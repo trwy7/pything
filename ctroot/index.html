@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script>
+    x = setInterval(
+      function() {
+        fetch("http://localhost:5192/isready", { method: 'GET' })
+        .then(response => {
+          if (response.ok) {
+            window.location.href = "http://localhost:5192/client?carthing=true";
+            clearInterval(x);
+          }
+        })
+        .catch(error => {});
+      },
+      1000
+    )
+  </script>
+</head>
+<body style="background-color: black;">
+</body>
+</html>
