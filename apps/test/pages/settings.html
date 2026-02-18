@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings for {{ app.display_name }}</title>
+</head>
+<body>
+    {% for setting in app.settings %}{# if you need a specific setting, pass it in render_template #}
+        <div style="border: solid black 2px; white-space: pre-line;">
+            <h2>{{ setting.display_name }}</h2>
+            <p>{{ setting.description }}</p>
+            <p>ID: {{ setting.id }}</p>
+            <p>Value: {{ setting.get_value() }}</p>
+        </div>
+    {% endfor %}
+</body>
+</html>
