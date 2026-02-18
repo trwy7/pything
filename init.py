@@ -37,12 +37,6 @@ if not logger.isEnabledFor(logging.DEBUG):
     log = logging.getLogger("werkzeug")
     log.setLevel(logging.WARNING)
 
-# Cache the socketIO script. 
-socketio_js = requests.get("https://cdn.socket.io/4.8.1/socket.io.min.js").text
-# Make sure this socketio version has not been compromised
-if sha256(socketio_js.encode("UTF-8")).hexdigest() != "b0e735814f8dcfecd6cdb8a7ce95a297a7e1e5f2727a29e6f5901801d52fa0c5":
-    raise RuntimeError("Failed to download the socketio 4.8.1 js file (hash mismatch).")
-
 # Save time so we dont check for the superbird webapp directory every check
 serial_cache = {}
 
@@ -85,7 +79,7 @@ def get_carthings():
 
 inject_proc: subprocess.Popen | None = None
 
-def inject_thread():
+def inject_thread(loop=True):
     global inject_proc
     while True:
         connected = get_carthings()
@@ -105,7 +99,7 @@ def inject_thread():
             # Wait for the script to finish
             # I dont understand this code, but it outputs as expected and it works
             inject_proc = subprocess.Popen(
-                ["./ctsetup.sh", serial],
+                ["./ctsetup.sh", serial, "true" if loop else "false"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 bufsize=1,
@@ -126,6 +120,8 @@ def inject_thread():
             else:
                 logger.error(f"Car Thing {serial} setup failed with return code {inject_proc.returncode}.")
             inject_proc = None
+        if loop == False:
+            return True
         time.sleep(2)
 
 # App stuff
@@ -281,16 +277,30 @@ def import_app(iappd: str):
         raise RuntimeError(f"App {iappd} variable 'app' has invalid blueprint ({str(type(iapp.app.blueprint))})")
     app.register_blueprint(iapp.app.blueprint, url_prefix="/apps/" + iapp.app.id.removeprefix("custom-"))
 
-# Restore carthing webapp on exit
-def restore_ct_webapp(sig, frame):
+# Restore carthing webapp
+def restore_ct_webapp(sig=None, frame=None):
     for serial in get_carthings():
         if is_carthing_serial(serial):
             logger.info(f"Restoring {serial}...")
             os.system(f"./ctrestore.sh {serial} {'>/dev/null 2>&1' if not show_output else ''}")
     sys.exit(0)
 
-if not devmode:
-    signal.signal(signal.SIGINT, restore_ct_webapp)
+if len(sys.argv) > 1:
+    match sys.argv[1]:
+        case "inject":
+            inject_thread(loop=False)
+        case "restore":
+            restore_ct_webapp()
+        case _:
+            print("Invalid command:", sys.argv[1])
+            sys.exit(1)
+    sys.exit(0)
+
+# Cache the socketIO script. 
+socketio_js = requests.get("https://cdn.socket.io/4.8.1/socket.io.min.js").text
+# Make sure this socketio version has not been compromised
+if sha256(socketio_js.encode("UTF-8")).hexdigest() != "b0e735814f8dcfecd6cdb8a7ce95a297a7e1e5f2727a29e6f5901801d52fa0c5":
+    raise RuntimeError("Failed to download the socketio 4.8.1 js file (hash mismatch).")
 
 if __name__ == "__main__":
 
@@ -308,6 +318,7 @@ if __name__ == "__main__":
     # Push webapp
     if os.environ.get("PYTHING_PUSH_WEBAPP", "true").lower() == "true":
         threading.Thread(target=inject_thread, daemon=True).start()
-
+        if not devmode:
+            signal.signal(signal.SIGINT, restore_ct_webapp)
     # Start the server
     socket.run(app, "127.0.0.1", 5192)

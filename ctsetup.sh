@@ -8,7 +8,9 @@ SERIAL=$1
 adb -s $SERIAL reverse tcp:5192 tcp:5192
 
 # Wait to see if it automatically connects (init.py should kill the script here if it does)
-sleep 3
+if [ "$2" == "true" ]; then
+    sleep 3
+fi
 
 # Stop chromium
 adb -s $SERIAL shell supervisorctl stop chromium
