@@ -62,7 +62,7 @@ def is_carthing_serial(serial: str):
     check_command = f"adb -s {serial} shell '[ -d /usr/share/qt-superbird-app/webapp/ ] && echo exists'"
     result = os.popen(check_command).read().strip()
     if result == "exists":
-        logger.info(f"Found device {serial}")
+        logger.debug(f"Found device {serial}")
         serial_cache[serial] = [True, False]
         return True
     else:
