@@ -4,24 +4,24 @@ set -ex
 
 SERIAL=$1
 
-# Stop chromium
-adb -s $SERIAL shell supervisorctl stop chromium
-
 # Forward our web server to its internal port
 adb -s $SERIAL reverse tcp:5192 tcp:5192
 
-# Remount root as read write to allow modifications
-adb -s $SERIAL shell mount -o remount,rw /
+# Wait to see if it automatically connects (init.py should kill the script here if it does)
+sleep 3
 
-# Remove the old webapp (if you really want stock back, reflash the firmware in burn mode)
-adb -s $SERIAL shell rm -rf /usr/share/qt-superbird-app/webapp/ || true
-adb -s $SERIAL shell mkdir -p /usr/share/qt-superbird-app/webapp/
+# Stop chromium
+adb -s $SERIAL shell supervisorctl stop chromium
+
+# Check for bind mounts (taken from https://github.com/pajowu/superbird-custom-webapp)
+adb -s $SERIAL shell 'mountpoint /usr/share/qt-superbird-app/webapp/ > /dev/null && umount /usr/share/qt-superbird-app/webapp' || true
+adb -s $SERIAL shell 'rm -rf /tmp/webapp' || true
 
 # Push our own webapp
-adb -s $SERIAL push ctroot/* /usr/share/qt-superbird-app/webapp/
+adb -s $SERIAL push ctroot /tmp/webapp
 
-# Remount root back to read only
-adb -s $SERIAL shell mount -o remount,ro /
+# Bind mount the temporary directory
+adb -s $SERIAL shell 'mount --bind /tmp/webapp /usr/share/qt-superbird-app/webapp'
 
 # Start chromium again
 adb -s $SERIAL shell supervisorctl start chromium
