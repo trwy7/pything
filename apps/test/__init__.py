@@ -12,3 +12,6 @@ app = App("Test App", [
 @app.blueprint.route("/settings")  # Results in /apps/<app.id>/settings, which becomes /apps/test/settings for this app
 def test_settings():
     return render_template(f"{app.dirname}/pages/settings.html", app=app)
+
+# To show the app on the dashboard, add a / route, which will be redirected to when the app is clicked
+# If this route does not exist, the app will still show up in settings, but will not show up on the dashboard
