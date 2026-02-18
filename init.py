@@ -289,7 +289,7 @@ def restore_ct_webapp(sig, frame):
             os.system(f"./ctrestore.sh {serial} {'>/dev/null 2>&1' if not show_output else ''}")
     sys.exit(0)
 
-if devmode:
+if not devmode:
     signal.signal(signal.SIGINT, restore_ct_webapp)
 
 if __name__ == "__main__":
