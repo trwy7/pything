@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PYThing client</title>
+    <link rel="stylesheet" href="/static/client.css">
+    <script src="/socket.io.min.js"></script>
+    <script>
+        const socket = io();
+        socket.on("connect", () => {
+            console.log("Connected to server");
+        });
+        socket.on("disconnect", () => {
+            socket.disconnect();
+            document.getElementById("status").innerText = "Disconnected";
+            document.getElementById("status").style.backgroundColor = "red";
+            x = setInterval(
+                function() {
+                    fetch("http://localhost:5192/isready", { method: 'GET' })
+                    .then(response => {
+                    if (response.ok) {
+                        window.location.reload();
+                        clearInterval(x);
+                    }
+                    })
+                    .catch(error => {});
+                },
+                1000
+            );
+        });
+    </script>
+</head>
+<body>
+    <div id="status"></div>
+    <!-- TODO: App iframes -->
+</body>
+</html>
