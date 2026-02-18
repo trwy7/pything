@@ -1,5 +1,7 @@
 # TODO: Sort these imports
 import os
+import sys
+import signal
 import subprocess
 import time
 import pickle
@@ -14,7 +16,9 @@ from flask import Flask, Blueprint, make_response, request, render_template, red
 from flask_socketio import SocketIO
 from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
 
-logging.basicConfig(level=logging.DEBUG)
+devmode = True
+
+logging.basicConfig(level=logging.DEBUG if devmode else logging.INFO)
 logger = logging.getLogger("pything")
 
 app = Flask(__name__, static_folder="src/static", template_folder="src/pages")
@@ -276,6 +280,17 @@ def import_app(iappd: str):
     if not isinstance(iapp.app.blueprint, Blueprint):
         raise RuntimeError(f"App {iappd} variable 'app' has invalid blueprint ({str(type(iapp.app.blueprint))})")
     app.register_blueprint(iapp.app.blueprint, url_prefix="/apps/" + iapp.app.id.removeprefix("custom-"))
+
+# Restore carthing webapp on exit
+def restore_ct_webapp(sig, frame):
+    for serial in get_carthings():
+        if is_carthing_serial(serial):
+            logger.info(f"Restoring {serial}...")
+            os.system(f"./ctrestore.sh {serial} {'>/dev/null 2>&1' if not show_output else ''}")
+    sys.exit(0)
+
+if devmode:
+    signal.signal(signal.SIGINT, restore_ct_webapp)
 
 if __name__ == "__main__":
 

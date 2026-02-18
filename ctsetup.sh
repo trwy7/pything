@@ -14,7 +14,7 @@ sleep 3
 adb -s $SERIAL shell supervisorctl stop chromium
 
 # Check for bind mounts (taken from https://github.com/pajowu/superbird-custom-webapp)
-adb -s $SERIAL shell 'mountpoint /usr/share/qt-superbird-app/webapp/ > /dev/null && umount /usr/share/qt-superbird-app/webapp' || true
+./ctrestore.sh $1 false
 adb -s $SERIAL shell 'rm -rf /tmp/webapp' || true
 
 # Push our own webapp
