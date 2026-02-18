@@ -9,7 +9,7 @@
         fetch("http://localhost:5192/isready", { method: 'GET' })
         .then(response => {
           if (response.ok) {
-            window.location.href = "http://localhost:5192/client?carthing=true";
+            window.location.href = "http://localhost:5192/client?carthing=true&ctcv=1";
             clearInterval(x);
           }
         })
@@ -19,6 +19,7 @@
     )
   </script>
 </head>
-<body style="background-color: black;">
+<body style="background-color: black; color:white;">
+  <h1 style="text-align: center; margin-top: 20vh;">Connecting to server...</h1>
 </body>
 </html>
