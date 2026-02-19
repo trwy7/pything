@@ -1,4 +1,4 @@
-from flask import render_template
+from flask import render_template, redirect
 from init import App, StringSetting, FloatSetting, IntegerSetting, BooleanSetting
 
 app = App("Test App", [
@@ -13,5 +13,9 @@ app = App("Test App", [
 def test_settings():
     return render_template(f"{app.dirname}/pages/settings.html", app=app)
 
-# To show the app on the dashboard, add a / route, which will be redirected to when the app is clicked
+@app.blueprint.route("/launch")
+def launch():
+    return redirect(f"/apps/{app.dirname}/settings")
+
+# To show the app on the dashboard, add a /launch route, which will be redirected to when the app is clicked
 # If this route does not exist, the app will still show up in settings, but will not show up on the dashboard

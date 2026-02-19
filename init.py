@@ -198,22 +198,18 @@ class App:
     Represents an app, use this class to create your app
     """
     def __init__(self, display_name: str, settings: list[Setting], aid: str | None=None):
-        #aid = "s" # FIXME: somehow find the importing python files directory name, prefix customapps with custom-
         stack = inspect.stack()
         self.dir = os.path.dirname(os.path.abspath(stack[1].filename))
         self.dirname = os.path.basename(self.dir)
         atype = os.path.basename(os.path.dirname(self.dir))
         if aid is None:
             aname = os.path.basename(self.dir)
-            if atype == "customapps":
-                aid = "custom-" + aname
-            else:
-                aid = aname
+            aid = aname
         self.id = aid
         self.logger = logging.getLogger("pything.app." + self.id)
         logger.info(f"Initializing app '{display_name}' with id '{aid}'")
         self.blueprint = Blueprint(self.id, __name__, static_folder=os.path.abspath(stack[1].filename) + "/static")
-        @app.context_processor
+        @self.blueprint.context_processor
         def inject_app():
             return {"app": self}
         if not os.path.isdir(atype + "/" + aid):
@@ -237,6 +233,17 @@ class App:
             logger.debug("Saving config with new default settings")
             save_config()
 
+# Client tracking
+clients = {}
+class Client:
+    def __init__(self, sid) -> None:
+        self.sid = sid
+        clients[sid] = self
+        self.change_app("dashboard")
+    def change_app(self, app: App | str):
+        if isinstance(app, App):
+            app = app.id
+        socket.emit("changeframe", "/apps/" + app + "/launch", to=self.sid)
 # Built in routes
 
 @app.route("/isready")
@@ -263,6 +270,11 @@ def socketio_js_route():
     res.headers["Content-Type"] = "application/javascript"
     return res
 
+# Socket
+@socket.on("connect")
+def client_connect(_):
+    Client(request.sid) # type: ignore
+
 def import_app(iappd: str):
     if not os.path.isdir(iappd):
         raise RuntimeError("All apps must be directories, name your app as <name>/__init__.py")
@@ -275,7 +287,7 @@ def import_app(iappd: str):
     # Make sure the blueprint is valid
     if not isinstance(iapp.app.blueprint, Blueprint):
         raise RuntimeError(f"App {iappd} variable 'app' has invalid blueprint ({str(type(iapp.app.blueprint))})")
-    app.register_blueprint(iapp.app.blueprint, url_prefix="/apps/" + iapp.app.id.removeprefix("custom-"))
+    app.register_blueprint(iapp.app.blueprint, url_prefix="/apps/" + iapp.app.id)
 
 # Restore carthing webapp
 def restore_ct_webapp(sig=None, frame=None):

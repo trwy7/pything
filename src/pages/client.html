@@ -8,6 +8,7 @@
     <script src="/socket.io.min.js"></script>
     <script>
         const socket = io();
+        var accent = "hsl(165, 46%, 68%)";
         socket.on("connect", () => {
             console.log("Connected to server");
         });
@@ -30,10 +31,20 @@
                 1000
             );
         });
+        socket.on("changeframe", (frame) => {
+            document.getElementById("appframe").src = frame
+            document.getElementById("appframe").hidden = false
+        })
+        socket.on("accentcolor", (color) => {
+            // TODO: Make apps able to set this color (or base it on the current song)
+            // FIXME: not actually a fixme but a reminder to make sure this is always a bright color
+            document.body.style.setProperty('--background-color', color);
+            accent = color
+        })
     </script>
 </head>
-<body>
+<body style="--background-color: hsl(165, 46%, 68%);">
     <div id="status" style="display:none;"></div>
-    <iframe id="appframe" src="about:blank" frameborder="0"></iframe>
+    <iframe id="appframe" src="about:blank" frameborder="0" style="background-color: var(--background-color);" hidden></iframe>
 </body>
 </html>
