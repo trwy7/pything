@@ -1,4 +1,3 @@
-# TODO: Sort these imports
 import os
 import sys
 import signal
@@ -16,9 +15,9 @@ from flask import Flask, Blueprint, make_response, request, render_template, red
 from flask_socketio import SocketIO
 from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
 
-devmode = True
+DEVMODE = True
 
-logging.basicConfig(level=logging.DEBUG if devmode else logging.INFO)
+logging.basicConfig(level=logging.DEBUG if DEVMODE else logging.INFO)
 logger = logging.getLogger("pything")
 
 app = Flask(__name__, static_folder="src/static", template_folder="src/pages")
@@ -41,12 +40,12 @@ if not logger.isEnabledFor(logging.DEBUG):
 serial_cache = {}
 
 def save_config():
-    with open("config.pkl", "wb") as f:
-        pickle.dump(config, f)
+    with open("config.pkl", "wb") as cfw:
+        pickle.dump(config, cfw)
 
 if os.path.exists("config.pkl"):
-    with open("config.pkl", "rb") as f:
-        config = pickle.load(f)
+    with open("config.pkl", "rb") as cfr:
+        config = pickle.load(cfr)
 else:
     config = {}
 
@@ -195,7 +194,7 @@ class IntegerSetting(Setting):
 
 class App:
     """
-    Represents an app, use this class to create your app
+    Represents a pything app, use this class to create your app, and specify settings
     """
     def __init__(self, display_name: str, settings: list[Setting], aid: str | None=None):
         stack = inspect.stack()
@@ -243,6 +242,9 @@ class Client:
     def change_app(self, app: App | str):
         if isinstance(app, App):
             app = app.id
+        if not isinstance(app, str):
+            raise ValueError("Argument app must be a string with the ID of the app")
+        self.app = app
         socket.emit("changeframe", "/apps/" + app + "/launch", to=self.sid)
 # Built in routes
 
@@ -264,6 +266,12 @@ def main_client():
             inject_proc.kill()
     return render_template("client.html")
 
+@app.route("/clients.json")
+def client_list():
+    return {sid: {
+        'app': d.app
+    } for sid, d in clients.items()}
+
 @app.route("/socket.io.min.js")
 def socketio_js_route():
     res = make_response(socketio_js)
@@ -272,8 +280,12 @@ def socketio_js_route():
 
 # Socket
 @socket.on("connect")
-def client_connect(_):
+def client_connect(*args, **kwargs):
     Client(request.sid) # type: ignore
+
+@socket.on("disconnect")
+def client_disconnect():
+    del clients[request.sid]
 
 def import_app(iappd: str):
     if not os.path.isdir(iappd):
@@ -330,7 +342,7 @@ if __name__ == "__main__":
     # Push webapp
     if os.environ.get("PYTHING_PUSH_WEBAPP", "true").lower() == "true":
         threading.Thread(target=inject_thread, daemon=True).start()
-        if not devmode:
+        if not DEVMODE:
             signal.signal(signal.SIGINT, restore_ct_webapp)
     # Start the server
     socket.run(app, "127.0.0.1", 5192)
