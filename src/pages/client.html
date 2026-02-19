@@ -15,6 +15,7 @@
             socket.disconnect();
             document.getElementById("status").innerText = "Disconnected";
             document.getElementById("status").style.backgroundColor = "red";
+            document.getElementById("status").style.display = "block";
             x = setInterval(
                 function() {
                     fetch("http://localhost:5192/isready", { method: 'GET' })
@@ -32,7 +33,7 @@
     </script>
 </head>
 <body>
-    <div id="status"></div>
-    <!-- TODO: App iframes -->
+    <div id="status" style="display:none;"></div>
+    <iframe id="appframe" src="about:blank" frameborder="0"></iframe>
 </body>
 </html>
