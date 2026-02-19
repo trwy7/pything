@@ -261,7 +261,6 @@ def client_redirect():
 @app.route("/client")
 def main_client():
     if request.args.get("carthing") == "true" and request.args.get("ctcv") == "1":
-        global inject_proc
         if inject_proc is not None:
             inject_proc.kill()
     return render_template("client.html")
@@ -280,7 +279,7 @@ def socketio_js_route():
 
 # Socket
 @socket.on("connect")
-def client_connect(*args, **kwargs):
+def client_connect(*args, **kwargs): #pylint: disable=unused-argument
     Client(request.sid) # type: ignore
 
 @socket.on("disconnect")
