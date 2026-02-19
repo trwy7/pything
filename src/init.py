@@ -20,13 +20,13 @@ DEVMODE = True
 logging.basicConfig(level=logging.DEBUG if DEVMODE else logging.INFO)
 logger = logging.getLogger("pything")
 
-app = Flask(__name__, static_folder="src/static", template_folder="src/pages")
+app = Flask(__name__, static_folder="static", template_folder="pages")
 socket = SocketIO(app)
 os.chdir(os.path.dirname(os.path.abspath(__file__))) # sanity check
 
 # Let apps load templates from their own directories
 app.jinja_env.loader = ChoiceLoader([
-    PackageLoader("src", "pages"),
+    PackageLoader("init", "pages"),
     FileSystemLoader(os.path.dirname(os.path.abspath(__file__)) + "/apps"),
     FileSystemLoader(os.path.dirname(os.path.abspath(__file__)) + "/customapps"),
 ])
@@ -299,7 +299,7 @@ def client_connect(*args, **kwargs): #pylint: disable=unused-argument
 
 @socket.on("disconnect")
 def client_disconnect():
-    del clients[request.sid]
+    del clients[request.sid] # type: ignore
 
 def import_app(iappd: str):
     if not os.path.isdir(iappd):
