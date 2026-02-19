@@ -192,6 +192,7 @@ class IntegerSetting(Setting):
 
 ## Apps
 
+apps = {}
 class App:
     """
     Represents a pything app, use this class to create your app, and specify settings
@@ -215,6 +216,7 @@ class App:
             raise RuntimeError(f"Failed to find app directory for '{display_name}'") # sanity check
         self.display_name = display_name
         self.settings = settings
+        self.hidden = True # updated on init
         if not aid in config:
             config[aid] = {}
         schange = False
@@ -271,6 +273,19 @@ def client_list():
         'app': d.app
     } for sid, d in clients.items()}
 
+@app.route("/apps.json")
+def app_list():
+    return {app.id: {
+        'display_name': app.display_name,
+        'settings': {setting.id: {
+            'display_name': setting.display_name,
+            'default': setting.default,
+            'value': setting.get_value(),
+            'hidden': setting.hidden
+        } for setting in app.settings },
+        'hidden': app.hidden
+    } for app in apps.values()}
+
 @app.route("/socket.io.min.js")
 def socketio_js_route():
     res = make_response(socketio_js)
@@ -299,6 +314,11 @@ def import_app(iappd: str):
     if not isinstance(iapp.app.blueprint, Blueprint):
         raise RuntimeError(f"App {iappd} variable 'app' has invalid blueprint ({str(type(iapp.app.blueprint))})")
     app.register_blueprint(iapp.app.blueprint, url_prefix="/apps/" + iapp.app.id)
+    apps[iapp.app.id] = iapp.app
+    for rule in app.url_map.iter_rules():
+        if rule == "/apps/" + iapp.app.id + "/launch":
+            iapp.app.hidden = False
+            break
 
 # Restore carthing webapp
 def restore_ct_webapp(sig=None, frame=None):
