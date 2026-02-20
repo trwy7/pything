@@ -236,6 +236,9 @@ class App:
             logger.debug("Saving config with new default settings")
             save_config()
 
+def get_apps():
+    return apps
+
 # Client tracking
 class Client:
     def __init__(self, sid) -> None:
@@ -323,7 +326,8 @@ def import_app(iappd: str):
     app.register_blueprint(iapp.app.blueprint, url_prefix="/apps/" + iapp.app.id)
     apps[iapp.app.id] = iapp.app
     for rule in app.url_map.iter_rules():
-        if rule == "/apps/" + iapp.app.id + "/launch":
+        if rule.rule == "/apps/" + iapp.app.id + "/launch":
+            logger.debug("%s has a launch route", iapp.app.id)
             iapp.app.hidden = False
             break
 

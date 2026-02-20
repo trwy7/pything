@@ -10,6 +10,13 @@
 </style>
 {% endblock %}
 {% block content %}
-<h1>Apps</h1><br>
-<p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Voluptatibus reprehenderit commodi doloribus! Modi officia fugit totam! Incidunt, veniam impedit magnam ipsam, exercitationem quaerat quos quidem hic dicta illo, maiores minima?</p>
+<h1>Apps</h1>
+{{apps}}
+<div id="apps">
+    {% for app in apps %}
+        {% if not app.hidden %}
+            <div id="app-{{app.id}}"></div>
+        {% endif %}
+    {% endfor %}
+</div>
 {% endblock %}
