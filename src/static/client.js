@@ -29,6 +29,7 @@ socket.on("connect", () => {
 });
 socket.on("disconnect", () => {
     socket.disconnect();
+    window.focus();
     document.getElementById("status").innerText = "Disconnected";
     document.getElementById("status").style.backgroundColor = "red";
     document.getElementById("status").style.display = "block";
@@ -51,7 +52,7 @@ socket.on("disconnect", () => {
 });
 socket.on("changeframe", (frame) => {
     triggerLoadAnim();
-    window.focus()
+    window.focus();
     setTimeout(() => {document.getElementById("appframe").src = frame;}, 500);
     setTimeout(() => {appFrame.contentWindow.focus();}, 1100);
 })
@@ -61,4 +62,4 @@ socket.on("accentcolor", (color) => {
     document.body.style.setProperty('--background-color', color);
     accent = color
 })
-appFrame.contentWindow.focus();
+setTimeout(() => {appFrame.contentWindow.focus();}, 500)
