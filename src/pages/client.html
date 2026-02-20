@@ -6,46 +6,12 @@
     <title>PYThing client</title>
     <link rel="stylesheet" href="/static/client.css">
     <script src="/socket.io.min.js"></script>
-    <script>
-        const socket = io();
-        var accent = "hsl(165, 46%, 68%)";
-        socket.on("connect", () => {
-            console.log("Connected to server");
-        });
-        socket.on("disconnect", () => {
-            socket.disconnect();
-            document.getElementById("status").innerText = "Disconnected";
-            document.getElementById("status").style.backgroundColor = "red";
-            document.getElementById("status").style.display = "block";
-            x = setInterval(
-                function() {
-                    fetch("http://localhost:5192/isready", { method: 'GET' })
-                    .then(response => {
-                    if (response.ok) {
-                        window.location.reload();
-                        clearInterval(x);
-                    }
-                    })
-                    .catch(error => {});
-                },
-                1000
-            );
-        });
-        socket.on("changeframe", (frame) => {
-            document.getElementById("appframe").src = frame
-            document.getElementById("appframe").hidden = false
-        })
-        socket.on("accentcolor", (color) => {
-            // TODO: Make apps able to set this color (or base it on the current song)
-            // FIXME: not actually a fixme but a reminder to make sure this is always a bright color
-            document.body.style.setProperty('--background-color', color);
-            accent = color
-        })
-    </script>
+    <script src="/static/client.js"></script>
 </head>
 <body style="--background-color: hsl(165, 46%, 68%);">
     <!-- TODO: Make the status text look better, it looks weird on some screen sizes -->
     <div id="status" style="display:none;"></div>
+    <div id="loadanim"></div>
     <iframe id="appframe" src="about:blank" frameborder="0" style="background-color: var(--background-color);" hidden></iframe>
 </body>
 </html>

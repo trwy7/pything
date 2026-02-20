@@ -10,6 +10,9 @@ html, body {
     margin: 0;
     padding: 0;
 }
+body {
+    border-radius: 20px;
+}
 #status {
     position: absolute;
     top: 0;
@@ -22,7 +25,36 @@ html, body {
     justify-content: center;
     text-align: center;
     font-size: 2em;
-    border-radius: 10px;
+    border-radius: 15px;
+    box-shadow: rgb(27, 27, 27) 0px 0px 5px;
+}
+#loadanim {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: black;
+    animation: loadanim 1s ease-in-out forwards;
+}
+#loadanim.reload {
+    animation: loadanimb 1s ease-in-out forwards;
+}
+@keyframes loadanim {
+    0% {
+        transform: translateY(0);
+    }
+    100% {
+        transform: translateY(100%);
+    }
+}
+@keyframes loadanimb {
+    0% {
+        transform: translateY(-100%);
+    }
+    100% {
+        transform: translateY(0);
+    }
 }
 #appframe {
     width: 100%;

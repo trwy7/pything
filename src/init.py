@@ -109,7 +109,7 @@ def inject_thread(loop=True):
             ct_connect = False
             run_adb_cmd(serial, ['reverse', 'tcp:5192', 'tcp:5192'])
             if loop:
-                time.sleep(1)
+                time.sleep(3)
             if ct_connect:
                 logger.debug("No need to repush webapp for %s", serial)
                 serial_cache[serial][1] = True
