@@ -1,3 +1,4 @@
+import subprocess
 import os
 import sys
 import signal
@@ -23,6 +24,7 @@ logger = logging.getLogger("pything")
 app = Flask(__name__, static_folder="static", template_folder="pages")
 socket = SocketIO(app)
 os.chdir(os.path.dirname(os.path.abspath(__file__))) # sanity check
+ct_connect = False
 
 # Let apps load templates from their own directories
 app.jinja_env.loader = ChoiceLoader([
@@ -30,6 +32,21 @@ app.jinja_env.loader = ChoiceLoader([
     FileSystemLoader(os.path.dirname(os.path.abspath(__file__)) + "/apps"),
     FileSystemLoader(os.path.dirname(os.path.abspath(__file__)) + "/customapps"),
 ])
+
+def run_adb_cmd(serial: str, command: list[str]):
+    # FIXME: needs testing
+    cmd = ["adb", "-s", serial]
+    cmd.extend(command)
+    logger.debug("[%s] + %s", serial, " ".join(cmd))
+    cmd_proc = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    if isinstance(cmd_proc.stdout, subprocess.IO):
+        for out in cmd_proc.stdout.readlines():
+            print(out)
 
 # Only show request logs in debug mode
 if not logger.isEnabledFor(logging.DEBUG):
@@ -40,11 +57,11 @@ if not logger.isEnabledFor(logging.DEBUG):
 serial_cache = {}
 
 def save_config():
-    with open("config.pkl", "wb") as cfw:
+    with open("appconfig.pkl", "wb") as cfw:
         pickle.dump(config, cfw)
 
-if os.path.exists("config.pkl"):
-    with open("config.pkl", "rb") as cfr:
+if os.path.exists("appconfig.pkl"):
+    with open("appconfig.pkl", "rb") as cfr:
         config = pickle.load(cfr)
 else:
     config = {}
@@ -76,10 +93,7 @@ def get_carthings():
                 things.append(serial_num)
     return things
 
-inject_proc: subprocess.Popen | None = None
-
 def inject_thread(loop=True):
-    global inject_proc
     while True:
         connected = get_carthings()
         # Remove disconnected devices
@@ -91,34 +105,18 @@ def inject_thread(loop=True):
         for serial in connected:
             if serial_cache[serial][1]:
                 continue
-            #if os.system("./ctsetup.sh " + serial + (" >/dev/null 2>&1" if not show_output else "")) == 0:
-            #    serial_cache[serial][1] = True
-            #else:
-            #    logger.error("Car Thing setup failed.")
-            # Wait for the script to finish
-            # I dont understand this code, but it outputs as expected and it works
-            inject_proc = subprocess.Popen(
-                ["./ctsetup.sh", serial, "true" if loop else "false"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                bufsize=1,
-                text=True,
-            )
-
-            # read merged stdout/stderr line-by-line
-            if inject_proc.stdout is not None:
-                for line in inject_proc.stdout:
-                    logger.debug(f"[{serial}] {line.strip()}")
-            inject_proc.wait()
-            if inject_proc.returncode == 0:
-                logger.info(f"Car Thing {serial} setup successful.")
-                serial_cache[serial][1] = True
-            elif inject_proc.returncode == -9:
-                logger.debug(f"Car Thing {serial} was reused.")
-                serial_cache[serial][1] = True
-            else:
-                logger.error(f"Car Thing {serial} setup failed with return code {inject_proc.returncode}.")
-            inject_proc = None
+            ct_connect = False
+            run_adb_cmd(serial, ['reverse', 'tcp:5192', 'tcp:5192'])
+            time.sleep(1)
+            if ct_connect:
+                logger.debug("No need to repush webapp for %s", serial)
+                continue
+            run_adb_cmd(serial, ['shell', 'supervisorctl stop chromium'])
+            restore_ct_webapp(fserial=serial, restart=False)
+            run_adb_cmd(serial, ['shell', 'rm -rf /tmp/ptwebapp'])
+            run_adb_cmd(serial, ['push', 'ctroot', '/tmp/ptwebapp'])
+            run_adb_cmd(serial, ['shell', 'mount --bind /tmp/ptwebapp /usr/share/qt-superbird-app/webapp'])
+            run_adb_cmd(serial, ['shell', 'supervisorctl start chromium'])
         if loop == False:
             return True
         time.sleep(2)
@@ -263,8 +261,8 @@ def client_redirect():
 @app.route("/client")
 def main_client():
     if request.args.get("carthing") == "true" and request.args.get("ctcv") == "1":
-        if inject_proc is not None:
-            inject_proc.kill()
+        global ct_connect
+        ct_connect = True
     return render_template("client.html")
 
 @app.route("/clients.json")
@@ -321,11 +319,13 @@ def import_app(iappd: str):
             break
 
 # Restore carthing webapp
-def restore_ct_webapp(sig=None, frame=None):
-    for serial in get_carthings():
+def restore_ct_webapp(fserial: str | None=None, restart: bool=True, sig=None, frame=None):
+    for serial in get_carthings() if serial is none else [fserial]:
         if is_carthing_serial(serial):
             logger.info(f"Restoring {serial}...")
-            os.system(f"./ctrestore.sh {serial} {'>/dev/null 2>&1' if not show_output else ''}")
+            run_adb_command(serial, ['shell', 'mountpoint /usr/share/qt-superbird-app/webapp/ > /dev/null && umount /usr/share/qt-superbird-app/webapp'])
+            if restart:
+                run_adb_cmd(serial, ['shell', 'supervisorctl', 'restart', 'chromium'])
     sys.exit(0)
 
 if len(sys.argv) > 1:
