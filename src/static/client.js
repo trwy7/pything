@@ -62,4 +62,11 @@ socket.on("accentcolor", (color) => {
     document.body.style.setProperty('--background-color', color);
     accent = color
 })
+let ctime = null
+let offset = 0
+socket.on("dt", (ttime) => {
+    ctime = new Date(ttime)
+    offset = ctime - new Date()
+    sendToApp("offset", offset);
+})
 setTimeout(() => {appFrame.contentWindow.focus();}, 500)

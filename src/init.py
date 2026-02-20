@@ -3,6 +3,7 @@ import os
 import sys
 import signal
 import subprocess
+import datetime
 import time
 import pickle
 import inspect
@@ -313,6 +314,12 @@ def client_request_open_app(app):
     logger.debug("%s is opening %s", request.sid, app) # type: ignore
     clients[request.sid].change_app(app) # type: ignore
 
+# Background updates
+def clock_thread():
+    while True:
+        socket.emit("dt", datetime.datetime.now().isoformat())
+        time.sleep(1)
+
 def import_app(iappd: str):
     if not os.path.isdir(iappd):
         raise RuntimeError("All apps must be directories, name your app as <name>/__init__.py")
@@ -377,6 +384,7 @@ if __name__ == "__main__":
     # Push webapp
     if os.environ.get("PYTHING_PUSH_WEBAPP", "true").lower() == "true":
         threading.Thread(target=inject_thread, daemon=True).start()
+        threading.Thread(target=clock_thread, daemon=True).start()
         if not DEVMODE:
             signal.signal(signal.SIGINT, restore_ct_webapp)
     # Start the server
