@@ -1,4 +1,5 @@
 const socket = io();
+const appFrame = document.getElementById("appframe")
 var accent = "hsl(165, 46%, 68%)";
 function triggerLoadAnim(keep=false) {
     document.getElementById("loadanim").classList.add("reload")
@@ -8,6 +9,21 @@ function triggerLoadAnim(keep=false) {
         }, 1000)
     }
 }
+function sendToApp(command, data) {
+    appFrame.contentWindow.postMessage({cmd: command, data: data}, '*');
+}
+window.addEventListener('message', (event) => {
+    const rmsg = event.data
+    switch (rmsg.cmd) {
+        case "openApp":
+            socket.emit("open_app", rmsg.data)
+            console.log("Switching to " + rmsg.data)
+            break;
+        default:
+            console.error("Unknown command recieved: " + rmsg.cmd);
+            alert("Unknown command recieved: " + rmsg.cmd);
+    }
+})
 socket.on("connect", () => {
     console.log("Connected to server");
 });
@@ -34,8 +50,8 @@ socket.on("disconnect", () => {
     );
 });
 socket.on("changeframe", (frame) => {
-    document.getElementById("appframe").src = frame
-    document.getElementById("appframe").hidden = false
+    triggerLoadAnim();
+    setTimeout(() => {document.getElementById("appframe").src = frame}, 1000);
 })
 socket.on("accentcolor", (color) => {
     // TODO: Make apps able to set this color (or base it on the current song)
@@ -43,3 +59,6 @@ socket.on("accentcolor", (color) => {
     document.body.style.setProperty('--background-color', color);
     accent = color
 })
+setInterval(() => {
+    appFrame.contentWindow.focus();
+}, 500);

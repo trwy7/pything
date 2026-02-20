@@ -27,6 +27,7 @@ body {
     font-size: 2em;
     border-radius: 15px;
     box-shadow: rgb(27, 27, 27) 0px 0px 5px;
+    pointer-events: none;
 }
 #loadanim {
     position: absolute;

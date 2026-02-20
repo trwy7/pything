@@ -237,12 +237,11 @@ class App:
             save_config()
 
 # Client tracking
-clients = {}
 class Client:
     def __init__(self, sid) -> None:
         self.sid = sid
+        self.app = "dashboard"
         clients[sid] = self
-        self.change_app("dashboard")
     def change_app(self, app: App | str):
         if isinstance(app, App):
             app = app.id
@@ -250,6 +249,7 @@ class Client:
             raise ValueError("Argument app must be a string with the ID of the app")
         self.app = app
         socket.emit("changeframe", "/apps/" + app + "/launch", to=self.sid)
+clients: dict[str, Client] = {}
 # Built in routes
 
 @app.route("/isready")
@@ -302,6 +302,11 @@ def client_connect(*args, **kwargs): #pylint: disable=unused-argument
 @socket.on("disconnect")
 def client_disconnect():
     del clients[request.sid] # type: ignore
+
+@socket.on("open_app")
+def client_request_open_app(app):
+    logger.debug("%s is opening %s", request.sid, app) # type: ignore
+    clients[request.sid].change_app(app) # type: ignore
 
 def import_app(iappd: str):
     if not os.path.isdir(iappd):

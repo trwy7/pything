@@ -6,12 +6,12 @@
     <title>PYThing client</title>
     <link rel="stylesheet" href="/static/client.css">
     <script src="/socket.io.min.js"></script>
-    <script src="/static/client.js"></script>
+    <script src="/static/client.js" defer></script>
 </head>
 <body style="--background-color: hsl(165, 46%, 68%);">
     <!-- TODO: Make the status text look better, it looks weird on some screen sizes -->
     <div id="status" style="display:none;"></div>
     <div id="loadanim"></div>
-    <iframe id="appframe" src="about:blank" frameborder="0" style="background-color: var(--background-color);" hidden></iframe>
+    <iframe id="appframe" src="/apps/dashboard/launch" frameborder="0" style="color: white;"></iframe>
 </body>
 </html>
