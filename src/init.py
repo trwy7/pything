@@ -200,6 +200,7 @@ class App:
     Represents a pything app, use this class to create your app, and specify settings
     """
     def __init__(self, display_name: str, settings: list[Setting], aid: str | None=None):
+        global apps
         stack = inspect.stack()
         self.dir = os.path.dirname(os.path.abspath(stack[1].filename))
         self.dirname = os.path.basename(self.dir)
@@ -208,6 +209,7 @@ class App:
             aname = os.path.basename(self.dir)
             aid = aname
         self.id = aid
+        apps[self.id] = self
         self.logger = logging.getLogger("pything.app." + self.id)
         logger.info(f"Initializing app '{display_name}' with id '{aid}'")
         self.blueprint = Blueprint(self.id, __name__, static_folder=os.path.abspath(stack[1].filename) + "/static")
