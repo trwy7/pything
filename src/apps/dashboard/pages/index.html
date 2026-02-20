@@ -32,7 +32,7 @@
 <h1>Apps</h1>
 <div id="apps">
     {% for app in apps.values() %}
-        {% if (not app.hidden) %}
+        {% if (not app.hidden) and app.id != 'dashboard' %}
             <div onclick="openApp('{{app.id}}')">
                 {{app.display_name}}
             </div>
