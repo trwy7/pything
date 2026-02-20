@@ -19,7 +19,7 @@ body {
     left: 0;
     width: calc(100% - 20px);
     margin: 10px;
-    height: 10%;
+    height: auto;
     display: flex;
     align-items: center;
     justify-content: center;
