@@ -31,10 +31,10 @@
 {% block content %}
 <h1>Apps</h1>
 <div id="apps">
-    {% for app in apps.values() %}
-        {% if (not app.hidden) and app.id != 'dashboard' %}
-            <div onclick="openApp('{{app.id}}')">
-                {{app.display_name}}
+    {% for napp in apps.values() %}
+        {% if (not napp.hidden) and napp.id != app.id %}
+            <div onclick="openApp('{{napp.id}}')">
+                {{napp.display_name}}
             </div>
         {% endif %}
     {% endfor %}
