@@ -43,10 +43,10 @@ def run_adb_cmd(serial: str, command: list[str]):
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
+        bufsize=1
     )
-    if isinstance(cmd_proc.stdout, subprocess.IO):
-        for out in cmd_proc.stdout.readlines():
-            print(out)
+    for out in cmd_proc.stdout.readlines(): # type: ignore
+        logger.debug("[%s] %s", serial, out)
 
 # Only show request logs in debug mode
 if not logger.isEnabledFor(logging.DEBUG):
@@ -94,6 +94,7 @@ def get_carthings():
     return things
 
 def inject_thread(loop=True):
+    global ct_connect
     while True:
         connected = get_carthings()
         # Remove disconnected devices
@@ -107,16 +108,19 @@ def inject_thread(loop=True):
                 continue
             ct_connect = False
             run_adb_cmd(serial, ['reverse', 'tcp:5192', 'tcp:5192'])
-            time.sleep(1)
+            if loop:
+                time.sleep(1)
             if ct_connect:
                 logger.debug("No need to repush webapp for %s", serial)
+                serial_cache[serial][1] = True
                 continue
             run_adb_cmd(serial, ['shell', 'supervisorctl stop chromium'])
-            restore_ct_webapp(fserial=serial, restart=False)
+            restore_ct_webapp(fserial=serial, restart=False, exit=False)
             run_adb_cmd(serial, ['shell', 'rm -rf /tmp/ptwebapp'])
             run_adb_cmd(serial, ['push', 'ctroot', '/tmp/ptwebapp'])
             run_adb_cmd(serial, ['shell', 'mount --bind /tmp/ptwebapp /usr/share/qt-superbird-app/webapp'])
             run_adb_cmd(serial, ['shell', 'supervisorctl start chromium'])
+            serial_cache[serial][1] = True
         if loop == False:
             return True
         time.sleep(2)
@@ -319,14 +323,15 @@ def import_app(iappd: str):
             break
 
 # Restore carthing webapp
-def restore_ct_webapp(fserial: str | None=None, restart: bool=True, sig=None, frame=None):
-    for serial in get_carthings() if serial is none else [fserial]:
+def restore_ct_webapp(fserial: str | None=None, restart: bool=True, exit: bool=True, sig=None, frame=None):
+    for serial in get_carthings() if fserial is None else [fserial]:
         if is_carthing_serial(serial):
             logger.info(f"Restoring {serial}...")
-            run_adb_command(serial, ['shell', 'mountpoint /usr/share/qt-superbird-app/webapp/ > /dev/null && umount /usr/share/qt-superbird-app/webapp'])
+            run_adb_cmd(serial, ['shell', 'mountpoint /usr/share/qt-superbird-app/webapp/ > /dev/null && umount /usr/share/qt-superbird-app/webapp'])
             if restart:
                 run_adb_cmd(serial, ['shell', 'supervisorctl', 'restart', 'chromium'])
-    sys.exit(0)
+    if exit:
+        sys.exit(0)
 
 if len(sys.argv) > 1:
     match sys.argv[1]:
