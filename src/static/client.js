@@ -51,7 +51,9 @@ socket.on("disconnect", () => {
 });
 socket.on("changeframe", (frame) => {
     triggerLoadAnim();
-    setTimeout(() => {document.getElementById("appframe").src = frame}, 500);
+    window.focus()
+    setTimeout(() => {document.getElementById("appframe").src = frame;}, 500);
+    setTimeout(() => {appFrame.contentWindow.focus();}, 1100);
 })
 socket.on("accentcolor", (color) => {
     // TODO: Make apps able to set this color (or base it on the current song)
@@ -59,6 +61,4 @@ socket.on("accentcolor", (color) => {
     document.body.style.setProperty('--background-color', color);
     accent = color
 })
-setInterval(() => {
-    appFrame.contentWindow.focus();
-}, 500);
+appFrame.contentWindow.focus();
