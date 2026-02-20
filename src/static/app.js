@@ -1,3 +1,4 @@
+// Internal functions
 function sendToClient(command, data) {
     window.parent.postMessage({cmd: command, data: data}, '*');
 }
@@ -9,12 +10,14 @@ window.addEventListener('message', (event) => {
             alert("Unknown command recieved: " + rmsg.cmd);
     }
 })
-function openApp(app) {
-    sendToClient("openApp", app)
-}
+// Utilities
 document.addEventListener('keydown', function(event) {
     event.preventDefault();
     if (event.key === 'm') {
         openApp('dashboard');
     }
 });
+// Exposed functions
+function openApp(app) {
+    sendToClient("openApp", app)
+}
