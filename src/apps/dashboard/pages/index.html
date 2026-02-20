@@ -14,11 +14,16 @@
         padding: 0 100px;
     }
     div#apps > div {
-        border: solid 2px white;
+        border: solid 2px rgb(223, 223, 223);
         border-radius: 10px;
         padding: 15px;
         background-color: #333;
         cursor: pointer;
+        transition: all 200ms;
+    }
+    div#apps > div.selected {
+        border: solid 2px rgb(142, 255, 213);
+        box-shadow: 0px 0px 8px rgb(142, 255, 213);
     }
 </style>
 {% endblock %}
@@ -27,7 +32,7 @@
 <div id="apps">
     {% for app in apps.values() %}
         {% if (not app.hidden) %}
-            <div id="app-{{app.id}}" onclick="openApp('{{app.id}}')">
+            <div onclick="openApp('{{app.id}}')">
                 {{app.display_name}}
             </div>
         {% endif %}
@@ -36,5 +41,39 @@
 {% endblock %}
 {% block script %}
 <script>
+    let index = 0
+    const appList = document.getElementById("apps")
+    const apps = appList.children
+    function updateSelected() {
+        const selected = document.querySelectorAll(".selected");
+        for (let i = 0; i < selected.length; i++) {
+            selected[i].classList.remove('selected');
+        }
+        apps[index].classList.add('selected');
+    }
+    document.addEventListener('keydown', function(event) {
+        switch (event.key) {
+            case 'Enter':
+                apps[index].click();
+                break;
+            case 'ArrowLeft':
+                index = (index - 1 + apps.length) % apps.length;
+                updateSelected();
+                break;
+            case 'ArrowRight':
+                index = (index + 1) % apps.length;
+                updateSelected();
+                break;
+        }
+    });
+    document.addEventListener('wheel', function(event) {
+        if (event.deltaX < 0) {
+            index = (index - 1 + apps.length) % apps.length;
+        } else {
+            index = (index + 1) % apps.length;
+        }
+        updateSelected();
+    });
+    updateSelected();
 </script>
 {% endblock %}
