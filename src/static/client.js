@@ -6,7 +6,7 @@ function triggerLoadAnim(keep=false) {
     if (!keep) {
         setTimeout(() => {
             document.getElementById("loadanim").classList.remove("reload")
-        }, 1000)
+        }, 600)
     }
 }
 function sendToApp(command, data) {
@@ -40,7 +40,7 @@ socket.on("disconnect", () => {
                 triggerLoadAnim(keep=true)
                 setTimeout(() => {
                     window.location.reload();
-                }, 1000)
+                }, 500)
                 clearInterval(x);
             }
             })
@@ -51,7 +51,7 @@ socket.on("disconnect", () => {
 });
 socket.on("changeframe", (frame) => {
     triggerLoadAnim();
-    setTimeout(() => {document.getElementById("appframe").src = frame}, 1000);
+    setTimeout(() => {document.getElementById("appframe").src = frame}, 500);
 })
 socket.on("accentcolor", (color) => {
     // TODO: Make apps able to set this color (or base it on the current song)

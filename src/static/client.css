@@ -36,10 +36,10 @@ body {
     width: 100%;
     height: 100%;
     background-color: black;
-    animation: loadanim 1s ease-in-out forwards;
+    animation: loadanim 0.5s ease-in-out forwards;
 }
 #loadanim.reload {
-    animation: loadanimb 1s ease-in-out forwards;
+    animation: loadanimb 0.5s ease-in-out forwards;
 }
 @keyframes loadanim {
     0% {
