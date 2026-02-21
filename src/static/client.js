@@ -57,6 +57,9 @@ socket.on("changeframe", (frame) => {
     triggerLoadAnim();
     window.focus();
     setTimeout(() => {document.getElementById("appframe").src = frame;}, 500);
+    setTimeout(() => {sendToApp("offset", offset);}, 550);
+    setTimeout(() => {sendToApp("offset", offset);}, 600);
+    setTimeout(() => {sendToApp("offset", offset);}, 650);
     setTimeout(() => {appFrame.contentWindow.focus();}, 1100);
 })
 socket.on("accentcolor", (color) => {
@@ -75,4 +78,4 @@ socket.on("dt", (ttime) => {
     offset = ctime - new Date()
     sendToApp("offset", offset);
 })
-setTimeout(() => {appFrame.contentWindow.focus();}, 500)
+appFrame.contentWindow.focus();

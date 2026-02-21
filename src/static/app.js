@@ -1,5 +1,4 @@
 const appId = document.querySelector('meta[name="app-id"]').content
-
 // Internal functions
 function sendToClient(command, data) {
     window.parent.postMessage({cmd: command, data: data}, '*');
@@ -9,6 +8,10 @@ window.addEventListener('message', (event) => {
     switch (rmsg.cmd) {
         case "offset":
             timeOffset = rmsg.data;
+            at = document.getElementById("auto-time");
+            if (at) {
+                updateAutoTime(at);
+            }
             break;
         case "appCom":
             if (rmsg.data.app != appId) {
@@ -36,6 +39,16 @@ document.addEventListener('keydown', function(event) {
 let timeOffset = 0;
 function getRealDate() {
     return new Date(Date.now() + timeOffset)
+}
+function updateAutoTime(autoTime) {
+    const cd = getRealDate()
+    var hours = cd.getHours();
+    var minutes = cd.getMinutes();
+    var ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12; // the hour '0' should be '12'
+    minutes = minutes < 10 ? '0'+minutes : minutes;
+    autoTime.innerText = hours + ':' + minutes + ' ' + ampm;
 }
 // app-server communication
 function send(event, data) {

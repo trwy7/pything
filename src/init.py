@@ -328,7 +328,8 @@ def socketio_js_route():
 # Socket
 @socket.on("connect")
 def client_connect(*args, **kwargs): #pylint: disable=unused-argument
-    Client(request.sid) # type: ignore
+    c = Client(request.sid) # type: ignore
+    socket.emit("dt", datetime.datetime.now().isoformat(), to=c.sid)
 
 @socket.on("disconnect")
 def client_disconnect():
@@ -357,7 +358,7 @@ def client_print(d):
 def clock_thread():
     while True:
         socket.emit("dt", datetime.datetime.now().isoformat())
-        time.sleep(1)
+        time.sleep(60)
 
 def import_app(iappd: str):
     if not os.path.isdir(iappd):
