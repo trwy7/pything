@@ -222,6 +222,7 @@ class App:
         self.display_name = display_name
         self.settings = settings
         self.hidden = True # updated on init
+        self.listeners = {}
         if not aid in config:
             config[aid] = {}
         schange = False
@@ -246,6 +247,11 @@ class App:
             if client.app == self.id:
                 return True
         return False
+    def on(self, event):
+        def decorator(func):
+            self.listeners[event] = func
+            return func
+        return decorator
 
 def get_apps():
     return apps
@@ -321,6 +327,16 @@ def client_disconnect():
 def client_request_open_app(app):
     logger.debug("%s is opening %s", request.sid, app) # type: ignore
     clients[request.sid].change_app(app) # type: ignore
+
+@socket.on("app_com")
+def app_client_communications(app, event, data):
+    if app not in apps:
+        logger.error("A client just sent a request to non-existent app '%s'", app)
+        return
+    if event not in apps[app].listeners:
+        logger.warning("A client just sent a message to '%s' with non-existent event '%s'", app, event)
+        return
+    apps[app].listeners[event](data)
 
 # Background updates
 def clock_thread():

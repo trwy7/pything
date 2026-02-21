@@ -1,3 +1,5 @@
+const appId = document.querySelector('meta[name="app-id"]').content
+
 // Internal functions
 function sendToClient(command, data) {
     window.parent.postMessage({cmd: command, data: data}, '*');
@@ -23,6 +25,10 @@ document.addEventListener('keydown', function(event) {
 let timeOffset = 0;
 function getRealDate() {
     return new Date(Date.now() + timeOffset)
+}
+// app-server communication
+function send(event, data) {
+    sendToClient("appCom", {app: appId, event: event, data: data})
 }
 // Exposed functions
 function openApp(app) {

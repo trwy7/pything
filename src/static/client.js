@@ -19,6 +19,9 @@ window.addEventListener('message', (event) => {
             socket.emit("open_app", rmsg.data)
             console.log("Switching to " + rmsg.data)
             break;
+        case "appCom":
+            socket.emit("app_com", rmsg.data.app, rmsg.data.event, rmsg.data.data)
+            break;
         default:
             console.error("Unknown command recieved: " + rmsg.cmd);
             alert("Unknown command recieved: " + rmsg.cmd);
