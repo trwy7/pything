@@ -425,7 +425,5 @@ if __name__ == "__main__":
     if os.environ.get("PYTHING_PUSH_WEBAPP", "true").lower() == "true":
         threading.Thread(target=inject_thread, daemon=True).start()
         threading.Thread(target=clock_thread, daemon=True).start()
-        if not DEVMODE:
-            signal.signal(signal.SIGINT, restore_ct_webapp)
     # Start the server
     socket.run(app, "127.0.0.1", 5192)
