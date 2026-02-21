@@ -6,7 +6,7 @@
     <title>Settings for {{ app.display_name }}</title>
 </head>
 <body>
-    {% for setting in app.settings %}{# if you need a specific setting, pass it in render_template #}
+    {% for setting in app.settings.values() %}
         <div style="border: solid black 2px; white-space: pre-line;">
             <h2>{{ setting.display_name }}</h2>
             <p>{{ setting.description }}</p>

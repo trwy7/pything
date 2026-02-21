@@ -221,7 +221,7 @@ class App:
         if not os.path.isdir(atype + "/" + aid):
             raise RuntimeError(f"Failed to find app directory for '{display_name}'") # sanity check
         self.display_name = display_name
-        self.settings = settings
+        self.settings = {s.id: s for s in settings}
         self.hidden = True # updated on init
         self.listeners = {}
         if not aid in config:
@@ -252,12 +252,12 @@ class App:
         for client in clients.values():
             if client.app == self.id:
                 yield client
-    def on(self, event):
+    def on(self, event: str):
         def decorator(func):
             self.listeners[event] = func
             return func
         return decorator
-    def send(self, event, data):
+    def send(self, event: str, data):
         logger.debug("serverapp>clientapp: %s > %s", self.id, event)
         for c in self.get_open_clients():
             socket.emit("app_com", [self.id, event, data], to=c.sid)

@@ -11,8 +11,19 @@
 {% endblock %}
 {% block content %}
 <p id="auto-time"></p>
+<div id="hardware">
+    <div id="ram">
+        <span class="label"></span>
+        <span id="ram-percent"></span>
+        <span id="ram-used"></span>
+    </div>
+</div>
 {% endblock %}
 {% block script %}
 <script>
+    on("upd", (payload) => {
+        document.getElementById("ram-percent").innerText = payload.rp + "%"
+        document.getElementById("ram-used").innerText = `${payload.ru}${payload.rl}/${payload.rt}${payload.rl}`
+    })
 </script>
 {% endblock %}
