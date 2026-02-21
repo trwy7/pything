@@ -13,9 +13,19 @@
 <p id="auto-time"></p>
 <div id="hardware">
     <div id="ram">
-        <span class="label"></span>
+        <span class="label">RAM</span>
         <span id="ram-percent"></span>
         <span id="ram-used"></span>
+    </div>
+    <div id="cpu">
+        <span class="label">CPU</span>
+        <span id="cpu-percent"></span>
+    </div>
+    <div id="gpu">
+        <span class="label">GPU</span>
+    </div>
+    <div id="net">
+        <span class="label">Network</span>
     </div>
 </div>
 {% endblock %}
@@ -23,7 +33,8 @@
 <script>
     on("upd", (payload) => {
         document.getElementById("ram-percent").innerText = payload.rp + "%"
-        document.getElementById("ram-used").innerText = `${payload.ru}${payload.rl}/${payload.rt}${payload.rl}`
+        document.getElementById("ram-used").innerText = `${payload.ru}/${payload.rt}`
+        document.getElementById("cpu-percent").innerText = payload.cpu + "%"
     })
 </script>
 {% endblock %}

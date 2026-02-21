@@ -1,11 +1,12 @@
 import threading
 import psutil
 import time
+import humanize
 from flask import render_template
 from init import App, BooleanSetting
 
 app = App("System", [
-    BooleanSetting("ram-gib", "Ram in GiB", "If on, shows ram in GiB instead of GB", False)
+    BooleanSetting("gib", "Values in GiB", "If on, shows data values in GiB instead of GB", False)
 ])
 
 @app.blueprint.route("/launch")
@@ -19,12 +20,12 @@ def send_stats_thread():
             continue
         app.logger.debug("Updating hardware stats")
         ram = psutil.virtual_memory()
-        rmult = 1073741824 if app.settings['ram-gib'].get_value() else 1e9
+        gib = app.settings['gib'].get_value()
         payload = {
             'rp': ram.percent,
-            'ru': round(ram.used / rmult, 2),
-            'rt': round(ram.total / rmult, 2),
-            'rl': "GiB" if rmult == 1073741824 else "GB"
+            'ru': humanize.naturalsize(ram.used, binary=gib),
+            'rt': humanize.naturalsize(ram.total, binary=gib),
+            'cpu': psutil.cpu_percent(interval=None)
         }
         app.send("upd", payload)
         time.sleep(1)
