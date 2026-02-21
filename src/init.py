@@ -330,6 +330,8 @@ def socketio_js_route():
 def client_connect(*args, **kwargs): #pylint: disable=unused-argument
     c = Client(request.sid) # type: ignore
     socket.emit("dt", datetime.datetime.now().isoformat(), to=c.sid)
+    socket.sleep(1)
+    socket.emit("dt", datetime.datetime.now().isoformat(), to=c.sid)
 
 @socket.on("disconnect")
 def client_disconnect():
