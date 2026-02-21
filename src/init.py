@@ -238,6 +238,14 @@ class App:
         if schange:
             logger.debug("Saving config with new default settings")
             save_config()
+    def should_poll(self) -> bool:
+        """
+        Checks if at least one client has the App open
+        """
+        for client in clients.values():
+            if client.app == self.id:
+                return True
+        return False
 
 def get_apps():
     return apps
