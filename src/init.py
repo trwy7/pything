@@ -11,7 +11,7 @@ import importlib
 import logging
 import threading
 from hashlib import sha256
-from typing import Any
+from typing import Any, Generator
 import requests
 from flask import Flask, Blueprint, make_response, request, render_template, redirect
 from flask_socketio import SocketIO
@@ -81,6 +81,7 @@ def is_carthing_serial(serial: str):
         serial_cache[serial] = [True, False]
         return True
     else:
+        logger.debug("Device %s is not a superbird", serial)
         serial_cache[serial] = [False, False]
         return False
 
@@ -101,8 +102,9 @@ def inject_thread(loop=True):
         # Remove disconnected devices
         for serial in list(serial_cache.keys()):
             if serial not in connected:
-                logger.info(f"{serial} disconnected")
-                del serial_cache[serial]
+                if serial_cache[serial][0]:
+                    logger.info(f"{serial} disconnected")
+                    del serial_cache[serial]
         # Initialize newly connected devices
         for serial in connected:
             if serial_cache[serial][1]:
@@ -195,7 +197,6 @@ class IntegerSetting(Setting):
 
 ## Apps
 
-apps = {}
 class App:
     """
     Represents a pything app, use this class to create your app, and specify settings
@@ -247,11 +248,21 @@ class App:
             if client.app == self.id:
                 return True
         return False
+    def get_open_clients(self) -> Generator:
+        for client in clients.values():
+            if client.app == self.id:
+                yield client
     def on(self, event):
         def decorator(func):
             self.listeners[event] = func
             return func
         return decorator
+    def send(self, event, data):
+        logger.debug("serverapp>clientapp: %s > %s", self.id, event)
+        for c in self.get_open_clients():
+            socket.emit("app_com", [self.id, event, data], to=c.sid)
+
+apps: dict[str, App] = {}
 
 def get_apps():
     return apps
@@ -338,6 +349,10 @@ def app_client_communications(app, event, data):
         return
     apps[app].listeners[event](data)
 
+@socket.on("debug")
+def client_print(d):
+    logger.debug("Client message: %s", d)
+
 # Background updates
 def clock_thread():
     while True:
@@ -357,7 +372,6 @@ def import_app(iappd: str):
     if not isinstance(iapp.app.blueprint, Blueprint):
         raise RuntimeError(f"App {iappd} variable 'app' has invalid blueprint ({str(type(iapp.app.blueprint))})")
     app.register_blueprint(iapp.app.blueprint, url_prefix="/apps/" + iapp.app.id)
-    apps[iapp.app.id] = iapp.app
     for rule in app.url_map.iter_rules():
         if rule.rule == "/apps/" + iapp.app.id + "/launch":
             logger.debug("%s has a launch route", iapp.app.id)
@@ -393,6 +407,8 @@ if sha256(socketio_js.encode("UTF-8")).hexdigest() != "b0e735814f8dcfecd6cdb8a7c
     raise RuntimeError("Failed to download the socketio 4.8.1 js file (hash mismatch).")
 
 if __name__ == "__main__":
+
+    sys.modules['init'] = sys.modules[__name__]
 
     # Load apps
     for modapp in os.listdir("apps"):

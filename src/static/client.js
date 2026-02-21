@@ -65,6 +65,9 @@ socket.on("accentcolor", (color) => {
     document.body.style.setProperty('--background-color', color);
     accent = color
 })
+socket.on("app_com", (data) => {
+    sendToApp("appCom", {app: data[0], event: data[1], data: data[2]})
+})
 let ctime = null
 let offset = 0
 socket.on("dt", (ttime) => {
