@@ -60,8 +60,11 @@
         <span id="cpu-percent" class="main"></span>
         <span class="secondary"></span>
     </div>
-    <div id="gpu">
-        <span class="label">GPU</span>
+    <div id="dsk">
+        <span class="label">Disk</span>
+        <span id="dsk-r" class="main"></span>
+        <span id="dsk-w" class="main"></span>
+        <span id="dsk-rwt" class="secondary"></span>
     </div>
     <div id="net">
         <span class="label">Network</span>
@@ -80,6 +83,9 @@
         document.getElementById("net-u").innerText = payload.netur + "/s"
         document.getElementById("net-d").innerText = payload.netdr + "/s"
         document.getElementById("net-udt").innerText = payload.netdt + "/" + payload.netut
+        document.getElementById("dsk-r").innerText = payload.dskrr + "/s"
+        document.getElementById("dsk-w").innerText = payload.dskwr + "/s"
+        document.getElementById("dsk-rwt").innerText = payload.dskrt + "/" + payload.dskwt
     })
 </script>
 {% endblock %}
