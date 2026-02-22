@@ -57,7 +57,6 @@ def ensure_adb(r=False):
             return False
         with tempfile.TemporaryDirectory() as tempdir:
             zpath = os.path.join(tempdir, "t.zip")
-            print(zpath)
             urllib.request.urlretrieve(urls[system], zpath)
             with zipfile.ZipFile(zpath, 'r') as zip:
                 zip.extractall(tempdir)
@@ -65,10 +64,6 @@ def ensure_adb(r=False):
             shutil.move(os.path.join(tempdir, "platform-tools"), pathlib.Path.home())
         if system != "windows":
             os.system(f"chmod +x '{os.path.join(pathlib.Path.home(), "platform-tools", "adb")}'")
-        
-adb = ensure_adb()
-if not adb:
-    logger.warning("ADB is not available, the carthing will not be able to connect.")
 
 # Let apps load templates from their own directories
 app.jinja_env.loader = ChoiceLoader([
@@ -473,6 +468,10 @@ if sha256(socketio_js.encode("UTF-8")).hexdigest() != "b0e735814f8dcfecd6cdb8a7c
 if __name__ == "__main__":
 
     sys.modules['init'] = sys.modules[__name__]
+
+    adb = ensure_adb()
+    if not adb:
+        logger.warning("ADB is not available, the carthing will not be able to connect.")
 
     # Load apps
     for modapp in os.listdir("apps"):
