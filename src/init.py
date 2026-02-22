@@ -487,7 +487,8 @@ if __name__ == "__main__":
 
     # Push webapp
     if os.environ.get("PYTHING_PUSH_WEBAPP", "true").lower() == "true":
-        threading.Thread(target=inject_thread, daemon=True).start()
+        if adb:
+            threading.Thread(target=inject_thread, daemon=True).start()
         threading.Thread(target=clock_thread, daemon=True).start()
     # Start the server
     socket.run(app, "127.0.0.1", 5192)
