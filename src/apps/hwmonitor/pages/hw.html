@@ -61,15 +61,15 @@
         <span class="secondary"></span>
     </div>
     <div id="dsk">
-        <span class="label">Disk</span>
+        <span class="label">Disk (R/W)</span>
         <span id="dsk-r" class="main"></span>
         <span id="dsk-w" class="main"></span>
         <span id="dsk-rwt" class="secondary"></span>
     </div>
     <div id="net">
-        <span class="label">Network</span>
-        <span id="net-d" class="main"></span>
+        <span class="label">Network (Up/Down)</span>
         <span id="net-u" class="main"></span>
+        <span id="net-d" class="main"></span>
         <span id="net-udt" class="secondary"></span>
     </div>
 </div>
@@ -82,7 +82,7 @@
         document.getElementById("cpu-percent").innerText = payload.cpu + "%"
         document.getElementById("net-u").innerText = payload.netur + "/s"
         document.getElementById("net-d").innerText = payload.netdr + "/s"
-        document.getElementById("net-udt").innerText = payload.netdt + "/" + payload.netut
+        document.getElementById("net-udt").innerText = payload.netut + "/" + payload.netdt
         document.getElementById("dsk-r").innerText = payload.dskrr + "/s"
         document.getElementById("dsk-w").innerText = payload.dskwr + "/s"
         document.getElementById("dsk-rwt").innerText = payload.dskrt + "/" + payload.dskwt
