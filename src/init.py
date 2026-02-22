@@ -392,12 +392,28 @@ def restore_ct_webapp(fserial: str | None=None, restart: bool=True, exit: bool=T
     if exit:
         sys.exit(0)
 
+# Fully replace the original webapp with ptclient
+def full_replace_carthing(serials: list | None=None):
+    """If used, gives faster app startup times from a restart"""
+    if serials is None:
+        serials = get_carthings()
+    for serial in serials:
+        restore_ct_webapp(fserial=serial, restart=False, exit=False)
+        logger.info("Replacing %s...", serial)
+        run_adb_cmd(serial, ['shell', 'mount -o remount,rw /'])
+        run_adb_cmd(serial, ['shell', 'rm -rf /usr/share/qt-superbird-app/webapp'])
+        run_adb_cmd(serial, ['push', 'ctroot', '/usr/share/qt-superbird-app/webapp'])
+        run_adb_cmd(serial, ['shell', 'supervisorctl', 'restart', 'chromium'])
+        run_adb_cmd(serial, ['shell', 'mount -o remount,ro /'])
+
 if len(sys.argv) > 1:
     match sys.argv[1]:
         case "inject":
             inject_thread(loop=False)
         case "restore":
             restore_ct_webapp()
+        case "perminject":
+            full_replace_carthing()
         case _:
             print("Invalid command:", sys.argv[1])
             sys.exit(1)
