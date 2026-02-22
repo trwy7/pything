@@ -40,6 +40,8 @@ def ensure_adb(r=False):
         os.environ["PATH"] = os.path.abspath(os.path.join(pathlib.Path().home(), "platform-tools")) + os.pathsep + os.environ.get("PATH", "")
         if os.system("adb devices > /dev/null") == 0:
             return True
+        logger.warning("%s exists and does not contain a valid ADB install. Car thing integration will not work until you rename or remove it.", os.path.abspath(os.path.join(pathlib.Path().home(), "platform-tools")))
+        return False
     if r:
         return False
     res = input("Could not find ADB in your path. Would you like to download it automatically [y/N]?")
