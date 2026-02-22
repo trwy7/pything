@@ -1,13 +1,18 @@
 import subprocess
 import os
 import sys
-import signal
 import subprocess
 import datetime
 import time
 import pickle
 import inspect
 import importlib
+import platform
+import pathlib
+import tempfile
+import shutil
+import zipfile
+import urllib.request
 import logging
 import threading
 from hashlib import sha256
@@ -18,7 +23,7 @@ from flask_socketio import SocketIO
 from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
 
 DEVMODE = True
-
+adb = False
 logging.basicConfig(level=logging.DEBUG if DEVMODE else logging.INFO)
 logger = logging.getLogger("pything")
 
@@ -26,6 +31,42 @@ app = Flask(__name__, static_folder="static", template_folder="pages")
 socket = SocketIO(app)
 os.chdir(os.path.dirname(os.path.abspath(__file__))) # sanity check
 ct_connect = False
+
+# Install adb for people who do not already have it
+def ensure_adb(r=False):
+    if os.system("adb devices > /dev/null") == 0:
+        return True
+    if os.path.isdir(os.path.abspath(os.path.join(pathlib.Path().home(), "platform-tools"))):
+        os.environ["PATH"] = os.path.abspath(os.path.join(pathlib.Path().home(), "platform-tools")) + os.pathsep + os.environ.get("PATH", "")
+        if os.system("adb devices > /dev/null") == 0:
+            return True
+    if r:
+        return False
+    res = input("Could not find ADB in your path. Would you like to download it automatically [y/N]?")
+    if res.lower() == "y":
+        system = platform.system().lower()
+        urls = {
+            "windows": "https://dl.google.com/android/repository/platform-tools-latest-windows.zip",
+            "darwin": "https://dl.google.com/android/repository/platform-tools-latest-darwin.zip",
+            "linux": "https://dl.google.com/android/repository/platform-tools-latest-linux.zip"
+        }
+        if system not in urls:
+            logger.error("System not supported, continuing without ADB")
+            return False
+        with tempfile.TemporaryDirectory() as tempdir:
+            zpath = os.path.join(tempdir, "t.zip")
+            print(zpath)
+            urllib.request.urlretrieve(urls[system], zpath)
+            with zipfile.ZipFile(zpath, 'r') as zip:
+                zip.extractall(tempdir)
+            os.remove(zpath)
+            shutil.move(os.path.join(tempdir, "platform-tools"), pathlib.Path.home())
+        if system != "windows":
+            os.system(f"chmod +x '{os.path.join(pathlib.Path.home(), "platform-tools", "adb")}'")
+        
+adb = ensure_adb()
+if not adb:
+    logger.warning("ADB is not available, the carthing will not be able to connect.")
 
 # Let apps load templates from their own directories
 app.jinja_env.loader = ChoiceLoader([
@@ -35,7 +76,9 @@ app.jinja_env.loader = ChoiceLoader([
 ])
 
 def run_adb_cmd(serial: str, command: list[str]):
-    # FIXME: needs testing
+    if not adb:
+        logger.warning("An adb command was ran, but adb has not been validated")
+        return
     cmd = ["adb", "-s", serial]
     cmd.extend(command)
     logger.debug("[%s] + %s", serial, " ".join(cmd))
