@@ -1,11 +1,49 @@
 {% extends "templates/app.html" %}
 {% block head %}
 <style>
+    body {
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
     #auto-time {
         width: 100%;
+        height: 15px;
         text-align: center;
         top: 0;
         font-weight: bold;
+    }
+    #hardware {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr 1fr;
+        flex-grow: 1;
+        gap: 10px;
+        height: 100%;
+        padding-bottom: 15px;
+    }
+    #hardware > div {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: center;
+        border: solid 2px rgb(223, 223, 223);
+        background-color: #333a;
+        border-radius: 20px;
+        text-align: center;
+        padding: 10px 0;
+    }
+    #hardware > div > .label {
+        font-size: 1.2em;
+    }
+    #hardware > div > .main {
+        font-size: 3em;
+        font-weight: bold;
+    }
+    #hardware > div > .secondary {
+        font-size: 1.5em;
+        min-height: 1.2em;
     }
 </style>
 {% endblock %}
@@ -14,12 +52,13 @@
 <div id="hardware">
     <div id="ram">
         <span class="label">RAM</span>
-        <span id="ram-percent"></span>
-        <span id="ram-used"></span>
+        <span id="ram-percent" class="main"></span>
+        <span id="ram-used" class="secondary"></span>
     </div>
     <div id="cpu">
         <span class="label">CPU</span>
-        <span id="cpu-percent"></span>
+        <span id="cpu-percent" class="main"></span>
+        <span class="secondary"></span>
     </div>
     <div id="gpu">
         <span class="label">GPU</span>
