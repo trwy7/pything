@@ -65,6 +65,9 @@
     </div>
     <div id="net">
         <span class="label">Network</span>
+        <span id="net-d" class="main"></span>
+        <span id="net-u" class="main"></span>
+        <span id="net-udt" class="secondary"></span>
     </div>
 </div>
 {% endblock %}
@@ -74,6 +77,9 @@
         document.getElementById("ram-percent").innerText = payload.rp + "%"
         document.getElementById("ram-used").innerText = `${payload.ru}/${payload.rt}`
         document.getElementById("cpu-percent").innerText = payload.cpu + "%"
+        document.getElementById("net-u").innerText = payload.netur + "/s"
+        document.getElementById("net-d").innerText = payload.netdr + "/s"
+        document.getElementById("net-udt").innerText = payload.netdt + "/" + payload.netut
     })
 </script>
 {% endblock %}
