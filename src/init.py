@@ -22,7 +22,7 @@ from flask import Flask, Blueprint, make_response, request, render_template, red
 from flask_socketio import SocketIO
 from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
 
-DEVMODE = True
+DEVMODE = bool(os.environ.get("DEV", False))
 adb = False
 logging.basicConfig(level=logging.DEBUG if DEVMODE else logging.INFO)
 logger = logging.getLogger("pything")
