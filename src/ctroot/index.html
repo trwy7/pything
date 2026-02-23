@@ -9,7 +9,7 @@
         fetch("http://localhost:5192/isready", { method: 'GET' })
         .then(response => {
           if (response.ok) {
-            window.location.href = "http://localhost:5192/client?carthing=true&ctcv=1";
+            window.location.href = "http://localhost:5192/client?carthing=true";
             clearInterval(x);
           }
         })

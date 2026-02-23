@@ -33,7 +33,6 @@ logger = logging.getLogger("pything")
 app = Flask(__name__, static_folder="static", template_folder="pages")
 socket = SocketIO(app)
 os.chdir(os.path.dirname(os.path.abspath(__file__))) # sanity check
-ct_connect = False
 
 # Install adb for people who do not already have it
 def ensure_adb(r=False):
@@ -94,6 +93,9 @@ def run_adb_cmd(serial: str, command: list[str]):
     )
     for out in cmd_proc.stdout.readlines(): # type: ignore
         logger.debug("[%s] %s", serial, out)
+    while cmd_proc.poll() is None:
+        time.sleep(0.2)
+    return cmd_proc.returncode
 
 # Only show request logs in debug mode
 if not logger.isEnabledFor(logging.DEBUG):
@@ -142,7 +144,6 @@ def get_carthings():
     return things
 
 def inject_thread(loop=True):
-    global ct_connect
     while True:
         connected = get_carthings()
         # Remove disconnected devices
@@ -157,9 +158,8 @@ def inject_thread(loop=True):
                 continue
             ct_connect = False
             run_adb_cmd(serial, ['reverse', 'tcp:5192', 'tcp:5192'])
-            if loop:
-                time.sleep(3)
-            if ct_connect:
+            if run_adb_cmd(serial, ['shell', 'test -f "/usr/share/qt-superbird-app/webapp/pythingclient1.txt"']) == 0:
+                # TODO: Test that this works
                 logger.debug("No need to repush webapp for %s", serial)
                 serial_cache[serial][1] = True
                 continue
@@ -341,9 +341,6 @@ def client_redirect():
 
 @app.route("/client")
 def main_client():
-    if request.args.get("carthing") == "true" and request.args.get("ctcv") == "1":
-        global ct_connect
-        ct_connect = True
     return render_template("client.html")
 
 @app.route("/clients.json")
