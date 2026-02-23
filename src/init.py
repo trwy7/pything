@@ -34,7 +34,7 @@ ct_connect = False
 
 # Install adb for people who do not already have it
 def ensure_adb(r=False):
-    if os.system("adb devices > /dev/null") == 0:
+    if os.system("adb devices &> /dev/null") == 0:
         return True
     if os.path.isdir(os.path.abspath(os.path.join(pathlib.Path().home(), "platform-tools"))):
         os.environ["PATH"] = os.path.abspath(os.path.join(pathlib.Path().home(), "platform-tools")) + os.pathsep + os.environ.get("PATH", "")
@@ -64,6 +64,9 @@ def ensure_adb(r=False):
             shutil.move(os.path.join(tempdir, "platform-tools"), pathlib.Path.home())
         if system != "windows":
             os.system(f"chmod +x '{os.path.join(pathlib.Path.home(), "platform-tools", "adb")}'")
+        logger.info("ADB has been downloaded to %s", os.path.abspath(os.path.join(pathlib.Path().home(), "platform-tools")))
+        return ensure_adb(r=True)
+    return False
 
 # Let apps load templates from their own directories
 app.jinja_env.loader = ChoiceLoader([
