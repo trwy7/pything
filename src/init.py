@@ -73,7 +73,7 @@ def ensure_adb(r=False):
 
 # Let apps load templates from their own directories
 app.jinja_env.loader = ChoiceLoader([
-    PackageLoader("init", "pages"),
+    FileSystemLoader(os.path.dirname(os.path.abspath(__file__)) + "/pages"),
     FileSystemLoader(os.path.dirname(os.path.abspath(__file__)) + "/apps"),
     FileSystemLoader(os.path.dirname(os.path.abspath(__file__)) + "/customapps"),
 ])
