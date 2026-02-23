@@ -22,7 +22,8 @@ from flask import Flask, Blueprint, make_response, request, render_template, red
 from flask_socketio import SocketIO
 from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
 
-print("Starting PYThing...")
+print(f"Starting PYThing as {__name__}...")
+sys.modules['init'] = sys.modules[__name__]
 
 DEVMODE = True
 adb = False
@@ -472,7 +473,7 @@ if sha256(socketio_js.encode("UTF-8")).hexdigest() != "b0e735814f8dcfecd6cdb8a7c
 
 if __name__ == "__main__":
 
-    sys.modules['init'] = sys.modules[__name__]
+    print("Init apps...")
 
     adb = ensure_adb()
     if not adb:
