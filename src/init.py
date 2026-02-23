@@ -22,6 +22,8 @@ from flask import Flask, Blueprint, make_response, request, render_template, red
 from flask_socketio import SocketIO
 from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
 
+print("Starting PYThing...")
+
 DEVMODE = True
 adb = False
 logging.basicConfig(level=logging.DEBUG if DEVMODE else logging.INFO)
