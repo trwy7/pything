@@ -17,6 +17,7 @@ import logging
 import threading
 from hashlib import sha256
 from typing import Any, Generator
+from collections.abc import Callable
 import requests
 from flask import Flask, Blueprint, make_response, request, render_template, redirect
 from flask_socketio import SocketIO
@@ -242,7 +243,10 @@ class IntegerSetting(Setting):
 
 ## Apps
 
+broadcast_listeners: dict[str, list[Callable]] = {}
+
 class App:
+    # TODO: docstring these functions
     """
     Represents a pything app, use this class to create your app, and specify settings
     """
@@ -306,6 +310,18 @@ class App:
         logger.debug("serverapp>clientapp: %s > %s", self.id, event)
         for c in self.get_open_clients():
             socket.emit("app_com", [self.id, event, data], to=c.sid)
+    def on_broadcast(self, event: str):
+        def decorator(func):
+            if event not in broadcast_listeners:
+                broadcast_listeners[event] = []
+            broadcast_listeners[event].append(func)
+            return func
+        return decorator
+    def broadcast(self, event: str, *args, **kwargs):
+        if event not in broadcast_listeners:
+            logger.debug("A broadcast to %s was sent by %s, but that event has no listeners", event, self.id)
+        for listener in broadcast_listeners[event]:
+            listener(*args, **kwargs)
 
 apps: dict[str, App] = {}
 
