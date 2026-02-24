@@ -25,7 +25,7 @@ from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
 print(f"Starting PYThing as {__name__}...")
 sys.modules['init'] = sys.modules[__name__]
 
-DEVMODE = True
+DEVMODE = bool(os.environ.get("DEV", False))
 adb = False
 logging.basicConfig(level=logging.DEBUG if DEVMODE else logging.INFO)
 logger = logging.getLogger("pything")
