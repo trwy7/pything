@@ -158,8 +158,7 @@ def inject_thread(loop=True):
                 continue
             ct_connect = False
             run_adb_cmd(serial, ['reverse', 'tcp:5192', 'tcp:5192'])
-            if run_adb_cmd(serial, ['shell', 'test -f "/usr/share/qt-superbird-app/webapp/pythingclient1.txt"']) == 0:
-                # TODO: Test that this works
+            if os.popen(f"adb -s {serial} shell '[ -f /usr/share/qt-superbird-app/webapp/pythingclient1.txt ] && echo exists'").read().strip() == "exists":
                 logger.debug("No need to repush webapp for %s", serial)
                 serial_cache[serial][1] = True
                 continue
@@ -449,25 +448,6 @@ def full_replace_carthing(serials: list | None=None):
         run_adb_cmd(serial, ['shell', 'supervisorctl', 'restart', 'chromium'])
         run_adb_cmd(serial, ['shell', 'mount -o remount,ro /'])
 
-if len(sys.argv) > 1:
-    match sys.argv[1]:
-        case "inject":
-            inject_thread(loop=False)
-        case "restore":
-            restore_ct_webapp()
-        case "perminject":
-            full_replace_carthing()
-        case _:
-            print("Invalid command:", sys.argv[1])
-            sys.exit(1)
-    sys.exit(0)
-
-# Cache the socketIO script. 
-socketio_js = requests.get("https://cdn.socket.io/4.8.1/socket.io.min.js").text
-# Make sure this socketio version has not been compromised
-if sha256(socketio_js.encode("UTF-8")).hexdigest() != "b0e735814f8dcfecd6cdb8a7ce95a297a7e1e5f2727a29e6f5901801d52fa0c5":
-    raise RuntimeError("Failed to download the socketio 4.8.1 js file (hash mismatch).")
-
 if __name__ == "__main__":
 
     print("Init apps...")
@@ -475,6 +455,25 @@ if __name__ == "__main__":
     adb = ensure_adb()
     if not adb:
         logger.warning("ADB is not available, the carthing will not be able to connect.")
+
+    if len(sys.argv) > 1:
+        match sys.argv[1]:
+            case "inject":
+                inject_thread(loop=False)
+            case "restore":
+                restore_ct_webapp()
+            case "perminject":
+                full_replace_carthing()
+            case _:
+                print("Invalid command:", sys.argv[1])
+                sys.exit(1)
+        sys.exit(0)
+
+    # Cache the socketIO script. 
+    socketio_js = requests.get("https://cdn.socket.io/4.8.1/socket.io.min.js").text
+    # Make sure this socketio version has not been compromised
+    if sha256(socketio_js.encode("UTF-8")).hexdigest() != "b0e735814f8dcfecd6cdb8a7ce95a297a7e1e5f2727a29e6f5901801d52fa0c5":
+        raise RuntimeError("Failed to download the socketio 4.8.1 js file (hash mismatch).")
 
     # Load apps
     for modapp in os.listdir("apps"):
