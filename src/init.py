@@ -469,7 +469,8 @@ if __name__ == "__main__":
                 sys.exit(1)
         sys.exit(0)
 
-    # Cache the socketIO script. 
+    # Cache the socketIO script.
+    logger.info("Downloading socketIO js file")
     socketio_js = requests.get("https://cdn.socket.io/4.8.1/socket.io.min.js").text
     # Make sure this socketio version has not been compromised
     if sha256(socketio_js.encode("UTF-8")).hexdigest() != "b0e735814f8dcfecd6cdb8a7ce95a297a7e1e5f2727a29e6f5901801d52fa0c5":
