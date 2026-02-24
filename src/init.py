@@ -258,7 +258,7 @@ class App:
         self.id = aid
         apps[self.id] = self
         self.logger = logging.getLogger("pything.app." + self.id)
-        logger.info(f"Initializing app '{display_name}' with id '{aid}'")
+        logger.debug(f"Initializing app '{display_name}' with id '{aid}'")
         self.blueprint = Blueprint(self.id, __name__, static_folder=os.path.abspath(stack[1].filename) + "/static")
         @self.blueprint.context_processor
         def inject_app():
@@ -450,7 +450,7 @@ def full_replace_carthing(serials: list | None=None):
 
 if __name__ == "__main__":
 
-    print("Init apps...")
+    logger.debug("Init apps...")
 
     adb = ensure_adb()
     if not adb:
