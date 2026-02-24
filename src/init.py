@@ -36,7 +36,7 @@ os.chdir(os.path.dirname(os.path.abspath(__file__))) # sanity check
 
 # Install adb for people who do not already have it
 def ensure_adb(r=False):
-    if os.system("adb devices &> /dev/null") == 0:
+    if os.system("adb devices > /dev/null") == 0:
         return True
     if os.path.isdir(os.path.abspath(os.path.join(pathlib.Path().home(), "platform-tools"))):
         os.environ["PATH"] = os.path.abspath(os.path.join(pathlib.Path().home(), "platform-tools")) + os.pathsep + os.environ.get("PATH", "")
