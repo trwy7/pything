@@ -9,13 +9,10 @@ app = App("Test App", [
     BooleanSetting("boolean-test", "Test boolean", "Test four\nToggle this", False)
 ])
 
-@app.blueprint.route("/settings")  # Results in /apps/<app.id>/settings, which becomes /apps/test/settings for this app
+@app.blueprint.route("/settings")  # Results in /apps/<app.id>/settings, which becomes /apps/demoapp/settings for this app
 def test_settings():
     return render_template(f"{app.dirname}/pages/settings.html", app=app)
 
-#@app.blueprint.route("/launch")
-#def launch():
-#    return redirect(f"/apps/{app.dirname}/settings")
-
-# To show the app on the dashboard, add a /launch route, which will be redirected to when the app is clicked
-# If this route does not exist, the app will still show up in settings, but will not show up on the dashboard
+@app.blueprint.route("/launch")
+def launch(): # Removing or commenting this route results in the app not showing on the dashboard
+    return redirect(f"/apps/{app.dirname}/settings")
