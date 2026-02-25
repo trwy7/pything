@@ -1,5 +1,6 @@
 import base64
 import requests
+from datetime import datetime, timedelta
 from flask import request
 from apps.music.types import playback
 from init import App, StringSetting, LinkSetting, DataSetting
@@ -40,4 +41,13 @@ def callback():
         }
     )
 
+    if resp.status_code != 200:
+        return "Error: \n" + resp.text
     
+    data = resp.json()
+
+    app.settings['access_token'].set_value({ # type: ignore
+        "token": data['access_token'],
+        "expiry": datetime.now() + timedelta(seconds=data['expires_in'])
+    })
+    app.settings['refresh_token'].set_value(data['refresh_token']) # type: ignore
