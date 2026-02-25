@@ -10,6 +10,9 @@
             color: white;
             font-family: Arial, Helvetica, sans-serif;
         }
+        a {
+            color: rgb(255, 220, 140);
+        }
     </style>
 </head>
 <body>
@@ -35,6 +38,8 @@
                             {% elif setting.type == "int" %}
                                 <span class="settinglabel">{{setting.display_name}}</span>
                                 <input type="number" name="{{app.id}}-{{setting.id}}" pattern="[0-9]*" onkeypress="return event.charCode >= 48 && event.charCode <= 57" value="{{setting.get_value()}}">
+                            {% elif setting.type == "link" %}
+                                <a class="link" href="{{setting.link}}">{{setting.label}}</a>
                             {% endif %}
                         </div>
                         {% endif %}
