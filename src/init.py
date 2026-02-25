@@ -181,7 +181,7 @@ class Setting:
     """
     A setting is a configuration option for an app. Do not call this directly.
     """
-    def __init__(self, id: str, display_name: str, description: str, default: Any, hidden: bool=False):
+    def __init__(self, id: str, display_name: str, description: str, default: Any, type: str, hidden: bool=False):
         self.id = id
         self.display_name = display_name
         self.description = description
@@ -195,7 +195,7 @@ class Setting:
 
 class StringSetting(Setting):
     def __init__(self, id: str, display_name: str, description: str, default: str, hidden: bool=False):
-        super().__init__(id, display_name, description, default, hidden)
+        super().__init__(id, display_name, description, default, "string", hidden)
     def set_value(self, value: str):
         if self.app is None:
             raise ValueError("Setting must be added to an app before setting a value")
@@ -206,7 +206,7 @@ class StringSetting(Setting):
 
 class BooleanSetting(Setting):
     def __init__(self, id: str, display_name: str, description: str, default: bool, hidden: bool=False):
-        super().__init__(id, display_name, description, default, hidden)
+        super().__init__(id, display_name, description, default, "bool", hidden)
     def set_value(self, value: bool):
         if self.app is None:
             raise ValueError("Setting must be added to an app before setting a value")
@@ -217,7 +217,7 @@ class BooleanSetting(Setting):
 
 class FloatSetting(Setting):
     def __init__(self, id: str, display_name: str, description: str, default: float, hidden: bool=False):
-        super().__init__(id, display_name, description, default, hidden)
+        super().__init__(id, display_name, description, default, "float", hidden)
     def set_value(self, value: float):
         if self.app is None:
             raise ValueError("Setting must be added to an app before setting a value")
@@ -230,7 +230,7 @@ class FloatSetting(Setting):
 
 class IntegerSetting(Setting):
     def __init__(self, id: str, display_name: str, description: str, default: int, hidden: bool=False):
-        super().__init__(id, display_name, description, default, hidden)
+        super().__init__(id, display_name, description, default, "int", hidden)
     def set_value(self, value: int):
         if self.app is None:
             raise ValueError("Setting must be added to an app before setting a value")
@@ -241,6 +241,18 @@ class IntegerSetting(Setting):
         config[self.app.id][self.id] = value
         save_config()
 
+class ElementSetting:
+    def __init__(self, id: str, type: str, hidden: bool=False):
+        self.type = type
+        self.id = id
+        self.hidden = hidden
+
+class LinkSetting(ElementSetting):
+    def __init__(self, id: str, label: str, link: str, hidden: bool=False):
+        super().__init__(id, "link", hidden)
+        self.label = label
+        self.link = link
+
 ## Apps
 
 broadcast_listeners: dict[str, list[Callable]] = {}
@@ -250,7 +262,7 @@ class App:
     """
     Represents a pything app, use this class to create your app, and specify settings
     """
-    def __init__(self, display_name: str, settings: list[Setting], aid: str | None=None):
+    def __init__(self, display_name: str, settings: list[Setting | ElementSetting], aid: str | None=None):
         global apps
         stack = inspect.stack()
         self.dir = os.path.dirname(os.path.abspath(stack[1].filename))
@@ -278,6 +290,8 @@ class App:
         schange = False
         for setting in settings:
             if not isinstance(setting, Setting):
+                if isinstance(setting, ElementSetting):
+                    continue
                 raise ValueError("Settings must be instances of the Setting class")
             if type(setting) == Setting:
                 raise ValueError("Setting must be a subclass of Setting")
