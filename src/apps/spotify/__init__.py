@@ -116,7 +116,7 @@ def music_thread():
             continue
         if rdata.status_code == 204:
             playback.reset()
-            return
+            continue
         data = rdata.json()
         if data['item']['type'] != "track":
             playback.reset()
