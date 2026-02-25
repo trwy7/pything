@@ -242,7 +242,7 @@ class IntegerSetting(Setting):
 class DataSetting(Setting):
     def __init__(self, id: str, default: Any):
         super().__init__(id, "", "", default, "data", True)
-    def set_value(self, value: Any)
+    def set_value(self, value: Any):
         if self.app is None:
             raise ValueError("Setting must be added to an app before setting a value")
         config[self.app.id][self.id] = value
