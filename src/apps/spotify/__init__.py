@@ -1,17 +1,62 @@
-import base64
-import requests
 from datetime import datetime, timedelta
+import threading
+import time
+import requests
 from flask import request
 from apps.music.types import playback
-from init import App, StringSetting, LinkSetting, DataSetting
+from init import App, StringSetting, LinkSetting, BooleanSetting, DataSetting
 
 app = App("Spotify Music Provider", [
+    BooleanSetting("enabled", "Enabled", "", True, False),
     StringSetting("client_id", "", "", "", False),
     StringSetting("client_secret", "", "", "", False),
     LinkSetting("auth", "Authenticate", "", True),
     DataSetting("access_token", {"token": "", "expiry": 0}),
     DataSetting("refresh_token", "")
 ])
+
+def request_new_token():
+    ref = app.settings['refresh_token'].get_value() # type: ignore
+    if not ref:
+        app.logger.warning("Something just requested a new access token without having a refresh token")
+        return
+    resp = requests.get(
+        "https://accounts.spotify.com/api/token",
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        auth=requests.auth.HTTPBasicAuth(app.settings['client_id'].get_value(), app.settings['client_secret'].get_value()), # type: ignore
+        data={
+            "grant_type": "refresh_token",
+            "refresh_token": ref
+        }
+    )
+
+    if resp.status_code != 200:
+        app.logger.error("Failed to get access token: " + resp.text)
+        return False
+    
+    data = resp.json()
+
+    app.settings['access_token'].set_value({ # type: ignore
+        "token": data['access_token'],
+        "expiry": datetime.now() + timedelta(seconds=data['expires_in'] - 5)
+    })
+    app.settings['refresh_token'].set_value(data['refresh_token']) # type: ignore
+
+    return True
+
+def token_expired():
+    return datetime.now() > app.settings['access_token'].get_value()['expiry'] # type: ignore
+
+def get_endpoint(endpoint: str):
+    if token_expired():
+        rs = request_new_token()
+        if not rs:
+            return rs
+    if not app.settings['access_token'].get_value()['token']: # type: ignore
+        return False
+    return requests.get(endpoint,
+        headers={"Authorization": f"Bearer {app.settings['access_token'].get_value()['token']}"} # type: ignore
+    )
 
 def update_auth_url():
     if (not app.settings['client_id'].get_value()) or (not app.settings['client_secret'].get_value()): # type: ignore
@@ -31,7 +76,7 @@ def callback():
         return "No response code was provided"
 
     resp = requests.get(
-        "https://api.spotify.com/api/token",
+        "https://accounts.spotify.com/api/token",
         headers={"Content-Type": "application/x-www-form-urlencoded"},
         auth=requests.auth.HTTPBasicAuth(app.settings['client_id'].get_value(), app.settings['client_secret'].get_value()), # type: ignore
         data={
@@ -48,6 +93,17 @@ def callback():
 
     app.settings['access_token'].set_value({ # type: ignore
         "token": data['access_token'],
-        "expiry": datetime.now() + timedelta(seconds=data['expires_in'])
+        "expiry": datetime.now() + timedelta(seconds=data['expires_in'] - 5)
     })
     app.settings['refresh_token'].set_value(data['refresh_token']) # type: ignore
+
+    return "Success!"
+
+def music_thread():
+    while True:
+        time.sleep(2)
+        if app.settings['enabled'].get_value(): # type: ignore
+            continue
+        # TODO: pass data to music app
+
+threading.Thread(target=music_thread, daemon=True).start()
