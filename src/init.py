@@ -387,7 +387,7 @@ def app_list():
             'default': setting.default,
             'value': setting.get_value(),
             'hidden': setting.hidden
-        } for setting in app.settings.values() },
+        } for setting in app.settings.values() if isinstance(setting, Setting) },
         'hidden': app.hidden
     } for app in apps.values()}
 
