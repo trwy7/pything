@@ -382,8 +382,24 @@ def main_client():
     return render_template("client.html")
 
 @app.route("/settings")
-def settings():
+def settings_editor():
     return render_template("settings.html", apps=apps)
+
+@app.route("/settings", methods=['POST'])
+def settings_set():
+    logger.debug("Got new settings: %s", request.form)
+    for app in apps.values():
+        for setting in app.settings.values():
+            if f"{app.id}-{setting.id}" in request.form:
+                nd = request.form[f"{app.id}-{setting.id}"]
+                logger.debug(f"Setting '{app.id}' > '{setting.id}' to {str(nd)}")
+                match setting.type:
+                    case "bool":
+                        nd = nd == "on"
+                logger.debug(f"Setting saved as {nd}")
+                setting.set_value(nd) # type: ignore
+    return render_template("settings.html", apps=apps, status="Done!")
+
 
 @app.route("/clients.json")
 def client_list():

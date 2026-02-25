@@ -13,7 +13,7 @@
     </style>
 </head>
 <body>
-    <div id="apps">
+    <form id="apps" method="POST">
         {% for app in apps.values() %}
             {% if app.settings | length > 0 %}
             <div id="app-{{app.id}}">
@@ -24,16 +24,17 @@
                         <div id="setting-{{app.id}}-{{setting.id}}" class="setting">
                             {% if setting.type == "string" %}
                                 <span class="settinglabel">{{setting.display_name}}</span>
-                                <input type="text" id="{{app.id}}-{{setting.id}}" value="{{setting.get_value()}}" data-setting-type="string">
+                                <input type="text" name="{{app.id}}-{{setting.id}}" value="{{setting.get_value()}}">
                             {% elif setting.type == "bool" %}
                                 <span class="settinglabel">{{setting.display_name}}</span>
-                                <input type="checkbox" id="{{app.id}}-{{setting.id}}"{% if setting.get_value() %} checked{% endif %} data-setting-type="bool">
+                                <input type="checkbox" name="{{app.id}}-{{setting.id}}"{% if setting.get_value() %} checked{% endif %}>
+                                <input type="hidden" name="{{app.id}}-{{setting.id}}" value="off">
                             {% elif setting.type == "float" %}
                                 <span class="settinglabel">{{setting.display_name}}</span>
-                                <input type="number" pattern="[0-9]*[.,]?[0-9]*" step="0.01" value="{{setting.get_value()}}" data-setting-type="float">
+                                <input type="number" name="{{app.id}}-{{setting.id}}" pattern="[0-9]*[.,]?[0-9]*" step="0.01" value="{{setting.get_value()}}">
                             {% elif setting.type == "int" %}
                                 <span class="settinglabel">{{setting.display_name}}</span>
-                                <input type="number" pattern="[0-9]*" onkeypress="return event.charCode >= 48 && event.charCode <= 57" value="{{setting.get_value()}}" data-setting-type="int">
+                                <input type="number" name="{{app.id}}-{{setting.id}}" pattern="[0-9]*" onkeypress="return event.charCode >= 48 && event.charCode <= 57" value="{{setting.get_value()}}">
                             {% endif %}
                         </div>
                         {% endif %}
@@ -42,6 +43,8 @@
             </div>
             {% endif %}
         {% endfor %}
-    </div>
+        <input type="submit">
+    </form>
+    {{status}}
 </body>
 </html>
