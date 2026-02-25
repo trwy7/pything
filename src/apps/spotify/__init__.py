@@ -10,7 +10,7 @@ app = App("Spotify Music Provider", [
     BooleanSetting("enabled", "Enabled", "", False, False),
     StringSetting("client_id", "Client ID", "", "", False),
     StringSetting("client_secret", "Client Secret", "", "", False),
-    LinkSetting("auth", "", "", True),
+    LinkSetting("auth", "Authenticate", "", True),
     DataSetting("access_token", {"token": "", "expiry": datetime.now()}),
     DataSetting("refresh_token", "")
 ])
@@ -58,9 +58,13 @@ def get_endpoint(endpoint: str):
         headers={"Authorization": f"Bearer {app.settings['access_token'].get_value()['token']}"} # type: ignore
     )
 
+@app.on_setting_update
 def update_auth_url():
     if (not app.settings['client_id'].get_value()) or (not app.settings['client_secret'].get_value()): # type: ignore
+        app.logger.debug("Hiding auth link")
         app.settings["auth"].hidden = True
+        return
+    app.logger.debug("Showing auth link")
     app.settings["auth"].hidden = False
     app.settings["auth"].link = f"https://accounts.spotify.com/authorize?response_type=code&client_id={app.settings['client_id'].get_value()}&scope=user-read-playback-state&redirect_uri=http://127.0.0.1:5192/apps/spotify/callback" # type: ignore
 
