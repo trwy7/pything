@@ -1,20 +1,22 @@
 from typing import Literal
 from collections.abc import Callable # why cant this be in typing :(
 class Artist:
-    def __init__(self, platform: str, id: str, name: str):
-        self.platform = platform
-        self.id = id
+    def __init__(self, name: str):
         self.name = name
 class Album:
-    def __init__(self, platform: str, id: str, title: str, artists: list[Artist]):
-        self.platform = platform
-        self.id = id
+    def __init__(self, title: str, artists: list[Artist], art: str):
+        """Represents an album
+
+        Args:
+            title (str): _description_
+            artists (list[Artist]): A list of artists that have worked on the album
+            art (str): A relative url to the album art of the album, must be relative to / on this server, e.x. /apps/music/image.png
+        """
         self.title = title
         self.artists = artists
+        self.art = art
 class Song:
-    def __init__(self, platform: str, id: str, title: str, album: Album, artists: list[Artist], duration: int):
-        self.platform = platform
-        self.id = id
+    def __init__(self, title: str, album: Album, artists: list[Artist], duration: int):
         self.title = title
         self.album = album
         self.artists = artists
