@@ -114,6 +114,7 @@ def music_thread():
             playback.reset()
         data = rdata.json()
         if data['item']['type'] != "track":
+            playback.reset()
             continue
         song = Song(
             "spotify",
