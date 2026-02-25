@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PYThing Settings</title>
+    <style>
+        body {
+            background-color: rgb(18, 20, 19);
+            color: white;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div id="apps">
+        { % for app in apps.values() %}
+            <div id="app-{{app.id}}">
+                <h1>{app.display_name}</h1>
+                <div class="settings">
+                    { % for setting in app.settings.values() % }
+                    <div id="setting-{{app.id}}-{{setting.id}}" class="setting">
+                        <span class="settinglabel">{{setting.display_name}}</span>
+                    </div>
+                    { % endfor % }
+                </div>
+            </div>
+        { % endfor % }
+    </div>
+</body>
+</html>

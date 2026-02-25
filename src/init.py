@@ -381,6 +381,10 @@ def client_redirect():
 def main_client():
     return render_template("client.html")
 
+@app.route("/settings")
+def settings():
+    return render_template("settings.html", apps=apps)
+
 @app.route("/clients.json")
 def client_list():
     return {sid: {
