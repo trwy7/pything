@@ -3,11 +3,11 @@ import threading
 import time
 import requests
 from flask import request
-from apps.music.types import playback
+from apps.music.types import playback, Song, Album, Artist
 from init import App, StringSetting, LinkSetting, BooleanSetting, DataSetting
 
 app = App("Spotify Music Provider", [
-    BooleanSetting("enabled", "Enabled", "", True, False),
+    BooleanSetting("enabled", "Enabled", "", False, False),
     StringSetting("client_id", "", "", "", False),
     StringSetting("client_secret", "", "", "", False),
     LinkSetting("auth", "Authenticate", "", True),
@@ -54,7 +54,7 @@ def get_endpoint(endpoint: str):
             return rs
     if not app.settings['access_token'].get_value()['token']: # type: ignore
         return False
-    return requests.get(endpoint,
+    return requests.get("https://api.spotify.com" + endpoint,
         headers={"Authorization": f"Bearer {app.settings['access_token'].get_value()['token']}"} # type: ignore
     )
 
@@ -63,6 +63,9 @@ def update_auth_url():
         app.settings["auth"].hidden = True
     app.settings["auth"].hidden = False
     app.settings["auth"].link = f"https://accounts.spotify.com/authorize?response_type=code&client_id={app.settings['client_id'].get_value()}&scope=user-read-playback-state&redirect_uri=http://127.0.0.1:5192/apps/spotify/callback" # type: ignore
+
+def download_art(url: str, id: str):
+    return "" #FIXME: implement
 
 update_auth_url()
 
@@ -104,6 +107,34 @@ def music_thread():
         time.sleep(2)
         if app.settings['enabled'].get_value(): # type: ignore
             continue
-        # TODO: pass data to music app
+        rdata = get_endpoint("/v1/me/player")
+        if rdata in (None, False):
+            continue
+        if rdata.status_code == 204:
+            playback.reset()
+        data = rdata.json()
+        if data['item']['type'] != "track":
+            # TODO: episode support
+            continue
+        song = Song(
+            "spotify",
+            data['item']['id'],
+            data['item']['name'],
+            Album(
+                "spotify",
+                data['item']['album']['id'],
+                data['item']['album']['name'],
+                [Artist('spotify', a['id'], a['name']) for a in data['item']['album']['artists']],
+                download_art(data['item']['album']['images'][0]['url'], data['item']['album']['id'])
+            ),
+            [Artist('spotify', a['id'], a['name']) for a in data['item']['artists']],
+            data['item']['duration_ms']
+        )
+        playback.update(
+            song,
+            data['is_playing'],
+            data['progress_ms']
+        )
+
 
 threading.Thread(target=music_thread, daemon=True).start()
