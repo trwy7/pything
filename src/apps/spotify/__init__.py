@@ -136,5 +136,4 @@ def music_thread():
             data['progress_ms']
         )
 
-
 threading.Thread(target=music_thread, daemon=True).start()
