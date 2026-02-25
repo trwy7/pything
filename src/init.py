@@ -181,12 +181,14 @@ class Setting:
     """
     A setting is a configuration option for an app. Do not call this directly.
     """
+    # TODO: there are a lot of type errors coming from these being inconsistent, maybe find a way to fix them?
     def __init__(self, id: str, display_name: str, description: str, default: Any, type: str, hidden: bool=False):
         self.id = id
         self.display_name = display_name
         self.description = description
         self.default = default
         self.hidden = hidden
+        self.type = type
         self.app: App | None = None
     def get_value(self):
         if self.app is None:
