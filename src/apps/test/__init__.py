@@ -3,7 +3,7 @@ from init import App, StringSetting, FloatSetting, IntegerSetting, BooleanSettin
 
 app = App("Test App", [
     StringSetting("string-test", "Test string", "Test one\nType whatever you want", "Hello!"),
-    StringSetting("hidden-string-test", "", "", "default"),
+    StringSetting("hidden-string-test", "", "", "default", True),
     FloatSetting("float-test", "Test float", "Test two\nType a float", 3.14),
     IntegerSetting("integer-test", "Test integer", "Test three\nType an integer", 42),
     BooleanSetting("boolean-test", "Test boolean", "Test four\nToggle this", False)

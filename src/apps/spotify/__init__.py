@@ -8,9 +8,9 @@ from init import App, StringSetting, LinkSetting, BooleanSetting, DataSetting
 
 app = App("Spotify Music Provider", [
     BooleanSetting("enabled", "Enabled", "", False, False),
-    StringSetting("client_id", "", "", "", False),
-    StringSetting("client_secret", "", "", "", False),
-    LinkSetting("auth", "Authenticate", "", True),
+    StringSetting("client_id", "Client ID", "", "", False),
+    StringSetting("client_secret", "Client Secret", "", "", False),
+    LinkSetting("auth", "", "", True),
     DataSetting("access_token", {"token": "", "expiry": datetime.now()}),
     DataSetting("refresh_token", "")
 ])
