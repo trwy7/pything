@@ -234,10 +234,17 @@ class IntegerSetting(Setting):
     def set_value(self, value: int):
         if self.app is None:
             raise ValueError("Setting must be added to an app before setting a value")
-        if isinstance(value, int):
-            value = int(value)
         if not isinstance(value, int):
             raise ValueError("Value must be a integer")
+        config[self.app.id][self.id] = value
+        save_config()
+
+class DataSetting(Setting):
+    def __init__(self, id: str, default: Any):
+        super().__init__(id, "", "", default, "data", True)
+    def set_value(self, value: Any)
+        if self.app is None:
+            raise ValueError("Setting must be added to an app before setting a value")
         config[self.app.id][self.id] = value
         save_config()
 
