@@ -294,6 +294,7 @@ class App:
         self.settings = {s.id: s for s in settings}
         self.hidden = True # updated on init
         self.listeners = {}
+        self.settingupdatelisteners: list[Callable] = []
         if not aid in config:
             config[aid] = {}
         schange = False
@@ -345,6 +346,9 @@ class App:
             logger.debug("A broadcast to %s was sent by %s, but that event has no listeners", event, self.id)
         for listener in broadcast_listeners[event]:
             listener(*args, **kwargs)
+    def on_setting_update(self, func: Callable):
+        self.settingupdatelisteners.append(func)
+        return func
 
 apps: dict[str, App] = {}
 
@@ -398,6 +402,8 @@ def settings_set():
                         nd = nd == "on"
                 logger.debug(f"Setting saved as {nd}")
                 setting.set_value(nd) # type: ignore
+        for sl in app.settingupdatelisteners:
+            sl()
     return render_template("settings.html", apps=apps, status="Done!")
 
 
