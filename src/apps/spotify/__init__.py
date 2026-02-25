@@ -20,7 +20,7 @@ def request_new_token():
     if not ref:
         app.logger.debug("Something just requested a new access token without having a refresh token")
         return
-    resp = requests.get(
+    resp = requests.post(
         "https://accounts.spotify.com/api/token",
         headers={"Content-Type": "application/x-www-form-urlencoded"},
         auth=requests.auth.HTTPBasicAuth(app.settings['client_id'].get_value(), app.settings['client_secret'].get_value()), # type: ignore
@@ -82,7 +82,7 @@ def callback():
     if 'code' not in request.args:
         return "No response code was provided"
 
-    resp = requests.get(
+    resp = requests.post(
         "https://accounts.spotify.com/api/token",
         headers={"Content-Type": "application/x-www-form-urlencoded"},
         auth=requests.auth.HTTPBasicAuth(app.settings['client_id'].get_value(), app.settings['client_secret'].get_value()), # type: ignore
@@ -116,6 +116,7 @@ def music_thread():
             continue
         if rdata.status_code == 204:
             playback.reset()
+            return
         data = rdata.json()
         if data['item']['type'] != "track":
             playback.reset()
