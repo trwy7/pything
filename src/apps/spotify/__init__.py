@@ -11,14 +11,14 @@ app = App("Spotify Music Provider", [
     StringSetting("client_id", "", "", "", False),
     StringSetting("client_secret", "", "", "", False),
     LinkSetting("auth", "Authenticate", "", True),
-    DataSetting("access_token", {"token": "", "expiry": 0}),
+    DataSetting("access_token", {"token": "", "expiry": datetime.now()}),
     DataSetting("refresh_token", "")
 ])
 
 def request_new_token():
     ref = app.settings['refresh_token'].get_value() # type: ignore
     if not ref:
-        app.logger.warning("Something just requested a new access token without having a refresh token")
+        app.logger.debug("Something just requested a new access token without having a refresh token")
         return
     resp = requests.get(
         "https://accounts.spotify.com/api/token",
@@ -105,7 +105,7 @@ def callback():
 def music_thread():
     while True:
         time.sleep(2)
-        if app.settings['enabled'].get_value(): # type: ignore
+        if not app.settings['enabled'].get_value(): # type: ignore
             continue
         rdata = get_endpoint("/v1/me/player")
         if rdata in (None, False):
