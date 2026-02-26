@@ -44,18 +44,20 @@ class Playback:
         self.song: Song | None = None
         self.playing: bool | None = None
         self.position: int | None = None
-        self.listener: Callable | None = None
+        self.listeners: list[Callable] = []
     def update(self, song: Song, playing: bool | None, position: int | None):
         self.song = song
         self.playing = playing
         self.position = position
-        if isinstance(self.listener, Callable):
-            self.listener(self)
+        for listener in self.listeners:
+            listener()
     def reset(self):
         self.song = None
         self.playing = None
         self.position = None
-        if isinstance(self.listener, Callable):
-            self.listener(self)
+        for listener in self.listeners:
+            listener()
+    def on_update(self, func: Callable):
+        self.listeners.append(func)
 
 playback = Playback()

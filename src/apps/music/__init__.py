@@ -4,7 +4,6 @@ from .types import playback, Playback
 
 app = App("Music provider", [])
 
+@playback.on_update
 def playback_listener(pb: Playback):
     app.logger.debug("Got playback update: %s", pb.song.title if pb.song else "None")
-
-playback.listener = playback_listener
