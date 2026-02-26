@@ -391,7 +391,7 @@ def ct_isready():
 def client_redirect():
     return redirect("/client")
 
-client_mods: list[str] = []
+client_mods: list[tuple[str, App]] = []
 
 @app.route("/client")
 def main_client():
@@ -495,7 +495,7 @@ def import_app(iappd: str):
         raise RuntimeError(f"App {iappd} variable 'app' has invalid blueprint ({str(type(iapp.app.blueprint))})")
     app.register_blueprint(iapp.app.blueprint, url_prefix="/apps/" + iapp.app.id)
     if os.path.exists(os.path.join(iappd, "clientmod.html")):
-        client_mods.append(os.path.join(iapp.app.id, "clientmod.html"))
+        client_mods.append((os.path.join(iapp.app.id, "clientmod.html"), iapp.app))
     for rule in app.url_map.iter_rules():
         if rule.rule == "/apps/" + iapp.app.id + "/launch":
             logger.debug("%s has a launch route", iapp.app.id)

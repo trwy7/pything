@@ -7,12 +7,12 @@
     <link rel="stylesheet" href="/static/client.css">
     <script src="/socket.io.min.js"></script>
 </head>
-<body style="--background-color: hsl(165, 46%, 68%);">
+<body>
     <div id="status" style="display:none;"></div>
     <div id="loadanim"></div>
-    <iframe id="appframe" src="/apps/dashboard/launch" frameborder="0" style="background-color: #497660;"></iframe>
+    <iframe id="appframe" src="/apps/dashboard/launch" frameborder="0"></iframe>
     <script src="/static/client.js"></script>
-    {% for mod in mods %}
+    {% for mod, app in mods %}
     {% include mod %}
     {% endfor %}
 </body>
