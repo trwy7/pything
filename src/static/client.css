@@ -10,7 +10,7 @@ html, body {
     margin: 0;
     padding: 0;
 }
-body.round {
+html.round {
     clip-path: inset(0 round 20px);
 }
 #status {
@@ -58,8 +58,8 @@ body.round {
         transform: translateY(0);
     }
 }
-#appframe {
+#appframe, body {
     width: 100%;
     height: 100%;
-    background-color: #497660;
+    background-color: hsl(151, 24%, 37%);
 }

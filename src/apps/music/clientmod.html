@@ -3,12 +3,12 @@
         position: absolute;
         bottom: 5px;
         left: 0;
-        margin: 15px;
+        margin: 10px;
         margin-bottom: 0px;
-        width: calc(100% - 30px);
+        width: calc(100% - 20px);
         border-radius: 9999px;
         background-color: rgb(123, 163, 150);
-        height: 10px;
+        height: 15px;
         transition: transform 1s;
         transform: translateY(20px);
     }
@@ -19,7 +19,13 @@
         border-radius: 9999px;
         transition: width 2s;
         background-color: rgb(47, 255, 186);
-        height: 10px;
+        height: 15px;
+    }
+    #appframe {
+        transition: height 1s;
+    }
+    body:has(#music-playbar.show) #appframe {
+        height: calc(100% - 20px);
     }
 </style>
 <div id="music-playbar">
