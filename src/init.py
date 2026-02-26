@@ -381,9 +381,11 @@ def ct_isready():
 def client_redirect():
     return redirect("/client")
 
+client_mods: list[str] = []
+
 @app.route("/client")
 def main_client():
-    return render_template("client.html")
+    return render_template("client.html", mods=client_mods)
 
 @app.route("/settings")
 def settings_editor():
@@ -482,6 +484,8 @@ def import_app(iappd: str):
     if not isinstance(iapp.app.blueprint, Blueprint):
         raise RuntimeError(f"App {iappd} variable 'app' has invalid blueprint ({str(type(iapp.app.blueprint))})")
     app.register_blueprint(iapp.app.blueprint, url_prefix="/apps/" + iapp.app.id)
+    if os.path.exists(os.path.join(iappd, "clientmod.html")):
+        client_mods.append(os.path.join(iapp.app.id, "clientmod.html"))
     for rule in app.url_map.iter_rules():
         if rule.rule == "/apps/" + iapp.app.id + "/launch":
             logger.debug("%s has a launch route", iapp.app.id)
