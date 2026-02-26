@@ -40,6 +40,8 @@
                                 <input type="number" name="{{app.id}}-{{setting.id}}" pattern="[0-9]*" onkeypress="return event.charCode >= 48 && event.charCode <= 57" value="{{setting.get_value()}}">
                             {% elif setting.type == "link" %}
                                 <a class="link" href="{{setting.link}}">{{setting.label}}</a>
+                            {% elif setting.type == "label" %}
+                                <span class="settinglabel">{{setting.label}}</span>
                             {% endif %}
                         </div>
                         {% endif %}

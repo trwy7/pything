@@ -6,7 +6,7 @@ from flask import render_template
 from init import App, BooleanSetting
 
 app = App("System", [
-    BooleanSetting("gib", "Values in GiB", "If on, shows data values in GiB instead of GB", False)
+    BooleanSetting("gib", "Values in GiB", False)
 ])
 
 onet = psutil.net_io_counters()

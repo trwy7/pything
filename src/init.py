@@ -182,10 +182,9 @@ class Setting:
     A setting is a configuration option for an app. Do not call this directly.
     """
     # TODO: there are a lot of type errors coming from these being inconsistent, maybe find a way to fix them?
-    def __init__(self, id: str, display_name: str, description: str, default: Any, type: str, hidden: bool=False):
+    def __init__(self, id: str, display_name: str, default: Any, type: str, hidden: bool=False):
         self.id = id
         self.display_name = display_name
-        self.description = description
         self.default = default
         self.hidden = hidden
         self.type = type
@@ -196,8 +195,8 @@ class Setting:
         return config[self.app.id][self.id]
 
 class StringSetting(Setting):
-    def __init__(self, id: str, display_name: str, description: str, default: str, hidden: bool=False):
-        super().__init__(id, display_name, description, default, "string", hidden)
+    def __init__(self, id: str, display_name: str, default: str, hidden: bool=False):
+        super().__init__(id, display_name, default, "string", hidden)
     def set_value(self, value: str):
         if self.app is None:
             raise ValueError("Setting must be added to an app before setting a value")
@@ -207,8 +206,8 @@ class StringSetting(Setting):
         save_config()
 
 class BooleanSetting(Setting):
-    def __init__(self, id: str, display_name: str, description: str, default: bool, hidden: bool=False):
-        super().__init__(id, display_name, description, default, "bool", hidden)
+    def __init__(self, id: str, display_name: str, default: bool, hidden: bool=False):
+        super().__init__(id, display_name, default, "bool", hidden)
     def set_value(self, value: bool):
         if self.app is None:
             raise ValueError("Setting must be added to an app before setting a value")
@@ -218,8 +217,8 @@ class BooleanSetting(Setting):
         save_config()
 
 class FloatSetting(Setting):
-    def __init__(self, id: str, display_name: str, description: str, default: float, hidden: bool=False):
-        super().__init__(id, display_name, description, default, "float", hidden)
+    def __init__(self, id: str, display_name: str, default: float, hidden: bool=False):
+        super().__init__(id, display_name, default, "float", hidden)
     def set_value(self, value: float):
         if self.app is None:
             raise ValueError("Setting must be added to an app before setting a value")
@@ -231,8 +230,8 @@ class FloatSetting(Setting):
         save_config()
 
 class IntegerSetting(Setting):
-    def __init__(self, id: str, display_name: str, description: str, default: int, hidden: bool=False):
-        super().__init__(id, display_name, description, default, "int", hidden)
+    def __init__(self, id: str, display_name: str, default: int, hidden: bool=False):
+        super().__init__(id, display_name, default, "int", hidden)
     def set_value(self, value: int):
         if self.app is None:
             raise ValueError("Setting must be added to an app before setting a value")
@@ -243,7 +242,7 @@ class IntegerSetting(Setting):
 
 class DataSetting(Setting):
     def __init__(self, id: str, default: Any):
-        super().__init__(id, "", "", default, "data", True)
+        super().__init__(id, "", default, "data", True)
     def set_value(self, value: Any):
         if self.app is None:
             raise ValueError("Setting must be added to an app before setting a value")
@@ -261,6 +260,11 @@ class LinkSetting(ElementSetting):
         super().__init__(id, "link", hidden)
         self.label = label
         self.link = link
+
+class LabelSetting(ElementSetting):
+    def __init__(self, id: str, label: str, hidden: bool=False):
+        super().__init__(id, "label", hidden)
+        self.label = label
 
 ## Apps
 

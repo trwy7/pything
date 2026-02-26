@@ -7,9 +7,9 @@ from apps.music.types import playback, Song, Album, Artist
 from init import App, StringSetting, LinkSetting, BooleanSetting, DataSetting
 
 app = App("Spotify Music Provider", [
-    BooleanSetting("enabled", "Enabled", "", False, False),
-    StringSetting("client_id", "Client ID", "", "", False),
-    StringSetting("client_secret", "Client Secret", "", "", False),
+    BooleanSetting("enabled", "Enabled", False, False),
+    StringSetting("client_id", "Client ID", "", False),
+    StringSetting("client_secret", "Client Secret", "", False),
     LinkSetting("auth", "Authenticate", "", True),
     DataSetting("access_token", {"token": "", "expiry": datetime.now()}),
     DataSetting("refresh_token", "")
