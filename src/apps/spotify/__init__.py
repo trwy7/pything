@@ -20,6 +20,7 @@ def request_new_token():
     if not ref:
         app.logger.debug("Something just requested a new access token without having a refresh token")
         return
+    app.logger.debug("Requesting new token")
     resp = requests.post(
         "https://accounts.spotify.com/api/token",
         headers={"Content-Type": "application/x-www-form-urlencoded"},
@@ -40,7 +41,8 @@ def request_new_token():
         "token": data['access_token'],
         "expiry": datetime.now() + timedelta(seconds=data['expires_in'] - 5)
     })
-    app.settings['refresh_token'].set_value(data['refresh_token']) # type: ignore
+    if 'refresh_token' in data and data['refresh_token']:
+        app.settings['refresh_token'].set_value(data['refresh_token']) # type: ignore
 
     return True
 
