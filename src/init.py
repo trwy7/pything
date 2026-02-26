@@ -410,7 +410,7 @@ def settings_set():
                 setting.set_value(nd) # type: ignore
         for sl in app.settingupdatelisteners:
             sl()
-    return render_template("settings.html", apps=apps, status="Done!")
+    return redirect("/settings")
 
 
 @app.route("/clients.json")
