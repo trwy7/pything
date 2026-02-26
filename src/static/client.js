@@ -1,3 +1,4 @@
+const carthing = new URLSearchParams(window.location.search).has("carthing");
 const socket = io();
 const appFrame = document.getElementById("appframe")
 var accent = "hsl(165, 46%, 68%)";
@@ -71,6 +72,9 @@ socket.on("accentcolor", (color) => {
 socket.on("app_com", (data) => {
     sendToApp("appCom", {app: data[0], event: data[1], data: data[2]})
 })
+if (carthing) {
+    document.body.classList.add("round")
+}
 let ctime = null
 let offset = 0
 socket.on("dt", (ttime) => {
