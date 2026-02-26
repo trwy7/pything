@@ -373,6 +373,12 @@ class Client:
         self.app = app
         socket.emit("changeframe", "/apps/" + app + "/launch", to=self.sid)
 clients: dict[str, Client] = {}
+
+# Utilities
+@app.context_processor
+def app_ctx():
+    return {'apps': apps}
+
 # Built in routes
 
 @app.route("/isready")
@@ -393,7 +399,7 @@ def main_client():
 
 @app.route("/settings")
 def settings_editor():
-    return render_template("settings.html", apps=apps)
+    return render_template("settings.html")
 
 @app.route("/settings", methods=['POST'])
 def settings_set():
