@@ -132,7 +132,7 @@ def music_thread():
                 data['item']['album']['id'],
                 data['item']['album']['name'],
                 [Artist('spotify', a['id'], a['name']) for a in data['item']['album']['artists']],
-                download_art(data['item']['album']['images'][0]['url'], data['item']['album']['id'])
+                download_art(data['item']['album']['images'][0]['url'], data['item']['album']['id']) if len(data['item']['album']['images']) > 0 else None
             ),
             [Artist('spotify', a['id'], a['name']) for a in data['item']['artists']],
             data['item']['duration_ms']
