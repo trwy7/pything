@@ -412,7 +412,11 @@ def settings_set():
                 match setting.type:
                     case "bool":
                         nd = nd == "on"
-                logger.debug(f"Setting saved as {nd}")
+                    case "int":
+                        nd = int(nd)
+                    case "float":
+                        nd = float(nd)
+                logger.debug(f"Setting as {nd}")
                 setting.set_value(nd) # type: ignore
         for sl in app.settingupdatelisteners:
             sl()
