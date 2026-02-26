@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 import threading
 import time
 import requests
-from flask import request
+from flask import request, redirect
 from apps.music.types import playback, Song, Album, Artist
 from init import App, StringSetting, LinkSetting, BooleanSetting, DataSetting
 
@@ -106,7 +106,7 @@ def callback():
     })
     app.settings['refresh_token'].set_value(data['refresh_token']) # type: ignore
 
-    return "Success!"
+    return redirect("/settings")
 
 def music_thread():
     while True:
