@@ -10,7 +10,7 @@ html, body {
     margin: 0;
     padding: 0;
 }
-html.round {
+body.round {
     clip-path: inset(0 round 20px);
 }
 #status {
