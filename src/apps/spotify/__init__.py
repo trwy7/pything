@@ -4,10 +4,11 @@ import time
 import requests
 from flask import request, redirect
 from apps.music.types import playback, Song, Album, Artist
-from init import App, StringSetting, LinkSetting, BooleanSetting, DataSetting
+from init import App, StringSetting, LinkSetting, BooleanSetting, DataSetting, LabelSetting
 
 app = App("Spotify Music Provider", [
     BooleanSetting("enabled", "Enabled", False, False),
+    LabelSetting("callbackhint", "Create a spotify developer application. The callback url should be http://127.0.0.1:5192/apps/spotify/callback"),
     StringSetting("client_id", "Client ID", "", False),
     StringSetting("client_secret", "Client Secret", "", False),
     LinkSetting("auth", "Authenticate", "", True),
