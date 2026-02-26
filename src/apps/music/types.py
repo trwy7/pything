@@ -6,7 +6,7 @@ class Artist:
         self.id = id
         self.name = name
 class Album:
-    def __init__(self, platform: str, id: str, title: str, artists: list[Artist], art: str):
+    def __init__(self, platform: str, id: str, title: str, artists: list[Artist], art: str | None):
         """Represents an album
 
         Args:
