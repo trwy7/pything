@@ -1,0 +1,37 @@
+<style>
+    #music-playbar {
+        position: absolute;
+        bottom: 5px;
+        left: 0;
+        margin: 15px;
+        margin-bottom: 0px;
+        width: calc(100% - 30px);
+        border-radius: 9999px;
+        background-color: rgb(123, 163, 150);
+        height: 10px;
+        transition: transform 1s;
+        transform: translateY(20px);
+    }
+    #music-playbar.show {
+        transform: translateY(0px);
+    }
+    #music-playbarinner {
+        border-radius: 9999px;
+        transition: width 2s;
+        background-color: rgb(47, 255, 186);
+        height: 10px;
+    }
+</style>
+<div id="music-playbar">
+    <div id="music-playbarinner" style="width: 0%;"></div>
+</div>
+<script>
+    socket.on("music", (d) => {
+        if (d[1]) {
+            document.getElementById("music-playbar").classList = ["show"]
+            document.getElementById("music-playbarinner").style.width = d[0] + "%"
+        } else {
+            document.getElementById("music-playbar").classList = []
+        }
+    })
+</script>
