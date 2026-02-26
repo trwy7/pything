@@ -1,4 +1,3 @@
-from typing import Literal
 from collections.abc import Callable # why cant this be in typing :(
 class Artist:
     def __init__(self, platform: str, id: str, name: str):

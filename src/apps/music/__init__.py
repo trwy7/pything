@@ -1,6 +1,6 @@
 """Provider for all music related things, an example of an advanced app"""
 from init import App, socket
-from .types import playback, Playback
+from .types import playback
 
 app = App("Music provider", [])
 
