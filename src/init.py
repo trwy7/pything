@@ -37,11 +37,11 @@ os.chdir(os.path.dirname(os.path.abspath(__file__))) # sanity check
 
 # Install adb for people who do not already have it
 def ensure_adb(r=False):
-    if os.system("adb devices > /dev/null") == 0:
+    if os.system("adb devices") == 0:
         return True
     if os.path.isdir(os.path.abspath(os.path.join(pathlib.Path().home(), "platform-tools"))):
         os.environ["PATH"] = os.path.abspath(os.path.join(pathlib.Path().home(), "platform-tools")) + os.pathsep + os.environ.get("PATH", "")
-        if os.system("adb devices > /dev/null") == 0:
+        if os.system("adb devices") == 0:
             return True
         logger.warning("%s exists and does not contain a valid ADB install. Car thing integration will not work until you rename or remove it.", os.path.abspath(os.path.join(pathlib.Path().home(), "platform-tools")))
         return False
@@ -73,9 +73,9 @@ def ensure_adb(r=False):
 
 # Let apps load templates from their own directories
 app.jinja_env.loader = ChoiceLoader([
-    FileSystemLoader(os.path.dirname(os.path.abspath(__file__)) + "/pages"),
-    FileSystemLoader(os.path.dirname(os.path.abspath(__file__)) + "/apps"),
-    FileSystemLoader(os.path.dirname(os.path.abspath(__file__)) + "/customapps"),
+    FileSystemLoader(os.path.dirname(os.path.abspath(__file__)) + os.sep + "pages"),
+    FileSystemLoader(os.path.dirname(os.path.abspath(__file__)) + os.sep + "apps"),
+    FileSystemLoader(os.path.dirname(os.path.abspath(__file__)) + os.sep + "customapps"),
 ])
 
 def run_adb_cmd(serial: str, command: list[str]):
@@ -123,8 +123,11 @@ show_output = logger.isEnabledFor(logging.DEBUG)
 def is_carthing_serial(serial: str):
     if serial in serial_cache:
         return serial_cache[serial][0]
-    check_command = f"adb -s {serial} shell '[ -d /usr/share/qt-superbird-app/webapp/ ] && echo exists'"
-    result = os.popen(check_command).read().strip()
+    result = subprocess.run(
+        ["adb", "-s", serial, "shell", "[ -d /usr/share/qt-superbird-app/webapp/ ] && echo exists"],
+        capture_output=True,
+        text=True
+    ).stdout.strip()
     if result == "exists":
         logger.debug(f"Found device {serial}")
         serial_cache[serial] = [True, False]
@@ -292,7 +295,7 @@ class App:
         @self.blueprint.context_processor
         def inject_app():
             return {"app": self}
-        if not os.path.isdir(atype + "/" + aid):
+        if not os.path.isdir(atype + os.sep + aid):
             raise RuntimeError(f"Failed to find app directory for '{display_name}'") # sanity check
         self.display_name = display_name
         self.settings = {s.id: s for s in settings}
@@ -488,7 +491,7 @@ def clock_thread():
 def import_app(iappd: str):
     if not os.path.isdir(iappd):
         raise RuntimeError("All apps must be directories, name your app as <name>/__init__.py")
-    iapp = importlib.import_module(iappd.replace("/", "."))
+    iapp = importlib.import_module(iappd.replace(os.sep, "."))
     if not hasattr(iapp, "app"):
         raise RuntimeError(f"App {iappd} does not have an 'app' variable")
     # isinstance does not work for some reason, so we check for attributes
