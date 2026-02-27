@@ -72,10 +72,12 @@ def ensure_adb(r=False):
     return False
 
 # Let apps load templates from their own directories
+base_dir = os.path.dirname(os.path.abspath(__file__))
+
 app.jinja_env.loader = ChoiceLoader([
-    FileSystemLoader(os.path.dirname(os.path.abspath(__file__)) + os.sep + "pages"),
-    FileSystemLoader(os.path.dirname(os.path.abspath(__file__)) + os.sep + "apps"),
-    FileSystemLoader(os.path.dirname(os.path.abspath(__file__)) + os.sep + "customapps"),
+    FileSystemLoader(os.path.join(base_dir, "pages").replace('\\', '/')),
+    FileSystemLoader(os.path.join(base_dir, "apps").replace('\\', '/')),
+    FileSystemLoader(os.path.join(base_dir, "customapps").replace('\\', '/')),
 ])
 
 def run_adb_cmd(serial: str, command: list[str]):
@@ -502,7 +504,7 @@ def import_app(iappd: str):
         raise RuntimeError(f"App {iappd} variable 'app' has invalid blueprint ({str(type(iapp.app.blueprint))})")
     app.register_blueprint(iapp.app.blueprint, url_prefix="/apps/" + iapp.app.id)
     if os.path.exists(os.path.join(iappd, "clientmod.html")):
-        client_mods.append((os.path.join(iapp.app.id, "clientmod.html"), iapp.app))
+        client_mods.append((os.path.join(iapp.app.id, "clientmod.html").replace('\\', '/'), iapp.app))
     for rule in app.url_map.iter_rules():
         if rule.rule == "/apps/" + iapp.app.id + "/launch":
             logger.debug("%s has a launch route", iapp.app.id)
