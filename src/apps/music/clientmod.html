@@ -24,9 +24,6 @@
     #appframe {
         transition: height 1s;
     }
-    body:has(#music-playbar.show) #appframe {
-        height: calc(100% - 20px);
-    }
 </style>
 <div id="music-playbar">
     <div id="music-playbarinner" style="width: 0%;"></div>
@@ -36,8 +33,10 @@
         if (d[1]) {
             document.getElementById("music-playbar").classList = ["show"]
             document.getElementById("music-playbarinner").style.width = d[0] + "%"
+            document.getElementById("appframe").style.height = "calc(100% - 20px)"
         } else {
             document.getElementById("music-playbar").classList = []
+            document.getElementById("appframe").style.height = ""
         }
     })
 </script>
