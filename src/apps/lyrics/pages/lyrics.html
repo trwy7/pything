@@ -1,17 +1,20 @@
 {% extends "templates/app.html" %}
 {% block head %}
 <style>
-    html, body {
+    #lyrics {
         text-align: center;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100%;
-        overflow: hidden;
+        font-size: 20px;
+        transition: transform 1s;
+        transform: translateY(0px);
     }
 </style>
 {% endblock %}
 {% block content %}
 <div id="lyrics">
 </div>
+{% endblock %}
+{% block script %}
+<script>
+    let automove = true;
+</script>
 {% endblock %}
