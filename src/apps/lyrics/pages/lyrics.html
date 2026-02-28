@@ -30,60 +30,97 @@
 {% endblock %}
 {% block script %}
 <script>
+    // copilot territory
     let automove = true;
-    let lyrics = [];
-    let pos = 0;
-    let lpos = 0;
-    let playing = true;
-    const lyricsInner = document.getElementById("lyrics")
-    on("lyrics", (lyr) => {
-        lyricsInner.innerHTML = '';
-        automove = true;
-        lyrics = []
-        if (lyr != null) {
-            lyr.forEach(rd => {
-                let line = rd
-                var span = document.createElement("span")
-                if (typeof line === 'string') {
-                    automove = false;
-                } else {
-                    line = line[1]
-                    lyrics.push([rd[0], span])
-                }
-                if (line == '') {
-                    line = '♬';
-                }
-                span.classList = ['lyric']
-                span.textContent = line
-                lyricsInner.appendChild(span)
-            });
+    let timedLyrics = [];
+    let currentIndex = -1;
+
+    let basePos = 0;              // last reported position from "music"
+    let playing = false;
+    let lastSyncTs = performance.now();
+
+    const lyricsInner = document.getElementById("lyrics");
+
+    function normalizeLine(line) {
+        return line === "" ? "♬" : line;
+    }
+
+    function setCurrentIndex(nextIndex) {
+        if (nextIndex === currentIndex) return;
+
+        if (currentIndex >= 0 && timedLyrics[currentIndex]) {
+            timedLyrics[currentIndex].el.classList.remove("current");
         }
-    })
-    on("music", (tpos) => {
-        pos = tpos[0];
-        playing = tpos[1];
-    })
-    function highlightLyric() {
-        if (!automove) {
-            return
-        }
-        ld = true;
-        for (let i = lyrics.length - 1; i >= 0; i--) {
-            if (ld && lyrics[i][0] <= pos) {
-                ld = false
-                if (lpos != i) {
-                    lyricsInner.style.transform = `translateY(calc(50vh - ${lyrics[i][1].offsetTop}px))`
-                    lyrics[i][1].classList = ['lyric current']
-                }
-            } else {
-                lyrics[i][1].classList = ['lyric']
-            }
-        }
-        if (playing) {
-            pos += 10;
+
+        currentIndex = nextIndex;
+
+        if (currentIndex >= 0 && timedLyrics[currentIndex]) {
+            const el = timedLyrics[currentIndex].el;
+            el.classList.add("current");
+            lyricsInner.style.transform = `translateY(calc(50vh - ${el.offsetTop}px))`;
         }
     }
-    setInterval(highlightLyric, 20) // Probably could be lower
-    send("open", 0)
+
+    function findCurrentIndexByTime(t) {
+        // Binary search: last line with time <= t
+        let lo = 0;
+        let hi = timedLyrics.length - 1;
+        let ans = -1;
+
+        while (lo <= hi) {
+            const mid = (lo + hi) >> 1;
+            if (timedLyrics[mid].time <= t) {
+                ans = mid;
+                lo = mid + 1;
+            } else {
+                hi = mid - 1;
+            }
+        }
+        return ans;
+    }
+
+    on("lyrics", (lyr) => {
+        lyricsInner.innerHTML = "";
+        timedLyrics = [];
+        automove = true;
+        currentIndex = -1;
+
+        if (!lyr) return;
+
+        for (const rd of lyr) {
+            const span = document.createElement("span");
+            span.className = "lyric";
+
+            if (typeof rd === "string") {
+                automove = false;
+                span.textContent = normalizeLine(rd);
+            } else {
+                const [time, text] = rd;
+                span.textContent = normalizeLine(text);
+                timedLyrics.push({ time, el: span });
+            }
+
+            lyricsInner.appendChild(span);
+        }
+    });
+
+    on("music", (tpos) => {
+        basePos = tpos[0];
+        playing = tpos[1];
+        lastSyncTs = performance.now();
+    });
+
+    function tick() {
+        if (automove && timedLyrics.length) {
+            const now = performance.now();
+            const effectivePos = basePos + (playing ? (now - lastSyncTs) : 0);
+            const idx = findCurrentIndexByTime(effectivePos);
+            setCurrentIndex(idx);
+        }
+        requestAnimationFrame(tick);
+    }
+
+    requestAnimationFrame(tick);
+    send("open", 0);
 </script>
 {% endblock %}
