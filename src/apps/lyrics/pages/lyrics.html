@@ -31,12 +31,13 @@
         if (lyr != null) {
             lyr.forEach(rd => {
                 let line = rd
+                var span = document.createElement("span")
                 if (typeof line === 'string') {
                     automove = false;
                 } else {
                     line = line[1]
+                    lyrics.push([rd[0], line])
                 }
-                var span = document.createElement("span")
                 span.classList = ['lyric']
                 span.textContent = line
                 lyricsInner.appendChild(span)
