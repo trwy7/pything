@@ -45,6 +45,10 @@
         return line === "" ? "♬" : line;
     }
 
+    function resetLyricsPosition() {
+        lyricsInner.style.transform = "translateY(50vh)";
+    }
+
     function setCurrentIndex(nextIndex) {
         if (nextIndex === currentIndex) return;
 
@@ -58,6 +62,8 @@
             const el = timedLyrics[currentIndex].el;
             el.classList.add("current");
             lyricsInner.style.transform = `translateY(calc(50vh - ${el.offsetTop}px))`;
+        } else {
+            resetLyricsPosition();
         }
     }
 
@@ -84,6 +90,7 @@
         timedLyrics = [];
         automove = true;
         currentIndex = -1;
+        resetLyricsPosition();
 
         if (!lyr) return;
 
@@ -102,12 +109,24 @@
 
             lyricsInner.appendChild(span);
         }
+
+        // Sync immediately for the currently known playback position
+        if (automove && timedLyrics.length) {
+            const now = performance.now();
+            const effectivePos = basePos + (playing ? (now - lastSyncTs) : 0);
+            setCurrentIndex(findCurrentIndexByTime(effectivePos));
+        }
     });
 
     on("music", (tpos) => {
         basePos = tpos[0];
         playing = tpos[1];
         lastSyncTs = performance.now();
+
+        if (automove && timedLyrics.length) {
+            const idx = findCurrentIndexByTime(basePos);
+            setCurrentIndex(idx);
+        }
     });
 
     function tick() {
