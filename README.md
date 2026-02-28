@@ -55,10 +55,11 @@ def test_settings():
 def launch(): # Removing or commenting this route results in the app not showing on the dashboard
     return redirect(f"/apps/{app.dirname}/settings")
 ```
-If you use this code, you should have a `/apps/<id>/pages/settings.html` with some basic content, following this structure:
+If you use this code, you should have a `/apps/<id>/pages/settings.html` with some basic content, following this loose structure:
 ```html
 {% extends "templates/app.html" %}
 {% block head %}
+<!-- Any styles, or really anything that should go in <head> should go here -->
 <style>
     html, body {
         overflow: hidden;
@@ -66,10 +67,12 @@ If you use this code, you should have a `/apps/<id>/pages/settings.html` with so
 </style>
 {% endblock %}
 {% block content %}
+<!-- Anything visible goes here -->
 <h1 id="auto-time"></h1> <!-- This is automatically filled in with the current time, no javascript needed. -->
 <span id="appid">This is the {{app.id}} app!</span>
 {% endblock %}
 {% block script %}
+<!-- Any scripts should go here -->
 <script>
     alert("hi!")
 </script>
