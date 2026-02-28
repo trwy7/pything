@@ -15,11 +15,12 @@
         flex-direction: column;
     }
     .lyric {
-        transition: font-weight 500ms;
+        transition: font-size 500ms;
         padding-bottom: 10px;
     }
     .lyric.current {
-        font-weight: bold;
+        font-size: 25px;
+        font-weight: 999;
     }
 </style>
 {% endblock %}
@@ -31,6 +32,8 @@
 <script>
     let automove = true;
     let lyrics = [];
+    let pos = 0;
+    let lpos = 0;
     const lyricsInner = document.getElementById("lyrics")
     on("lyrics", (lyr) => {
         lyricsInner.innerHTML = '';
@@ -44,7 +47,7 @@
                     automove = false;
                 } else {
                     line = line[1]
-                    lyrics.push([rd[0], line])
+                    lyrics.push([rd[0], span])
                 }
                 if (line == '') {
                     line = '♬';
@@ -55,6 +58,25 @@
             });
         }
     })
+    on("music", (tpos) => {
+        pos = tpos;
+    })
+    function highlightLyric() {
+        ld = true;
+        for (let i = lyrics.length - 1; i >= 0; i--) {
+            if (ld && lyrics[i][0] <= pos) {
+                ld = false
+                if (lpos != i) {
+                    lyricsInner.style.transform = `translateY(calc(50vh - ${lyrics[i][1].offsetTop}px))`
+                    lyrics[i][1].classList = ['lyric current']
+                }
+            } else {
+                lyrics[i][1].classList = ['lyric']
+            }
+        }
+        pos += 10;
+    }
+    setInterval(highlightLyric, 10) // Probably could be lower
     send("open", 0)
 </script>
 {% endblock %}
