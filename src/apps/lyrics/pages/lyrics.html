@@ -34,6 +34,7 @@
     let lyrics = [];
     let pos = 0;
     let lpos = 0;
+    let playing = true;
     const lyricsInner = document.getElementById("lyrics")
     on("lyrics", (lyr) => {
         lyricsInner.innerHTML = '';
@@ -59,9 +60,13 @@
         }
     })
     on("music", (tpos) => {
-        pos = tpos;
+        pos = tpos[0];
+        playing = tpos[1];
     })
     function highlightLyric() {
+        if (!automove) {
+            return
+        }
         ld = true;
         for (let i = lyrics.length - 1; i >= 0; i--) {
             if (ld && lyrics[i][0] <= pos) {
@@ -74,9 +79,11 @@
                 lyrics[i][1].classList = ['lyric']
             }
         }
-        pos += 10;
+        if (playing) {
+            pos += 10;
+        }
     }
-    setInterval(highlightLyric, 10) // Probably could be lower
+    setInterval(highlightLyric, 20) // Probably could be lower
     send("open", 0)
 </script>
 {% endblock %}

@@ -71,12 +71,12 @@ def get_current_lrc() -> list[tuple[int, str]] | list[str] | None:
 def on_pb_change():
     if app.should_poll():
         get_current_lrc()
-        app.send("music", playback.position)
+        app.send("music", [playback.position, playback.playing])
 
 @app.on("open")
 def send_lrc(_):
     app.send("lyrics", get_current_lrc(), to=request.sid) # type: ignore
-    app.send("music", playback.position)
+    app.send("music", [playback.position, playback.playing])
 
 def parse_lrc(lrc: list[str]) -> list[tuple[int, str]]:
     nlrc = []
