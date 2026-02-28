@@ -1,8 +1,10 @@
 from datetime import datetime, timedelta
 import threading
 import time
+import os
+import urllib.request
 import requests
-from flask import request, redirect
+from flask import request, redirect, send_file, abort
 from apps.music.types import playback, Song, Album, Artist
 from init import App, StringSetting, LinkSetting, BooleanSetting, DataSetting, LabelSetting
 
@@ -15,6 +17,11 @@ app = App("Spotify Music Provider", [
     DataSetting("access_token", {"token": "", "expiry": datetime.now()}),
     DataSetting("refresh_token", "")
 ])
+art_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache", "art")
+art_lock = threading.Lock()
+
+if not os.path.isdir(art_dir):
+    os.makedirs(art_dir)
 
 def request_new_token():
     ref = app.settings['refresh_token'].get_value() # type: ignore
@@ -72,7 +79,14 @@ def update_auth_url():
     app.settings["auth"].link = f"https://accounts.spotify.com/authorize?response_type=code&client_id={app.settings['client_id'].get_value()}&scope=user-read-playback-state&redirect_uri=http://127.0.0.1:5192/apps/spotify/callback" # type: ignore
 
 def download_art(url: str, id: str):
-    return "" #FIXME: implement
+    if os.path.exists(os.path.join(art_dir, id + ".jpg")):
+        return "/apps/spotify/art/" + id + ".jpg"
+    with art_lock:
+        if os.path.exists(os.path.join(art_dir, id + ".jpg")):
+            return "/apps/spotify/art/" + id + ".jpg"
+        app.logger.debug("Downloading art for %s...", id)
+        urllib.request.urlretrieve(url, os.path.join(art_dir, id + ".jpg"))
+        return "/apps/spotify/art/" + id + ".jpg"
 
 update_auth_url()
 
@@ -143,5 +157,11 @@ def music_thread():
             data['is_playing'],
             data['progress_ms']
         )
+
+@app.blueprint.route("/art/<string:ap>")
+def art_route(ap):
+    if not os.path.exists(os.path.join(art_dir, ap)):
+        return abort(404)
+    return send_file(os.path.join(art_dir, ap))
 
 threading.Thread(target=music_thread, daemon=True).start()
