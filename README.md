@@ -14,23 +14,23 @@ PYThing is a python version of [DeskThing](https://github.com/ItsRiprod/DeskThin
 All apps can store data in the form of settings, you can access any visible settings from `/settings`
 
 - Clock
- - A basic clock app
- - Use it as a template for a static application
+    - A basic clock app
+    - Use it as a template for a static application
 - System
- - Shows information about your computer
-  - RAM
-  - CPU
-  - Disk
-  - Network
- - Use it as a template for a display app
+    - Shows information about your computer
+        - RAM
+        - CPU
+        - Disk
+        - Network
+    - Use it as a template for a display app
 - Music
- - Provider that can take input from other apps.
- - Basically, takes input from a 'provider' app, and passes that data to everything else.
- - Injects code into the client to display the provided information (playbar)
+    - Provider that can take input from other apps.
+    - Basically, takes input from a 'provider' app, and passes that data to everything else.
+    - Injects code into the client to display the provided information (playbar)
 - Spotify
- - A music provider app,
+    - A music provider app,
 - Lyrics
- - An app that takes the data from the music provider, and gets the lyrics for the current song.
+    - An app that takes the data from the music provider, and gets the lyrics for the current song.
 
 ### Make your own
 
