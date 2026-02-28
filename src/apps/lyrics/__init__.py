@@ -79,9 +79,12 @@ def send_lrc(_):
 def parse_lrc(lrc: list[str]) -> list[tuple[int, str]]:
     nlrc = []
     for line in lrc:
+        if line.strip() == '':
+            continue
         res = re.fullmatch(bpre, line)
-        if res is None:
-            app.logger.error("Could not match line: %s", line)
+        if res == None:
+            app.logger.warning("Could not match line: %s", line)
+            continue
         ms = ((60 * int(res.group("min"))) + int(res.group("sec"))) * 1000 + int(res.group("ms")) * 10
         nlrc.append((ms, res.group("line").strip()))
     return nlrc
