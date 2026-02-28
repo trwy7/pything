@@ -339,8 +339,12 @@ class App:
             self.listeners[event] = func
             return func
         return decorator
-    def send(self, event: str, data):
+    def send(self, event: str, data, to: list[str] | None=None):
         logger.debug("serverapp>clientapp: %s > %s", self.id, event)
+        if isinstance(to, list):
+            for c in self.get_open_clients():
+                if c.sid in to:
+                    socket.emit("app_com", [self.id, event, data], to=c.sid)
         for c in self.get_open_clients():
             socket.emit("app_com", [self.id, event, data], to=c.sid)
     def on_broadcast(self, event: str):
