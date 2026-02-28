@@ -9,6 +9,28 @@ PYThing is a python version of [DeskThing](https://github.com/ItsRiprod/DeskThin
 - Light on the client
 - Very extendable
 
+## Usage
+
+Clone this repo
+
+Run `python3 src/init.py`
+
+Configure to your liking at http://127.0.0.1:5192/settings
+
+### With a Car Thing
+
+The Car Thing should be automatically detected when plugged in to your computer. The device will be returned to it's previous state on restart. You can close the current app with the upper right button.
+
+### Without a Car Thing
+
+You won't get the full experience, but you may access the client view from http://127.0.0.1:5192 and all apps should work fine. You can navigate the dashboard with mouse or arrow keys and enter, and close apps with m.
+
+## Troubleshooting
+
+### My Car Thing won't connect
+
+Make sure you are running the custom Thing Labs firmware, if the device is not detected by the script, make sure the device shows up in ADB. You may need udev rules on linux.
+
 ## Apps
 
 All apps can store data in the form of settings, you can access any visible settings from `/settings`
