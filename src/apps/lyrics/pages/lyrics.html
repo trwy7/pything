@@ -38,6 +38,9 @@
                     line = line[1]
                     lyrics.push([rd[0], line])
                 }
+                if (line == '') {
+                    line = '♬';
+                }
                 span.classList = ['lyric']
                 span.textContent = line
                 lyricsInner.appendChild(span)

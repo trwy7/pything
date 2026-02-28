@@ -83,5 +83,5 @@ def parse_lrc(lrc: list[str]) -> list[tuple[int, str]]:
         if res is None:
             app.logger.error("Could not match line: %s", line)
         ms = ((60 * int(res.group("min"))) + int(res.group("sec"))) * 1000 + int(res.group("ms")) * 10
-        nlrc.append((ms, res.group("line")))
+        nlrc.append((ms, res.group("line").strip()))
     return nlrc
