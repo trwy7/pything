@@ -58,5 +58,6 @@ class Playback:
             listener()
     def on_update(self, func: Callable):
         self.listeners.append(func)
+        return func
 
 playback = Playback()
