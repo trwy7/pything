@@ -22,17 +22,26 @@
 {% block script %}
 <script>
     let automove = true;
-    let lyrics = null
+    let lyrics = [];
     const lyricsInner = document.getElementById("lyrics")
     on("lyrics", (lyr) => {
         lyricsInner.innerHTML = '';
-        lyr.forEach(rd => {
-            const line = rd[1]
-            var span = document.createElement("span")
-            span.classList = ['lyric']
-            span.textContent = line
-            lyricsInner.appendChild(span)
-        });
+        automove = true;
+        lyrics = []
+        if (lyr != null) {
+            lyr.forEach(rd => {
+                let line = rd
+                if (typeof line === 'string') {
+                    automove = false;
+                } else {
+                    line = line[1]
+                }
+                var span = document.createElement("span")
+                span.classList = ['lyric']
+                span.textContent = line
+                lyricsInner.appendChild(span)
+            });
+        }
     })
     send("open", 0)
 </script>
