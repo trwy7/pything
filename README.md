@@ -51,8 +51,9 @@ All apps can store data in the form of settings, you can access any visible sett
     - Provider that can take input from other apps.
     - Basically, takes input from a 'provider' app, and passes that data to everything else.
     - Injects code into the client to display the provided information (playbar)
+    - Also provides it's own UI to show some of the data it gets.
 - Spotify
-    - A music provider app,
+    - A music provider app, takes data from spotify.
 - Lyrics
     - An app that takes the data from the music provider, and gets the lyrics for the current song.
 
