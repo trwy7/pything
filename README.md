@@ -13,6 +13,8 @@ PYThing is a python version of [DeskThing](https://github.com/ItsRiprod/DeskThin
 
 Clone this repo
 
+Install dependencies with `pip install -r requirements.txt`, on linux you may need to make a virtual environment first
+
 Run `python3 src/init.py`
 
 Configure to your liking at http://127.0.0.1:5192/settings
