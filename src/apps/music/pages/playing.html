@@ -1,0 +1,88 @@
+{% extends "templates/app.html" %}
+{% block head %}
+<style>
+    /* Ai assisted */
+    #song {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        display: flex;
+        align-items: center;
+        width: fit-content;
+        max-width: 85%;
+        min-width: 400px;
+        gap: 32px;
+        padding: 24px;
+        border: 2px solid rgba(0, 0, 0, 0.6);
+        border-radius: 24px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08)
+    }
+
+    #art {
+        width: 200px;
+        height: 200px;
+        object-fit: cover;
+        border-radius: 16px;
+        border: 2px solid black; 
+    }
+
+    #details {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding-left: 20px;
+        text-align: center;
+    }
+
+    #title {
+        font-size: 1.8rem;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        padding: 10px;
+    }
+
+    #album {
+        font-size: 1.1rem;
+        opacity: 0.8;
+    }
+
+    #artists {
+        font-size: 1rem;
+        font-weight: 600;
+        opacity: 0.6;
+    }
+
+</style>
+{% endblock %}
+{% block content %}
+<div id="song" hidden>
+    <img id="art">
+    <div id="details">
+        <span id="title"></span>
+        <span id="album"></span>
+        <span id="artists"></span>
+    </div>
+</div>
+{% endblock %}
+{% block script %}
+<script>
+    on("song", (song) => {
+        if (!song) {
+            document.getElementById("song").hidden = true;
+            return;
+        }
+        document.getElementById("song").hidden = false;
+        document.getElementById("title").innerText = song.title;
+        document.getElementById("album").innerText = song.album;
+        document.getElementById("artists").innerText = song.artists;
+        if (song.art) {
+            document.getElementById("art").src = song.art;
+            document.getElementById("art").hidden = false;
+        } else {
+            document.getElementById("art").hidden = true;
+        }
+    })
+    send("get", 0)
+</script>
+{% endblock %}
