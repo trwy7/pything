@@ -11,6 +11,12 @@ PYThing is a python version of [DeskThing](https://github.com/ItsRiprod/DeskThin
 
 ## Usage
 
+### Prebuilt
+
+Go to [releases](https://github.com/trwy7/pything/releases), and download the release for your device, and run it. On linux, you may need to run `chmod +x pything-linux` before running.
+
+### From source
+
 Clone this repo
 
 Install dependencies with `pip install -r requirements.txt`, on linux you may need to make a virtual environment first
@@ -59,7 +65,7 @@ All apps can store data in the form of settings, you can access any visible sett
 
 ### Make your own
 
-Apps have a defined structure, but not all files are needed. Apps can either be in `/apps` or `/customapps`. `/customapps` are excluded from git, but `/apps` is not., they are both loaded the same way, but a custom app cannot take the same id as a built in app. All apps are loaded as a python module, so your init script should be in `/apps/<id>/__init__.py`. The app needs to expose an `app` variable, of the `App` class. This is a basic example of an app that has a few settings.
+To create a custom app, you must be using the source build, not the prebuilt binary. Apps have a defined structure, but not all files are needed. Apps can either be in `/src/apps` or `/src/customapps`. `/src/customapps` are excluded from git, but `/src/apps` is not., they are both loaded the same way, but a custom app cannot take the same id as a built in app. All apps are loaded as a python module, so your init script should be in `/src/apps/<id>/__init__.py`. The app needs to expose an `app` variable, of the `App` class. This is a basic example of an app that has a few settings.
 ```python
 from flask import render_template, redirect
 from init import App, StringSetting, FloatSetting, IntegerSetting, BooleanSetting
@@ -104,3 +110,7 @@ If you use this code, you should have a `/apps/<id>/pages/settings.html` with so
 {% endblock %}
 ```
 To make more complex apps, look around at the built in app to see what you can do! Even better, try removing some built in apps (Just delete the folder, no config needed) and see what stops working.
+
+### Building
+
+Building pything with your custom apps is as simple as running either `build.sh` (linux, from within your virtual environment) or `build.bat` (windows). The result should be in `dist`.
