@@ -7,7 +7,6 @@
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        display: flex;
         align-items: center;
         width: fit-content;
         max-width: 85%;
@@ -17,6 +16,14 @@
         border: 2px solid rgba(0, 0, 0, 0.6);
         border-radius: 24px;
         box-shadow: 0 10px 30px rgba(0,0,0,0.08)
+    }
+
+    #warn {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
     }
 
     #art {
@@ -56,7 +63,7 @@
 </style>
 {% endblock %}
 {% block content %}
-<div id="song" hidden>
+<div id="song" style="display: none;">
     <img id="art">
     <div id="details">
         <span id="title"></span>
@@ -64,15 +71,21 @@
         <span id="artists"></span>
     </div>
 </div>
+<div id="warn">
+    No music data has been recieved. You may need to set up an audio provider, or start playing something.
+</div>
 {% endblock %}
 {% block script %}
 <script>
     on("song", (song) => {
-        if (!song) {
-            document.getElementById("song").hidden = true;
+        console.log(song)
+        if (song == null) {
+            document.getElementById("song").style.display = "none";
+            document.getElementById("warn").style.display = "block";
             return;
         }
-        document.getElementById("song").hidden = false;
+        document.getElementById("song").style.display = "flex";
+        document.getElementById("warn").style.display = "none";
         document.getElementById("title").innerText = song.title;
         document.getElementById("album").innerText = song.album;
         document.getElementById("artists").innerText = song.artists;
