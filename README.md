@@ -113,4 +113,4 @@ To make more complex apps, look around at the built in app to see what you can d
 
 ### Building
 
-Building pything with your custom apps is as simple as running either `build.sh` (linux, from within your virtual environment) or `build.bat` (windows). The result should be in `dist`.
+Building pything with your custom apps is as simple as running either `build.sh` (linux, from within your virtual environment) or `build.bat` (windows). The result should be in `dist`. Keep in mind that any custom apps will not be included in the build.
