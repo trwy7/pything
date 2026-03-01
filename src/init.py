@@ -21,7 +21,10 @@ from collections.abc import Callable
 import requests
 from flask import Flask, Blueprint, make_response, request, render_template, redirect
 from flask_socketio import SocketIO
-from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
+from jinja2 import ChoiceLoader, FileSystemLoader
+import engineio.async_drivers.threading # pyinstaller
+import psutil # pyinstaller
+import humanize # pyinstaller
 
 print(f"Starting PYThing as {__name__}...")
 sys.modules['init'] = sys.modules[__name__]
@@ -32,7 +35,7 @@ logging.basicConfig(level=logging.DEBUG if DEVMODE else logging.INFO)
 logger = logging.getLogger("pything")
 
 app = Flask(__name__, static_folder="static", template_folder="pages")
-socket = SocketIO(app)
+socket = SocketIO(app, async_mode='threading')
 os.chdir(os.path.dirname(os.path.abspath(__file__))) # sanity check
 
 # Install adb for people who do not already have it
