@@ -37,7 +37,7 @@ You won't get the full experience, but you may access the client view from http:
 
 ### My Car Thing won't connect
 
-Make sure you are running the custom Thing Labs firmware, if the device is not detected by the script, make sure the device shows up in ADB. You may need udev rules on linux.
+Make sure you are running the custom Thing Labs firmware, if the device is not detected by the script, make sure the device shows up in ADB. You may need udev rules on linux. If it is not detected when your computer turns on, it may need to be manually unplugged and replugged.
 
 ## Apps
 
