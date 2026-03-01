@@ -33,6 +33,10 @@ DEVMODE = bool(os.environ.get("DEV", False))
 adb = False
 logging.basicConfig(level=logging.DEBUG if DEVMODE else logging.INFO)
 logger = logging.getLogger("pything")
+if os.name == 'nt':
+    data_path = os.path.join(os.environ['APPDATA'], "pything.pkl")
+else:
+    data_path = os.path.join(os.path.expanduser("~"), ".config", "pything.pkl")
 
 app = Flask(__name__, static_folder="static", template_folder="pages")
 socket = SocketIO(app, async_mode='threading')
@@ -112,11 +116,11 @@ if not logger.isEnabledFor(logging.DEBUG):
 serial_cache = {}
 
 def save_config():
-    with open("appconfig.pkl", "wb") as cfw:
+    with open(data_path, "wb") as cfw:
         pickle.dump(config, cfw)
 
-if os.path.exists("appconfig.pkl"):
-    with open("appconfig.pkl", "rb") as cfr:
+if os.path.exists(data_path):
+    with open(data_path, "rb") as cfr:
         config = pickle.load(cfr)
 else:
     config = {}
