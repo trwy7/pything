@@ -516,7 +516,7 @@ def import_app(iappd: str):
             break
 
 # Restore carthing webapp
-def restore_ct_webapp(fserial: str | None=None, restart: bool=True, exit: bool=True, sig=None, frame=None):
+def restore_ct_webapp(fserial: str | None=None, restart: bool=True, exit: bool=True):
     for serial in get_carthings() if fserial is None else [fserial]:
         if is_carthing_serial(serial):
             logger.info(f"Restoring {serial}...")
