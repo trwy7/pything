@@ -54,12 +54,12 @@ All apps can store data in the form of settings, you can access any visible sett
         - Network
     - Use it as a template for a display app
 - Music
-    - Provider that can take input from other apps.
+    - App that can take input from other apps.
     - Basically, takes input from a 'provider' app, and passes that data to everything else.
-    - Injects code into the client to display the provided information (playbar)
-    - Also provides it's own UI to show some of the data it gets.
+    - Injects code into the client to display a playbar
 - Spotify
-    - A music provider app, takes data from spotify.
+    - A music provider app, takes data from spotify. Requires spotify premium.
+    - Does not have a UI
 - Lyrics
     - An app that takes the data from the music provider, and gets the lyrics for the current song.
 
@@ -99,7 +99,7 @@ If you use this code, you should have a `/apps/<id>/pages/settings.html` with so
 {% endblock %}
 {% block content %}
 <!-- Anything visible goes here -->
-<h1 id="auto-time"></h1> <!-- This is automatically filled in with the current time, no javascript needed. -->
+<h1 id="auto-time"></h1> <!-- This is automatically filled in with the current time by the app, no javascript needed. -->
 <span id="appid">This is the {{app.id}} app!</span>
 {% endblock %}
 {% block script %}
