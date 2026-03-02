@@ -1,45 +1,19 @@
 # PYThing
 
-PYThing is a python version of [DeskThing](https://github.com/ItsRiprod/DeskThing), designed to be easy to write apps for, and to be light on the client. The client just needs chrome and access to the host port in any way, and does not need internet (the host does).
+PYThing is a python version of [DeskThing](https://github.com/ItsRiprod/DeskThing), designed to be easy to write apps for, and to be light on the client.
 
 ## Features
 
 - Automatic carthing connection
 - Easy setup
 - Light on the client
-- Very extendable
+- Client does not need internet (the host does)
+- Most, if not all features can be extended with apps
 
-## Usage
-
-### Prebuilt
-
-Go to [releases](https://github.com/trwy7/pything/releases), and download the release for your device, and run it. On linux, you may need to run `chmod +x pything-linux` before running.
-
-### From source
-
-Clone this repo
-
-Install dependencies with `pip install -r requirements.txt`, on linux you may need to make a virtual environment first
-
-Run `python3 src/init.py`
-
-Configure to your liking at http://127.0.0.1:5192/settings
-
-### With a Car Thing
-
-The Car Thing should be automatically detected when plugged in to your computer. The device will be returned to it's previous state on restart. You can close the current app with the upper right button.
-
-### Without a Car Thing
-
-You won't get the full experience, but you may access the client view from http://127.0.0.1:5192 and all apps should work fine. You can navigate the dashboard with mouse or arrow keys and enter, and close apps with m.
-
-## Troubleshooting
-
-### My Car Thing won't connect
-
-Make sure you are running the custom Thing Labs firmware, if the device is not detected by the script, make sure the device shows up in ADB. You may need udev rules on linux. If it is not detected when your computer turns on, it may need to be manually unplugged and replugged.
-
-## Apps
+<details>
+   <summary>
+      <h2>▶️ Apps</h2>
+   </summary>
 
 All apps can store data in the form of settings, you can access any visible settings from `/settings`
 
@@ -63,9 +37,52 @@ All apps can store data in the form of settings, you can access any visible sett
 - Lyrics
     - An app that takes the data from the music provider, and gets the lyrics for the current song.
 
-### Make your own
+</details>
 
-To create a custom app, you must be using the source build, not the prebuilt binary. Apps have a defined structure, but not all files are needed. Apps can either be in `/src/apps` or `/src/customapps`. `/src/customapps` are excluded from git, but `/src/apps` is not., they are both loaded the same way, but a custom app cannot take the same id as a built in app. All apps are loaded as a python module, so your init script should be in `/src/apps/<id>/__init__.py`. The app needs to expose an `app` variable, of the `App` class. This is a basic example of an app that has a few settings.
+<details>
+   <summary>
+      <h2>🏃 Running</h2>
+   </summary>
+
+### Prebuilt
+
+Go to [releases](https://github.com/trwy7/pything/releases), and download the release for your device, and run it. On linux, you may need to run `chmod +x pything-linux` before running.
+
+### From source
+
+Clone this repo
+
+Install dependencies with `pip install -r requirements.txt`, on linux you may need to make a virtual environment first
+
+Run `python3 src/init.py`
+
+## Usage
+
+If you have a Car Thing, it should be detected automatically. If you do not, you may visit the web UI from http://127.0.0.1:5192.
+
+All app settings can be configured from http://127.0.0.1:5192/settings. Some apps require this to work.
+
+</details>
+
+<details>
+   <summary>
+      <h2>❓ Troubleshooting</h2>
+   </summary>
+
+## Troubleshooting
+
+### My Car Thing won't connect
+
+Make sure you are running the custom Thing Labs firmware, if the device is not detected by the script, make sure the device shows up in ADB. You may need udev rules on linux. If it is not detected when your computer turns on, it may need to be manually unplugged and replugged.
+
+</details>
+
+<details>
+   <summary>
+      <h2>🛠️ Making an app</h2>
+   </summary>
+
+To create a custom app, you must be using the source build. Apps have a defined structure, but not all files are needed. Apps can either be in `/src/apps` or `/src/customapps`. `/src/customapps` are excluded from git, but `/src/apps` is not., they are both loaded the same way, but a custom app cannot take the same id as a built in app. All apps are loaded as a python module, so your init script should be in `/src/apps/<id>/__init__.py`. The app needs to expose an `app` variable, of the `App` class. This is a basic example of an app that has a few settings.
 ```python
 from flask import render_template, redirect
 from init import App, StringSetting, FloatSetting, IntegerSetting, BooleanSetting
@@ -109,8 +126,14 @@ If you use this code, you should have a `/apps/<id>/pages/settings.html` with so
 </script>
 {% endblock %}
 ```
-To make more complex apps, look around at the built in app to see what you can do! Even better, try removing some built in apps (Just delete the folder, no config needed) and see what stops working.
+To make more complex apps, look around at the built in apps to see what you can do! Even better, try removing some built in apps (Just delete the folder, no config needed) and see what stops working.
 
-### Building
+</details>
 
-Building pything with your custom apps is as simple as running either `build.sh` (linux, from within your virtual environment) or `build.bat` (windows). The result should be in `dist`. Keep in mind that any custom apps will not be included in the build.
+<details>
+   <summary>
+      <h2>🏗️ Building</h2>
+   </summary>
+
+Building pything with your modifications can be done by either running `build.sh` (linux, from within your virtual environment) or `build.bat` (windows). The result should be in `dist`. Keep in mind that apps must be in `/src/apps` to be included in the build.
+</details>
