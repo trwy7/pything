@@ -12,35 +12,6 @@ PYThing is a python version of [DeskThing](https://github.com/ItsRiprod/DeskThin
 
 <details>
    <summary>
-      <h2>▶️ Apps</h2>
-   </summary>
-
-All apps can store data in the form of settings, you can access any visible settings from `/settings`
-
-- Clock
-    - A basic clock app
-    - Use it as a template for a static application
-- System
-    - Shows information about your computer
-        - RAM
-        - CPU
-        - Disk
-        - Network
-    - Use it as a template for a display app
-- Music
-    - App that can take input from other apps.
-    - Basically, takes input from a 'provider' app, and passes that data to everything else.
-    - Injects code into the client to display a playbar
-- Spotify
-    - A music provider app, takes data from spotify. Requires spotify premium.
-    - Does not have a UI
-- Lyrics
-    - An app that takes the data from the music provider, and gets the lyrics for the current song.
-
-</details>
-
-<details>
-   <summary>
       <h2>🏃 Running</h2>
    </summary>
 
@@ -74,6 +45,35 @@ All app settings can be configured from http://127.0.0.1:5192/settings. Some app
 ### My Car Thing won't connect
 
 Make sure you are running the custom Thing Labs firmware, if the device is not detected by the script, make sure the device shows up in ADB. You may need udev rules on linux. If it is not detected when your computer turns on, it may need to be manually unplugged and replugged.
+
+</details>
+
+<details>
+   <summary>
+      <h2>▶️ Apps</h2>
+   </summary>
+
+All apps can store data in the form of settings, you can access any visible settings from `/settings`
+
+- Clock
+    - A basic clock app
+    - Use it as a template for a static application
+- System
+    - Shows information about your computer
+        - RAM
+        - CPU
+        - Disk
+        - Network
+    - Use it as a template for a display app
+- Music
+    - App that can take input from other apps.
+    - Basically, takes input from a 'provider' app, and passes that data to everything else.
+    - Injects code into the client to display a playbar
+- Spotify
+    - A music provider app, takes data from spotify. Requires spotify premium.
+    - Does not have a UI
+- Lyrics
+    - An app that takes the data from the music provider, and gets the lyrics for the current song.
 
 </details>
 
