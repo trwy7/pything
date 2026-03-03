@@ -6,6 +6,7 @@ import urllib.request
 import requests
 from flask import request, redirect, send_file, abort
 from apps.music.types import playback, Song, Album, Artist
+from apps.music.utils import get_accent
 from init import App, StringSetting, LinkSetting, BooleanSetting, DataSetting, LabelSetting
 
 app = App("Spotify", [
@@ -20,6 +21,8 @@ app = App("Spotify", [
 art_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache", "art")
 art_lock = threading.Lock()
 downloading: list[str] = []
+accent_cache: dict[str, int | None] = {}
+accent_lock = threading.Lock()
 
 if not os.path.isdir(art_dir):
     os.makedirs(art_dir)
@@ -82,9 +85,17 @@ def update_auth_url():
 def get_art(url: str, id: str):
     if os.path.exists(os.path.join(art_dir, id + ".jpg")):
         app.logger.debug("Reusing art")
+        if id not in accent_cache:
+            threading.Thread(target=accent_thread, daemon=True, args=(id,)).start()
         return "/apps/spotify/art/" + id + ".jpg"
     app.logger.debug("Starting download thread")
     threading.Thread(target=download_art, daemon=True, args=(url, id)).start()
+
+def accent_thread(id: str):
+    with accent_lock:
+        if id in accent_cache:
+            return
+        accent_cache[id] = get_accent(os.path.join(art_dir, id + ".jpg"))
 
 def download_art(url: str, id: str):
     if id in downloading:
@@ -96,6 +107,7 @@ def download_art(url: str, id: str):
         app.logger.debug("Downloading art for %s...", id)
         urllib.request.urlretrieve(url, os.path.join(art_dir, id + ".jpg"))
         downloading.remove(id) # this should also mean if the download fails, it wont be re-attempted until app restart
+    accent_thread(id)
 
 update_auth_url()
 
@@ -156,7 +168,8 @@ def music_thread():
                 data['item']['album']['id'],
                 data['item']['album']['name'],
                 [Artist('spotify', a['id'], a['name']) for a in data['item']['album']['artists']],
-                get_art(data['item']['album']['images'][0]['url'], data['item']['album']['id']) if len(data['item']['album']['images']) > 0 else None
+                get_art(data['item']['album']['images'][0]['url'], data['item']['album']['id']) if len(data['item']['album']['images']) > 0 else None,
+                accent_cache.get(data['item']['album']['id'])
             ),
             [Artist('spotify', a['id'], a['name']) for a in data['item']['artists']],
             data['item']['duration_ms']

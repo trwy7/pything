@@ -1,9 +1,11 @@
 """Provider for all music related things, an example of an advanced app"""
 from flask import render_template
-from init import App, socket
+from init import App, socket, BooleanSetting
 from .types import playback
 
-app = App("Music", [])
+app = App("Music", [
+    BooleanSetting("accent", "Set accent color to art accent", True)
+])
 
 @app.on("get")
 @playback.on_update
@@ -25,6 +27,8 @@ def playback_listener():
         ((playback.position / playback.song.duration) * 100) if playback.song and playback.position else None,
         playback.playing
     ])
+    if playback.song and app.settings['accent'].get_value(): # type: ignore
+        app.broadcast("set_accent", playback.song.album.accent)
 
 @app.blueprint.route("/launch")
 def launch():

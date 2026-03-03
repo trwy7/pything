@@ -5,7 +5,7 @@ class Artist:
         self.id = id
         self.name = name
 class Album:
-    def __init__(self, platform: str, id: str, title: str, artists: list[Artist], art: str | None):
+    def __init__(self, platform: str, id: str, title: str, artists: list[Artist], art: str | None, accent: int | None):
         """Represents an album
 
         Args:
@@ -20,6 +20,7 @@ class Album:
         self.title = title
         self.artists = artists
         self.art = art
+        self.accent = accent
 class Song:
     def __init__(self, platform: str, id: str, title: str, album: Album, artists: list[Artist], duration: int):
         """Represents a song
