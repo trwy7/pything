@@ -37,7 +37,10 @@ window.addEventListener('message', (event) => {
 })
 socket.on("connect", () => {
     console.log("Connected to server");
-    unhideApp();
+    unhideApp(); // This could make it so the dashboard is loaded early on first reload, but it should be fine.
+    setTimeout(() => {
+        document.getElementById("loadanim").innerText = ""
+    }, 500)
 });
 socket.on("disconnect", () => {
     socket.disconnect();

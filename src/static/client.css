@@ -37,6 +37,11 @@ body.round {
     width: 100%;
     height: 100%;
     background-color: black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 2em;
 }
 #loadanim.load {
     animation: loadanim 0.5s ease-in-out forwards;
