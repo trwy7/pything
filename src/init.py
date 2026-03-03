@@ -592,4 +592,5 @@ if __name__ == "__main__":
             threading.Thread(target=inject_thread, daemon=True).start()
         threading.Thread(target=clock_thread, daemon=True).start()
     # Start the server
+    logger.info("Starting on 127.0.0.1:5192")
     socket.run(app, "127.0.0.1", 5192, allow_unsafe_werkzeug=True)
