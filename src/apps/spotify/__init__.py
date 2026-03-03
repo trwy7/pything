@@ -8,7 +8,7 @@ from flask import request, redirect, send_file, abort
 from apps.music.types import playback, Song, Album, Artist
 from init import App, StringSetting, LinkSetting, BooleanSetting, DataSetting, LabelSetting
 
-app = App("Spotify Music Provider", [
+app = App("Spotify", [
     BooleanSetting("enabled", "Enabled", False, False),
     LabelSetting("callbackhint", "Create a spotify developer application from https://developer.spotify.com/dashboard. The callback url should be http://127.0.0.1:5192/apps/spotify/callback"),
     StringSetting("client_id", "Client ID", "", False),
