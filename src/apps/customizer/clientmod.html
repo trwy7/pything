@@ -7,9 +7,10 @@
     function setAccent(hue, background) {
         document.documentElement.style.setProperty("--custom-hue", hue)
         document.documentElement.style.setProperty("--custom-bg", background + "%")
+        sendToApp("customizer", {hue: hue, background: background})
     }
     socket.on("customizer", (h) => {
-        console.log("Customizer: Got colors")
+        console.log("Customizer (clientmod): Got colors")
         setAccent(h[0], h[1])
     })
     socket.emit("customizer+get", 0)

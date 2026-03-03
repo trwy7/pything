@@ -1,0 +1,10 @@
+<script>
+    window.addEventListener('message', (event) => {
+        const rmsg = event.data
+        if (rmsg.cmd == "customizer") {
+            console.log("Customizer (appmod): Got colors")
+            document.documentElement.style.setProperty("--custom-hue", rmsg.data.hue)
+            document.documentElement.style.setProperty("--custom-bg", rmsg.data.background + "%")
+        }
+    })
+</script>
