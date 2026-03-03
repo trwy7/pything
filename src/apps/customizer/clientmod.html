@@ -4,14 +4,20 @@
     }
 </style>
 <script>
+    let customizer_current = {hue: 151, background: 24}
+    function sendAccent() {
+        sendToApp("customizer", customizer_current);
+    }
     function setAccent(hue, background) {
-        document.documentElement.style.setProperty("--custom-hue", hue)
-        document.documentElement.style.setProperty("--custom-bg", background + "%")
-        sendToApp("customizer", {hue: hue, background: background})
+        document.documentElement.style.setProperty("--custom-hue", hue);
+        document.documentElement.style.setProperty("--custom-bg", background + "%");
+        customizer_current = {hue: hue, background: background}
+        sendAccent();
     }
     socket.on("customizer", (h) => {
-        console.log("Customizer (clientmod): Got colors")
-        setAccent(h[0], h[1])
+        console.log("Customizer (clientmod): Got colors");
+        setAccent(h[0], h[1]);
     })
-    socket.emit("customizer+get", 0)
+    socket.emit("customizer+get", 0);
+    onAppLoad(sendAccent);
 </script>
