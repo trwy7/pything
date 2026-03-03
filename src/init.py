@@ -518,6 +518,8 @@ def import_app(iappd: str):
     app.register_blueprint(iapp.app.blueprint, url_prefix="/apps/" + iapp.app.id)
     if os.path.exists(os.path.join(iappd, "clientmod.html")):
         client_mods.append((os.path.join(iapp.app.id, "clientmod.html").replace('\\', '/'), iapp.app))
+    if os.path.exists(os.path.join(iappd, "appmod.html")):
+        app_mods.append((os.path.join(iapp.app.id, "appmod.html").replace('\\', '/'), iapp.app))
     for rule in app.url_map.iter_rules():
         if rule.rule == "/apps/" + iapp.app.id + "/launch":
             logger.debug("%s has a launch route", iapp.app.id)
