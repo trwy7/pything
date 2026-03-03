@@ -12,6 +12,7 @@ window.addEventListener('message', (event) => {
             if (at) {
                 updateAutoTime(at);
             }
+            break;
         case "appCom":
             if (rmsg.data.app != appId) {
                 console.warn("Server just sent an event to app '" + rmsg.data.app + "' but '" + appId + "' is loaded")
@@ -22,6 +23,7 @@ window.addEventListener('message', (event) => {
                 break;
             }
             func(rmsg.data.data)
+            break;
     }
 })
 // Signal to the client that we are ready

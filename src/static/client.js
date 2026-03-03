@@ -25,14 +25,17 @@ window.addEventListener('message', (event) => {
         case "openApp":
             socket.emit("open_app", rmsg.data)
             console.log("Switching to " + rmsg.data)
+            break;
         case "appCom":
             socket.emit("app_com", rmsg.data.app, rmsg.data.event, rmsg.data.data)
+            break;
         case "loaded":
             alf.forEach((naf) => {
                 naf()
             })
             console.log("App has loaded");
             unhideApp();
+            break;
     }
 })
 socket.on("connect", () => {
