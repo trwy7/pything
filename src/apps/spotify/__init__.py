@@ -19,6 +19,7 @@ app = App("Spotify", [
 ])
 art_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache", "art")
 art_lock = threading.Lock()
+downloading: list[str] = []
 
 if not os.path.isdir(art_dir):
     os.makedirs(art_dir)
@@ -78,15 +79,23 @@ def update_auth_url():
     app.settings["auth"].hidden = False
     app.settings["auth"].link = f"https://accounts.spotify.com/authorize?response_type=code&client_id={app.settings['client_id'].get_value()}&scope=user-read-playback-state&redirect_uri=http://127.0.0.1:5192/apps/spotify/callback" # type: ignore
 
-def download_art(url: str, id: str):
+def get_art(url: str, id: str):
     if os.path.exists(os.path.join(art_dir, id + ".jpg")):
+        app.logger.debug("Reusing art")
         return "/apps/spotify/art/" + id + ".jpg"
+    app.logger.debug("Starting download thread")
+    threading.Thread(target=download_art, daemon=True, args=(url, id)).start()
+
+def download_art(url: str, id: str):
+    if id in downloading:
+        return
     with art_lock:
         if os.path.exists(os.path.join(art_dir, id + ".jpg")):
-            return "/apps/spotify/art/" + id + ".jpg"
+            return
+        downloading.append(id)
         app.logger.debug("Downloading art for %s...", id)
         urllib.request.urlretrieve(url, os.path.join(art_dir, id + ".jpg"))
-        return "/apps/spotify/art/" + id + ".jpg"
+        downloading.remove(id) # this should also mean if the download fails, it wont be re-attempted until app restart
 
 update_auth_url()
 
@@ -147,7 +156,7 @@ def music_thread():
                 data['item']['album']['id'],
                 data['item']['album']['name'],
                 [Artist('spotify', a['id'], a['name']) for a in data['item']['album']['artists']],
-                download_art(data['item']['album']['images'][0]['url'], data['item']['album']['id']) if len(data['item']['album']['images']) > 0 else None
+                get_art(data['item']['album']['images'][0]['url'], data['item']['album']['id']) if len(data['item']['album']['images']) > 0 else None
             ),
             [Artist('spotify', a['id'], a['name']) for a in data['item']['artists']],
             data['item']['duration_ms']
