@@ -2,10 +2,12 @@ const carthing = new URLSearchParams(window.location.search).has("carthing");
 const socket = io();
 const appFrame = document.getElementById("appframe")
 function triggerLoadAnim(keep=false) {
+    document.getElementById("loadanim").classList.remove("load")
     document.getElementById("loadanim").classList.add("reload")
     if (!keep) {
         setTimeout(() => {
             document.getElementById("loadanim").classList.remove("reload")
+            document.getElementById("loadanim").classList.add("load")
         }, 600)
     }
 }
@@ -29,6 +31,7 @@ window.addEventListener('message', (event) => {
 })
 socket.on("connect", () => {
     console.log("Connected to server");
+    document.getElementById("loadanim").classList.add("load")
 });
 socket.on("disconnect", () => {
     socket.disconnect();
