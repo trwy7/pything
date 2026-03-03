@@ -391,9 +391,13 @@ class Client:
 clients: dict[str, Client] = {}
 
 # Utilities
+
+client_mods: list[tuple[str, App]] = []
+app_mods: list[tuple[str, App]] = []
+
 @app.context_processor
 def app_ctx():
-    return {'apps': apps}
+    return {'apps': apps, 'app_mods': app_mods}
 
 # Built in routes
 
@@ -406,8 +410,6 @@ def ct_isready():
 @app.route("/")
 def client_redirect():
     return redirect("/client")
-
-client_mods: list[tuple[str, App]] = []
 
 @app.route("/client")
 def main_client():
