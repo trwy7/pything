@@ -8,6 +8,9 @@
         flex-direction: column;
         overflow: hidden;
     }
+    h1 {
+        margin-bottom: 0;
+    }
     div#apps {
         display: grid;
         gap: 20px;
@@ -35,10 +38,18 @@
         bottom: 0;
         font-weight: bold;
     }
+    div#divider {
+        background-color: rgba(255, 255, 255, 0.3);
+        height: 5px;
+        width: calc(100% - 60px);
+        margin: 20px 30px;
+        border-radius: 200px;
+    }
 </style>
 {% endblock %}
 {% block content %}
 <h1>Apps</h1>
+<div id="divider"></div>
 <div id="apps">
     {% for napp in apps.values() %}
         {% if (not napp.hidden) and napp.id != app.id %}
