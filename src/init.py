@@ -22,9 +22,7 @@ import requests
 from flask import Flask, Blueprint, make_response, request, render_template, redirect
 from flask_socketio import SocketIO
 from jinja2 import ChoiceLoader, FileSystemLoader
-import engineio.async_drivers.threading # pyinstaller
-import psutil # pyinstaller
-import humanize # pyinstaller
+import pyinstallerdeps
 
 print(f"Starting PYThing as {__name__}...")
 sys.modules['init'] = sys.modules[__name__]
