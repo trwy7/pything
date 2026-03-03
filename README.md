@@ -57,14 +57,12 @@ All apps can store data in the form of settings, you can access any visible sett
 
 - Clock
     - A basic clock app
-    - Use it as a template for a static application
 - System
     - Shows information about your computer
         - RAM
         - CPU
         - Disk
         - Network
-    - Use it as a template for a display app
 - Music
     - App that can take input from other apps.
     - Basically, takes input from a 'provider' app, and passes that data to everything else.
@@ -76,6 +74,7 @@ All apps can store data in the form of settings, you can access any visible sett
     - An app that takes the data from the music provider, and gets the lyrics for the current song.
 - Customizer
     - An app that provides custom colors to the UI
+    - Takes broadcasts from other apps so any app can set the accent color
 
 </details>
 
