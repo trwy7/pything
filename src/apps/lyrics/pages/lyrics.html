@@ -3,15 +3,21 @@
 <style>
     html, body {
         overflow: hidden;
+        text-align: center;
+    }
+    #status {
+        font-size: 2em;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
     }
     #lyrics {
-        text-align: center;
         font-size: 20px;
         transition: transform 500ms;
         transform: translateY(50vh);
         width: calc(100% - 50px);
         padding-left: 25px;
-        display: flex;
         flex-direction: column;
     }
     .lyric {
@@ -26,6 +32,8 @@
 </style>
 {% endblock %}
 {% block content %}
+<div id="status">
+</div>
 <div id="lyrics">
 </div>
 {% endblock %}
@@ -41,6 +49,7 @@
     let lastSyncTs = performance.now();
 
     const lyricsInner = document.getElementById("lyrics");
+    const statusDiv = document.getElementById("status");
 
     function normalizeLine(line) {
         return line === "" ? "♬" : line;
@@ -93,7 +102,14 @@
         currentIndex = -1;
         resetLyricsPosition();
 
-        if (!lyr) return;
+        if (typeof lyr === "string") {
+            statusDiv.innerText = lyr;
+            statusDiv.style.display = "block";
+            lyricsInner.style.display = "none";
+            return;
+        }
+        statusDiv.style.display = "none";
+        lyricsInner.style.display = "flex";
 
         for (const rd of lyr) {
             const span = document.createElement("span");

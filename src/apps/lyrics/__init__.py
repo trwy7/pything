@@ -9,7 +9,7 @@ from apps.music.types import playback
 
 app = App("Lyrics", [])
 USER_AGENT = "PYThing Lyrics (https://github.com/trwy7/pything)"
-current_lrc: tuple[str, list[tuple[int, str]]] | tuple[str, list[str]] | tuple[str, None] | None = None
+current_lrc: tuple[str, list[tuple[int, str]]] | tuple[str, list[str]] | tuple[str, str] = ("", "")
 get_lrc_lock = Lock()
 bpre = re.compile(r"\[(?P<min>[0-9]{1,2}):(?P<sec>[0-9]{1,2}).(?P<ms>[0-9]{1,2})\](?P<line>.*)")
 
@@ -17,13 +17,13 @@ bpre = re.compile(r"\[(?P<min>[0-9]{1,2}):(?P<sec>[0-9]{1,2}).(?P<ms>[0-9]{1,2})
 def launch():
     return render_template(f"{app.dirname}/pages/lyrics.html")
 
-def get_current_lrc() -> list[tuple[int, str]] | list[str] | None:
+def get_current_lrc() -> list[tuple[int, str]] | list[str] | str:
     cpbs = playback.song # should avoid race conditions
     if not cpbs:
-        return None
-    if not (cpbs.artists and cpbs.album):
+        return "Nothing is playing right now"
+    if not cpbs.artists:
         # might be possible to get these through /api/search
-        return None
+        return "This song has no artists"
     global current_lrc
     if current_lrc and cpbs.id == current_lrc[0]:
         app.logger.debug("Using cached lyrics")
@@ -44,9 +44,9 @@ def get_current_lrc() -> list[tuple[int, str]] | list[str] | None:
         if req.status_code != 200:
             app.logger.debug("Could not find lyrics for '%s': %s", cpbs.title, req.status_code)
             if playback.song and cpbs.id == playback.song.id:
-                current_lrc = (cpbs.id, None)
-                app.send("lyrics", None)
-            return None
+                current_lrc = (cpbs.id, f"Could not find lyrics for {cpbs.title}")
+                app.send("lyrics", current_lrc[1])
+            return f"Could not find lyrics for {cpbs.title}"
         data = req.json()
         if data['syncedLyrics']:
             app.logger.debug("Found synced lyrics for song '%s'", cpbs.title)
@@ -63,9 +63,9 @@ def get_current_lrc() -> list[tuple[int, str]] | list[str] | None:
                 app.send("lyrics", lyr)
             return lyr
         if playback.song and cpbs.id == playback.song.id:
-            current_lrc = (cpbs.id, None)
-            app.send("lyrics", None)
-        return None
+            current_lrc = (cpbs.id, "Song is instrumental")
+            app.send("lyrics", current_lrc[1])
+        return "Song is instrumental"
 
 @playback.on_update
 def on_pb_change():
