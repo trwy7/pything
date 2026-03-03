@@ -50,6 +50,10 @@
 {% block content %}
 <h1>Apps</h1>
 <div id="divider"></div>
+{% if app.settings.warn.get_value() %}
+<h2>Most apps have settings to change their function! Check it out at http://127.0.0.1:5192/settings.</h2>
+<div id="divider"></div>
+{% endif %}
 <div id="apps">
     {% for napp in apps.values() %}
         {% if (not napp.hidden) and napp.id != app.id %}
