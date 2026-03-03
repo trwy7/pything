@@ -24,6 +24,10 @@ window.addEventListener('message', (event) => {
             func(rmsg.data.data)
     }
 })
+// Signal to the client that we are ready
+document.addEventListener("DOMContentLoaded", (event) => {
+    sendToClient("loaded", 1)
+});
 // Utilities
 document.addEventListener('keydown', function(event) {
     event.preventDefault();
