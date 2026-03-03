@@ -28,6 +28,7 @@ window.addEventListener('message', (event) => {
             alf.forEach((naf) => {
                 naf()
             })
+            console.log("App has loaded");
             unhideApp();
     }
 })
