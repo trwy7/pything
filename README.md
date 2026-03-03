@@ -74,6 +74,8 @@ All apps can store data in the form of settings, you can access any visible sett
     - Does not have a UI
 - Lyrics
     - An app that takes the data from the music provider, and gets the lyrics for the current song.
+- Customizer
+    - An app that provides custom colors to the UI
 
 </details>
 

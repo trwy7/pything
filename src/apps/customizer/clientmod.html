@@ -1,0 +1,16 @@
+<style>
+    #appframe, body {
+        background-color: hsl(var(--custom-hue, 151), 2%, var(--custom-bg, 24%));
+    }
+</style>
+<script>
+    function setAccent(hue, background) {
+        document.documentElement.style.setProperty("--custom-hue", hue)
+        document.documentElement.style.setProperty("--custom-bg", background + "%")
+    }
+    socket.on("customizer", (h) => {
+        console.log("Customizer: Got colors")
+        setAccent(h[0], h[1])
+    })
+    socket.emit("customizer+get", 0)
+</script>
