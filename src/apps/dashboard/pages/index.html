@@ -55,11 +55,13 @@
 <div id="divider"></div>
 {% endif %}
 <div id="apps">
+    {% set ns = namespace(ci = 0) %}
     {% for napp in apps.values() %}
         {% if (not napp.hidden) and napp.id != app.id %}
-            <div onclick="openApp('{{napp.id}}')">
+            <div onclick="openApp('{{napp.id}}')" onmouseover="index = Number('{{ns.ci}}'); updateSelected();">
                 {{napp.display_name}}
             </div>
+            {% set ns.ci = ns.ci + 1 %}
         {% endif %}
     {% endfor %}
 </div>
