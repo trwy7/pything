@@ -15,12 +15,13 @@
         flex-direction: column;
     }
     .lyric {
-        transition: font-size 500ms;
+        transition: font-size 500ms, color 500ms;
         padding-bottom: 10px;
     }
     .lyric.current {
         font-size: 25px;
         font-weight: 999;
+        color: hsl(var(--custom-hue, 151), 100%, 85%);
     }
 </style>
 {% endblock %}
