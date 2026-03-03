@@ -1,7 +1,6 @@
 const carthing = new URLSearchParams(window.location.search).has("carthing");
 const socket = io();
 const appFrame = document.getElementById("appframe")
-var accent = "hsl(165, 46%, 68%)";
 function triggerLoadAnim(keep=false) {
     document.getElementById("loadanim").classList.add("reload")
     if (!keep) {
@@ -62,12 +61,6 @@ socket.on("changeframe", (frame) => {
     setTimeout(() => {sendToApp("offset", offset);}, 600);
     setTimeout(() => {sendToApp("offset", offset);}, 650);
     setTimeout(() => {appFrame.contentWindow.focus();}, 1100);
-})
-socket.on("accentcolor", (color) => {
-    // TODO: Make apps able to set this color (or base it on the current song)
-    // FIXME: not actually a fixme but a reminder to make sure this is always a bright color
-    document.body.style.setProperty('--background-color', color);
-    accent = color
 })
 socket.on("app_com", (data) => {
     sendToApp("appCom", {app: data[0], event: data[1], data: data[2]})
