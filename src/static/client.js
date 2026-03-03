@@ -6,6 +6,9 @@ function hideApp() {
     document.getElementById("loadanim").classList.add("reload")
 }
 function unhideApp() {
+    if (!socket.connected) {
+        return;
+    }
     document.getElementById("loadanim").classList.remove("reload")
     document.getElementById("loadanim").classList.add("load")
 }
@@ -34,7 +37,7 @@ window.addEventListener('message', (event) => {
 })
 socket.on("connect", () => {
     console.log("Connected to server");
-    document.getElementById("loadanim").classList.add("load")
+    unhideApp();
 });
 socket.on("disconnect", () => {
     socket.disconnect();
