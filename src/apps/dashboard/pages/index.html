@@ -97,6 +97,8 @@
     });
     document.addEventListener('wheel', function(event) {
         if (event.deltaX < 0) {
+            // TODO: Something is going on here and the wheel is being registered twice
+            // Note to future me; find the exact amount the wheel scrolls and check for it in specific. (also put in readme)
             index = (index - 1 + apps.length) % apps.length;
         } else {
             index = (index + 1) % apps.length;
