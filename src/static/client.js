@@ -19,6 +19,7 @@ let alf = [] // app load functions
 function onAppLoad(func) {
     alf.push(func)
 }
+onAppLoad(() => {sendToApp("offset", offset); appFrame.contentWindow.focus();})
 window.addEventListener('message', (event) => {
     const rmsg = event.data
     switch (rmsg.cmd) {
@@ -70,7 +71,6 @@ socket.on("changeframe", (frame) => {
     hideApp();
     window.focus();
     setTimeout(() => {document.getElementById("appframe").src = frame;}, 500);
-    onAppLoad(() => {sendToApp("offset", offset); appFrame.contentWindow.focus();})
 })
 socket.on("app_com", (data) => {
     sendToApp("appCom", {app: data[0], event: data[1], data: data[2]})
