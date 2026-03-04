@@ -1,6 +1,4 @@
-import os
 import re
-import time
 from threading import Lock
 import requests
 from flask import render_template, request
@@ -39,7 +37,8 @@ def get_current_lrc() -> list[tuple[int, str]] | list[str] | str:
                 "artist_name": cpbs.artists[0].name,
                 "album_name": cpbs.album.title,
                 "duration": int(cpbs.duration / 1000)
-            }
+            },
+            headers={"User-Agent": USER_AGENT}
         )
         if req.status_code != 200:
             app.logger.debug("Could not find lyrics for '%s': %s", cpbs.title, req.status_code)
