@@ -70,10 +70,7 @@ socket.on("changeframe", (frame) => {
     hideApp();
     window.focus();
     setTimeout(() => {document.getElementById("appframe").src = frame;}, 500);
-    setTimeout(() => {sendToApp("offset", offset);}, 550);
-    setTimeout(() => {sendToApp("offset", offset);}, 600);
-    setTimeout(() => {sendToApp("offset", offset);}, 650);
-    setTimeout(() => {appFrame.contentWindow.focus();}, 1100);
+    onAppLoad(() => {sendToApp("offset", offset); appFrame.contentWindow.focus();})
 })
 socket.on("app_com", (data) => {
     sendToApp("appCom", {app: data[0], event: data[1], data: data[2]})
