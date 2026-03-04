@@ -458,12 +458,6 @@ def app_list():
         'hidden': app.hidden
     } for app in apps.values()}
 
-@app.route("/socket.io.min.js")
-def socketio_js_route():
-    res = make_response(socketio_js)
-    res.headers["Content-Type"] = "application/javascript"
-    return res
-
 # Socket
 @socket.on("connect")
 def client_connect(*args, **kwargs): #pylint: disable=unused-argument
@@ -569,13 +563,6 @@ if __name__ == "__main__":
                 print("Invalid command:", sys.argv[1])
                 sys.exit(1)
         sys.exit(0)
-
-    # Cache the socketIO script.
-    logger.info("Downloading socketIO js file")
-    socketio_js = requests.get("https://cdn.socket.io/4.8.1/socket.io.min.js").text
-    # Make sure this socketio version has not been compromised
-    if sha256(socketio_js.encode("UTF-8")).hexdigest() != "b0e735814f8dcfecd6cdb8a7ce95a297a7e1e5f2727a29e6f5901801d52fa0c5":
-        raise RuntimeError("Failed to download the socketio 4.8.1 js file (hash mismatch).")
 
     # Load apps
     for modapp in os.listdir("apps"):
