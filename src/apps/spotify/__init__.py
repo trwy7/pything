@@ -149,7 +149,11 @@ def music_thread():
         time.sleep(2)
         if not app.settings['enabled'].get_value(): # type: ignore
             continue
-        rdata = get_endpoint("/v1/me/player")
+        try:
+            rdata = get_endpoint("/v1/me/player")
+        except Exception as e:
+            app.logger.error("Error fetching data: %s", str(e))
+            continue
         if rdata in (None, False):
             continue
         if rdata.status_code == 204:
