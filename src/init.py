@@ -15,10 +15,8 @@ import zipfile
 import urllib.request
 import logging
 import threading
-from hashlib import sha256
 from typing import Any, Generator
 from collections.abc import Callable
-import requests
 from flask import Flask, Blueprint, make_response, request, render_template, redirect
 from flask_socketio import SocketIO
 from jinja2 import ChoiceLoader, FileSystemLoader
