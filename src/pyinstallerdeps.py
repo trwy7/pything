@@ -9,3 +9,9 @@ import numpy
 from PIL import Image
 from sklearn.cluster import KMeans
 import colorsys
+import platform
+import pathlib
+import tempfile
+import shutil
+import zipfile
+import urllib.request
