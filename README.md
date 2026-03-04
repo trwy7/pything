@@ -76,6 +76,9 @@ All apps can store data in the form of settings, you can access any visible sett
 - Customizer
     - An app that provides custom colors to the UI
     - Takes broadcasts from other apps so any app can set the accent color
+- `device-carthing`
+    - Sets up any connected Car Things
+    - Prompts to download ADB if it is not already installed.
 
 </details>
 
