@@ -11,7 +11,7 @@ app = App("Lyrics", [])
 USER_AGENT = "PYThing Lyrics (https://github.com/trwy7/pything)"
 current_lrc: tuple[str, list[tuple[int, str]]] | tuple[str, list[str]] | tuple[str, str] = ("", "")
 get_lrc_lock = Lock()
-bpre = re.compile(r"\[(?P<min>[0-9]{1,2}):(?P<sec>[0-9]{1,2}).(?P<ms>[0-9]{1,2})\](?P<line>.*)")
+bpre = re.compile(r"\[(?P<min>[0-9]{1,2}):(?P<sec>[0-9]{1,2})\.(?P<ms>[0-9]{2,3})\](?P<line>.*)")
 
 @app.blueprint.route("/launch")
 def launch():
@@ -83,10 +83,11 @@ def parse_lrc(lrc: list[str]) -> list[tuple[int, str]]:
     for line in lrc:
         if line.strip() == '':
             continue
-        res = re.fullmatch(bpre, line)
+        res = re.fullmatch(bpre, line.strip())
         if res == None:
             app.logger.warning("Could not match line: %s", line)
             continue
-        ms = ((60 * int(res.group("min"))) + int(res.group("sec"))) * 1000 + int(res.group("ms")) * 10
+        tms = res.group("ms")
+        ms = ((60 * int(res.group("min"))) + int(res.group("sec"))) * 1000 + int(tms) * (10 if len(tms) == 2 else 1)
         nlrc.append((ms, res.group("line").strip()))
     return nlrc
