@@ -145,7 +145,7 @@ Building pything with your modifications can be done by either running `build.sh
       <h2>🚧 Making a client</h2>
    </summary>
 
-If you want to make hardware to be used with PYThing, there are some basic rules to follow. It should boot to a chromium webview (Should be v70 or higher if possible). The hardware buttons of the Car Thing are shown below, apps may rely on these for functionality.
+If you want to make hardware to be used with PYThing, there are some basic rules to follow. The hardware buttons of the Car Thing are shown below, apps may rely on these for functionality.
 - Menu button (Key M)
     - Required
 - Scroll wheel (Horizontal scroll, scroll right on clockwise)
@@ -153,4 +153,5 @@ If you want to make hardware to be used with PYThing, there are some basic rules
     - On the Car Thing, it is placed on the scroll wheel 
 - Back key (Key Backspace)
 - Button row (Numbers 1-4)
+The device should boot to a chromium webview (Should be v70 or higher if possible), and when ready, load the page `http://localhost:5192/client?device=<id>`, feel free to make the ID whatever you want. You may check if the server is ready by pinging `http://localhost:5192/isready`, and loading when it is.
 </details>
