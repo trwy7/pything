@@ -70,8 +70,10 @@ All apps can store data in the form of settings, you can access any visible sett
 - Spotify
     - A music provider app, takes data from spotify. Requires spotify premium.
     - Does not have a UI
+    - Because it relies on the Spotify API, song changes will take ~2-4 seconds to show up, sometimes longer.
 - Lyrics
     - An app that takes the data from the music provider, and gets the lyrics for the current song.
+    - Uses LRCLIB and only requests lyrics when the app is open on at least one device
 - Customizer
     - An app that provides custom colors to the UI
     - Takes broadcasts from other apps so any app can set the accent color
