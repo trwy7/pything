@@ -7,7 +7,7 @@ PYThing is a python version of [DeskThing](https://github.com/ItsRiprod/DeskThin
 - Automatic carthing connection
 - Easy setup
 - Light on the client
-- Client does not need internet (the host does)
+- No internet is required, unless an app needs it.
 - Very modular, all features that are not important to the core are within apps that can be removed/replaced easily
 
 <details>
