@@ -18,6 +18,7 @@ app = App("Spotify", [
     DataSetting("access_token", {"token": "", "expiry": datetime.now()}),
     DataSetting("refresh_token", "")
 ])
+USER_AGENT = "PYThing Spotify Provider (https://github.com/trwy7/pything)"
 art_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache", "art")
 art_lock = threading.Lock()
 downloading: list[str] = []
@@ -35,7 +36,7 @@ def request_new_token():
     app.logger.debug("Requesting new token")
     resp = requests.post(
         "https://accounts.spotify.com/api/token",
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        headers={"Content-Type": "application/x-www-form-urlencoded", "User-Agent": USER_AGENT},
         auth=requests.auth.HTTPBasicAuth(app.settings['client_id'].get_value(), app.settings['client_secret'].get_value()), # type: ignore
         data={
             "grant_type": "refresh_token",
@@ -69,7 +70,7 @@ def get_endpoint(endpoint: str):
     if not app.settings['access_token'].get_value()['token']: # type: ignore
         return False
     return requests.get("https://api.spotify.com" + endpoint,
-        headers={"Authorization": f"Bearer {app.settings['access_token'].get_value()['token']}"} # type: ignore
+        headers={"Authorization": f"Bearer {app.settings['access_token'].get_value()['token']}", "User-Agent": USER_AGENT} # type: ignore
     )
 
 @app.on_setting_update
@@ -122,7 +123,7 @@ def callback():
 
     resp = requests.post(
         "https://accounts.spotify.com/api/token",
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        headers={"Content-Type": "application/x-www-form-urlencoded", "User-Agent": USER_AGENT},
         auth=requests.auth.HTTPBasicAuth(app.settings['client_id'].get_value(), app.settings['client_secret'].get_value()), # type: ignore
         data={
             "grant_type": "authorization_code",
