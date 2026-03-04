@@ -1,4 +1,4 @@
-const carthing = new URLSearchParams(window.location.search).has("carthing");
+const isHardware = new URLSearchParams(window.location.search).has("device");
 const socket = io();
 const appFrame = document.getElementById("appframe")
 function hideApp() {
@@ -78,7 +78,7 @@ socket.on("changeframe", (frame) => {
 socket.on("app_com", (data) => {
     sendToApp("appCom", {app: data[0], event: data[1], data: data[2]})
 })
-if (carthing) {
+if (isHardware) {
     document.body.classList.add("round")
 }
 let ctime = null

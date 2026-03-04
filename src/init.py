@@ -167,7 +167,7 @@ def inject_thread(loop=True):
                 continue
             ct_connect = False
             run_adb_cmd(serial, ['reverse', 'tcp:5192', 'tcp:5192'])
-            if os.popen(f"adb -s {serial} shell '[ -f /usr/share/qt-superbird-app/webapp/pythingclient1.txt ] && echo exists'").read().strip() == "exists":
+            if os.popen(f"adb -s {serial} shell '[ -f /usr/share/qt-superbird-app/webapp/pythingclient2.txt ] && echo exists'").read().strip() == "exists":
                 logger.debug("No need to repush webapp for %s", serial)
                 serial_cache[serial][1] = True
                 continue
