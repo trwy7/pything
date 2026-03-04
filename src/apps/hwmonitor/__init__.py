@@ -31,7 +31,7 @@ def send_stats_thread():
             continue
         app.logger.debug("Updating hardware stats")
         ram = psutil.virtual_memory()
-        gib = app.settings['gib'].get_value() # type: ignore
+        gib = app.settings['gib'].get_value()
         onet = psutil.net_io_counters()
         net_td = onet.bytes_recv
         net_tu = onet.bytes_sent

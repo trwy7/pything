@@ -201,67 +201,41 @@ class Setting:
         if self.app is None:
             raise ValueError("Setting must be added to an app")
         return config[self.app.id][self.id]
-
-class StringSetting(Setting):
-    def __init__(self, id: str, display_name: str, default: str, hidden: bool=False):
-        super().__init__(id, display_name, default, "string", hidden)
-    def set_value(self, value: str):
-        if self.app is None:
-            raise ValueError("Setting must be added to an app before setting a value")
-        if not isinstance(value, str):
-            raise ValueError("Value must be a string")
-        config[self.app.id][self.id] = value
-        save_config()
-
-class BooleanSetting(Setting):
-    def __init__(self, id: str, display_name: str, default: bool, hidden: bool=False):
-        super().__init__(id, display_name, default, "bool", hidden)
-    def set_value(self, value: bool):
-        if self.app is None:
-            raise ValueError("Setting must be added to an app before setting a value")
-        if not isinstance(value, bool):
-            raise ValueError("Value must be a boolean")
-        config[self.app.id][self.id] = value
-        save_config()
-
-class FloatSetting(Setting):
-    def __init__(self, id: str, display_name: str, default: float, hidden: bool=False):
-        super().__init__(id, display_name, default, "float", hidden)
-    def set_value(self, value: float):
-        if self.app is None:
-            raise ValueError("Setting must be added to an app before setting a value")
-        if isinstance(value, int):
-            value = float(value)
-        if not isinstance(value, float):
-            raise ValueError("Value must be a float")
-        config[self.app.id][self.id] = value
-        save_config()
-
-class IntegerSetting(Setting):
-    def __init__(self, id: str, display_name: str, default: int, hidden: bool=False):
-        super().__init__(id, display_name, default, "int", hidden)
-    def set_value(self, value: int):
-        if self.app is None:
-            raise ValueError("Setting must be added to an app before setting a value")
-        if not isinstance(value, int):
-            raise ValueError("Value must be a integer")
-        config[self.app.id][self.id] = value
-        save_config()
-
-class DataSetting(Setting):
-    def __init__(self, id: str, default: Any):
-        super().__init__(id, "", default, "data", True)
     def set_value(self, value: Any):
         if self.app is None:
             raise ValueError("Setting must be added to an app before setting a value")
         config[self.app.id][self.id] = value
         save_config()
 
+class StringSetting(Setting):
+    def __init__(self, id: str, display_name: str, default: str, hidden: bool=False):
+        super().__init__(id, display_name, default, "string", hidden)
+
+class BooleanSetting(Setting):
+    def __init__(self, id: str, display_name: str, default: bool, hidden: bool=False):
+        super().__init__(id, display_name, default, "bool", hidden)
+
+class FloatSetting(Setting):
+    def __init__(self, id: str, display_name: str, default: float, hidden: bool=False):
+        super().__init__(id, display_name, default, "float", hidden)
+
+class IntegerSetting(Setting):
+    def __init__(self, id: str, display_name: str, default: int, hidden: bool=False):
+        super().__init__(id, display_name, default, "int", hidden)
+
+class DataSetting(Setting):
+    def __init__(self, id: str, default: Any):
+        super().__init__(id, "", default, "data", True)
+
 class ElementSetting:
     def __init__(self, id: str, type: str, hidden: bool=False):
         self.type = type
         self.id = id
         self.hidden = hidden
+    def get_value(self):
+        raise NotImplementedError("ElementSettings cannot store data, but get_value was called.")
+    def set_value(self, value: Any):
+        raise NotImplementedError("ElementSettings cannot store data, but set_value was called.")
 
 class LinkSetting(ElementSetting):
     def __init__(self, id: str, label: str, link: str, hidden: bool=False):
@@ -433,7 +407,7 @@ def settings_set():
                     case "float":
                         nd = float(nd)
                 logger.debug(f"Setting as {nd}")
-                setting.set_value(nd) # type: ignore
+                setting.set_value(nd)
         for sl in app.settingupdatelisteners:
             sl()
     return redirect("/settings")

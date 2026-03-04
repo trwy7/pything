@@ -4,6 +4,7 @@ import time
 import os
 import urllib.request
 import requests
+import requests.auth
 from flask import request, redirect, send_file, abort
 from apps.music.types import playback, Song, Album, Artist
 from apps.music.utils import get_accent
@@ -29,7 +30,7 @@ if not os.path.isdir(art_dir):
     os.makedirs(art_dir)
 
 def request_new_token():
-    ref = app.settings['refresh_token'].get_value() # type: ignore
+    ref = app.settings['refresh_token'].get_value()
     if not ref:
         app.logger.debug("Something just requested a new access token without having a refresh token")
         return
@@ -37,7 +38,7 @@ def request_new_token():
     resp = requests.post(
         "https://accounts.spotify.com/api/token",
         headers={"Content-Type": "application/x-www-form-urlencoded", "User-Agent": USER_AGENT},
-        auth=requests.auth.HTTPBasicAuth(app.settings['client_id'].get_value(), app.settings['client_secret'].get_value()), # type: ignore
+        auth=requests.auth.HTTPBasicAuth(app.settings['client_id'].get_value(), app.settings['client_secret'].get_value()),
         data={
             "grant_type": "refresh_token",
             "refresh_token": ref
@@ -50,32 +51,32 @@ def request_new_token():
     
     data = resp.json()
 
-    app.settings['access_token'].set_value({ # type: ignore
+    app.settings['access_token'].set_value({
         "token": data['access_token'],
         "expiry": datetime.now() + timedelta(seconds=data['expires_in'] - 5)
     })
     if 'refresh_token' in data and data['refresh_token']:
-        app.settings['refresh_token'].set_value(data['refresh_token']) # type: ignore
+        app.settings['refresh_token'].set_value(data['refresh_token'])
 
     return True
 
 def token_expired():
-    return datetime.now() > app.settings['access_token'].get_value()['expiry'] # type: ignore
+    return datetime.now() > app.settings['access_token'].get_value()['expiry']
 
 def get_endpoint(endpoint: str):
     if token_expired():
         rs = request_new_token()
         if not rs:
             return rs
-    if not app.settings['access_token'].get_value()['token']: # type: ignore
+    if not app.settings['access_token'].get_value()['token']:
         return False
     return requests.get("https://api.spotify.com" + endpoint,
-        headers={"Authorization": f"Bearer {app.settings['access_token'].get_value()['token']}", "User-Agent": USER_AGENT} # type: ignore
+        headers={"Authorization": f"Bearer {app.settings['access_token'].get_value()['token']}", "User-Agent": USER_AGENT}
     )
 
 @app.on_setting_update
 def update_auth_url():
-    if (not app.settings['client_id'].get_value()) or (not app.settings['client_secret'].get_value()): # type: ignore
+    if (not app.settings['client_id'].get_value()) or (not app.settings['client_secret'].get_value()):
         app.logger.debug("Hiding auth link")
         app.settings["auth"].hidden = True
         return
@@ -114,7 +115,7 @@ update_auth_url()
 
 @app.blueprint.route("/callback")
 def callback():
-    if (not app.settings['client_id'].get_value()) or (not app.settings['client_secret'].get_value()): # type: ignore
+    if (not app.settings['client_id'].get_value()) or (not app.settings['client_secret'].get_value()):
         return "You have to add a client ID and secret first."
     if 'error' in request.args:
         return "Error: " + request.args['error']
@@ -124,7 +125,7 @@ def callback():
     resp = requests.post(
         "https://accounts.spotify.com/api/token",
         headers={"Content-Type": "application/x-www-form-urlencoded", "User-Agent": USER_AGENT},
-        auth=requests.auth.HTTPBasicAuth(app.settings['client_id'].get_value(), app.settings['client_secret'].get_value()), # type: ignore
+        auth=requests.auth.HTTPBasicAuth(app.settings['client_id'].get_value(), app.settings['client_secret'].get_value()),
         data={
             "grant_type": "authorization_code",
             "code": request.args['code'],
@@ -137,18 +138,18 @@ def callback():
     
     data = resp.json()
 
-    app.settings['access_token'].set_value({ # type: ignore
+    app.settings['access_token'].set_value({
         "token": data['access_token'],
         "expiry": datetime.now() + timedelta(seconds=data['expires_in'] - 5)
     })
-    app.settings['refresh_token'].set_value(data['refresh_token']) # type: ignore
+    app.settings['refresh_token'].set_value(data['refresh_token'])
 
     return redirect("/settings")
 
 def music_thread():
     while True:
         time.sleep(2)
-        if not app.settings['enabled'].get_value(): # type: ignore
+        if not app.settings['enabled'].get_value():
             continue
         try:
             rdata = get_endpoint("/v1/me/player")

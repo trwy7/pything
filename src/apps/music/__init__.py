@@ -27,7 +27,7 @@ def playback_listener():
         ((playback.position / playback.song.duration) * 100) if playback.song and playback.position else None,
         playback.playing
     ])
-    if playback.song and app.settings['accent'].get_value(): # type: ignore
+    if playback.song and app.settings['accent'].get_value():
         app.broadcast("set_accent", playback.song.album.accent)
 
 @app.blueprint.route("/launch")
