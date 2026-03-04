@@ -10,8 +10,18 @@ html, body {
     margin: 0;
     padding: 0;
 }
+body {
+    background: linear-gradient(350deg, #272727, #1f1f1f);
+}
 body.round {
     clip-path: inset(0 round 20px);
+}
+#appframe, body {
+    width: 100%;
+    height: 100%;
+}
+#appframe {
+    background: transparent;
 }
 #status {
     position: absolute;
@@ -64,9 +74,4 @@ body.round {
     100% {
         transform: translateY(0);
     }
-}
-#appframe, body {
-    width: 100%;
-    height: 100%;
-    background-color: hsl(0, 0%, 24%);
 }
