@@ -37,6 +37,8 @@ body.round {
     font-size: 2em;
     border-radius: 15px;
     box-shadow: rgb(27, 27, 27) 0px 0px 5px;
+    background: linear-gradient(75deg, hsl(var(--custom-hue, 10), 100%, 30%), hsl(3, 45%, 48%));
+    border: 1px solid hsl(var(--custom-hue, 10), 50%, 40%);
     pointer-events: none;
 }
 #loadanim {

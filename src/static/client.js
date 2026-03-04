@@ -48,8 +48,6 @@ socket.on("connect", () => {
 socket.on("disconnect", () => {
     socket.disconnect();
     window.focus();
-    document.getElementById("status").innerText = "Disconnected";
-    document.getElementById("status").style.backgroundColor = "red";
     document.getElementById("status").style.display = "block";
     x = setInterval(
         function() {
