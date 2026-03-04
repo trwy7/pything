@@ -281,26 +281,6 @@ def settings_set():
             sl()
     return redirect("/settings")
 
-
-@app.route("/clients.json")
-def client_list():
-    return {sid: {
-        'app': d.app
-    } for sid, d in clients.items()}
-
-@app.route("/apps.json")
-def app_list():
-    return {app.id: {
-        'display_name': app.display_name,
-        'settings': {setting.id: {
-            'display_name': setting.display_name,
-            'default': setting.default,
-            'value': setting.get_value(),
-            'hidden': setting.hidden
-        } for setting in app.settings.values() if isinstance(setting, Setting) },
-        'hidden': app.hidden
-    } for app in apps.values()}
-
 # Socket
 @socket.on("connect")
 def client_connect(*args, **kwargs): #pylint: disable=unused-argument
