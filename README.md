@@ -5,6 +5,7 @@ PYThing is a python version of [DeskThing](https://github.com/ItsRiprod/DeskThin
 ## Features
 
 - Automatic carthing connection
+- Many different clients can be used, as long as they provide chromium
 - Easy setup
 - Light on the client
 - No internet is required, unless an app needs it.
@@ -40,9 +41,7 @@ All app settings can be configured from http://127.0.0.1:5192/settings. Some app
       <h2>❓ Troubleshooting</h2>
    </summary>
 
-## Troubleshooting
-
-### My Car Thing won't connect
+## My Car Thing won't connect
 
 Make sure you are running the custom Thing Labs firmware, if the device is not detected by the script, make sure the device shows up in ADB. You may need udev rules on linux. If it is not detected when your computer turns on, it may need to be manually unplugged and replugged.
 
@@ -139,4 +138,19 @@ To make more complex apps, look around at the built in apps to see what you can 
    </summary>
 
 Building pything with your modifications can be done by either running `build.sh` (linux, from within your virtual environment) or `build.bat` (windows). The result should be in `dist`. Keep in mind that apps must be in `/src/apps` to be included in the build.
+</details>
+
+<details>
+   <summary>
+      <h2>🚧 Making a client</h2>
+   </summary>
+
+If you want to make hardware to be used with PYThing, there are some basic rules to follow. It should boot to a chromium webview (Should be v70 or higher if possible). The hardware buttons of the Car Thing are shown below, apps may rely on these for functionality.
+- Menu button (Key M)
+    - Required
+- Scroll wheel (Horizontal scroll, scroll right on clockwise)
+- Select (Key Enter)
+    - On the Car Thing, it is placed on the scroll wheel 
+- Back key (Key Backspace)
+- Button row (Numbers 1-4)
 </details>
