@@ -287,12 +287,8 @@ class App:
         for setting in settings:
             if not isinstance(setting, Setting):
                 if isinstance(setting, ElementSetting):
-                    if type(setting) == ElementSetting:
-                        raise ValueError("ElementSetting must be a subclass of ElementSetting, not ElementSetting itself")
                     continue
-                raise ValueError("Settings must be instances of the Setting class")
-            if type(setting) == Setting:
-                raise ValueError("Setting must be a subclass of Setting, not Setting itself")
+                raise ValueError("Settings must be instances of the Setting or ElementSetting class")
             setting.app = self
             if not setting.id in config[aid]:
                 schange = True
