@@ -65,7 +65,6 @@ class Setting:
     """
     A setting is a configuration option for an app. Do not call this directly.
     """
-    # TODO: there are a lot of type errors coming from these being inconsistent, maybe find a way to fix them?
     def __init__(self, id: str, display_name: str, default: Any, type: str, hidden: bool=False):
         self.id = id
         self.display_name = display_name
@@ -129,7 +128,7 @@ class LabelSetting(ElementSetting):
 broadcast_listeners: dict[str, list[Callable]] = {}
 
 class App:
-    # TODO: docstring these functions
+    # TODO: docstring these functions to make it easier to build apps
     """
     Represents a pything app, use this class to create your app, and specify settings
     """
