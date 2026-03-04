@@ -180,7 +180,7 @@ def music_thread():
                 data['item']['album']['id'],
                 data['item']['album']['name'],
                 [Artist('spotify', a['id'], a['name']) for a in data['item']['album']['artists']],
-                get_art(data['item']['album']['images'][1]['url'], data['item']['album']['id']) if len(data['item']['album']['images']) > 0 else None,
+                get_art(data['item']['album']['images'][1 if len(data['item']['album']['images']) > 1 else 0]['url'], data['item']['album']['id']) if len(data['item']['album']['images']) > 0 else None,
                 accent_cache.get(data['item']['album']['id'])
             ),
             [Artist('spotify', a['id'], a['name']) for a in data['item']['artists']],
