@@ -17,7 +17,7 @@ PYThing is a python version of [DeskThing](https://github.com/ItsRiprod/DeskThin
 
 ### Prebuilt
 
-Go to [releases](https://github.com/trwy7/pything/releases), and download the release for your device, and run it. On linux, you may need to run `chmod +x pything-linux` before running.
+Go to [releases](https://github.com/trwy7/pything/releases), and download the release for your device, and run it. On linux, you may need to run `chmod +x pything-linux` before running. If you are using an ARM device, or a mac, you will need to run from source.
 
 ### From source
 
