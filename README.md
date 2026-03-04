@@ -129,7 +129,7 @@ If you use this code, you should have a `/apps/<id>/pages/settings.html` with so
 </script>
 {% endblock %}
 ```
-To make more complex apps, look around at the built in apps to see what you can do! Even better, try removing some built in apps (Just delete the folder, no config needed) and see what stops working.
+To make more complex apps, look around at the built in apps to see what you can do! While there are no docs yet, PYThing is made to be easy to extend, and part of the experience is making your own app!
 
 </details>
 
