@@ -18,18 +18,19 @@
         padding: 0 100px;
     }
     div#apps > div {
-        border: solid 2px rgb(223, 223, 223);
         border-radius: 10px;
         padding: 15px;
-        background-color: #2223;
+        background-color: #ccc3;
+        border: solid 1px #fff6;
+        box-shadow: 0px 0px 8px #fff2;
         cursor: pointer;
-        transition: all 50ms;
-        box-shadow: 0px 0px 5px #222;
+        transition: all 500ms;
     }
     div#apps > div.selected {
-        border: solid 2px hsl(var(--custom-hue, 158), 100%, 78%);
+        border: solid 1px hsl(var(--custom-hue, 158), 100%, 78%);
+        outline: solid 1px hsl(var(--custom-hue, 158), 100%, 78%);
         box-shadow: 0px 0px 8px hsl(var(--custom-hue, 158), 100%, 78%);
-        background-color: hsla(var(--custom-hue, 154), 20%, 30%, 0.6);
+        background-color: hsla(var(--custom-hue, 154), 25%, 50%, 0.6);
     }
     #auto-time {
         position: absolute;
