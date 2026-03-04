@@ -98,6 +98,9 @@ def accent_thread(id: str):
         if id in accent_cache:
             return
         accent_cache[id] = get_accent(os.path.join(art_dir, id + ".jpg"))
+        if playback.song and id == playback.song.album.id:
+            playback.song.album.accent = accent_cache[id]
+            playback.update(playback.song, playback.playing, playback.position)
 
 def download_art(url: str, id: str):
     if id in downloading:
@@ -109,6 +112,9 @@ def download_art(url: str, id: str):
         app.logger.debug("Downloading art for %s...", id)
         urllib.request.urlretrieve(url, os.path.join(art_dir, id + ".jpg"))
         downloading.remove(id) # this should also mean if the download fails, it wont be re-attempted until app restart
+        if playback.song and id == playback.song.album.id:
+            playback.song.album.art = "/apps/spotify/art/" + id + ".jpg"
+            playback.update(playback.song, playback.playing, playback.position)
     accent_thread(id)
 
 update_auth_url()
