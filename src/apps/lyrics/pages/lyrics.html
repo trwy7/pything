@@ -5,6 +5,8 @@
         overflow: hidden;
         text-align: center;
         margin: 0;
+        height: 100%;
+        width: 100%;
     }
     #status {
         font-size: 2em;
@@ -24,11 +26,12 @@
     .lyric {
         transition: font-size 500ms, color 500ms;
         padding-bottom: 10px;
+        color: hsla(var(--custom-hue, 151), 5%, 85%, 0.7);
     }
     .lyric.current {
         font-size: 25px;
         font-weight: 999;
-        color: hsl(var(--custom-hue, 151), 100%, 85%);
+        color: hsla(var(--custom-hue, 151), 100%, 85%, 1);
     }
 </style>
 {% endblock %}
