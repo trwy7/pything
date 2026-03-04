@@ -4,6 +4,7 @@ const appFrame = document.getElementById("appframe")
 function hideApp() {
     document.getElementById("loadanim").classList.remove("load")
     document.getElementById("loadanim").classList.add("reload")
+    document.getElementById("loadanim").innerText = ""
 }
 function unhideApp() {
     if (!socket.connected) {
@@ -41,10 +42,7 @@ window.addEventListener('message', (event) => {
 })
 socket.on("connect", () => {
     console.log("Connected to server");
-    unhideApp(); // This could make it so the dashboard is loaded early on first reload, but it should be fine.
-    setTimeout(() => {
-        document.getElementById("loadanim").innerText = ""
-    }, 500)
+    document.getElementById("appframe").src = "/apps/dashboard/launch";
 });
 socket.on("disconnect", () => {
     socket.disconnect();
