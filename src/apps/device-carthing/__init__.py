@@ -8,9 +8,11 @@ import tempfile
 import shutil
 import zipfile
 import urllib.request
-from init import App
+from init import App, BooleanSetting
 
-app = App("Carthing connector", [])
+app = App("Car Thing connector", [
+    BooleanSetting("adb", "Ask to download ADB", True)
+])
 
 adb = False
 
@@ -28,6 +30,8 @@ def ensure_adb(r=False):
         app.logger.warning("%s exists and does not contain a valid ADB install. Car thing integration will not work until you rename or remove it.", os.path.abspath(os.path.join(pathlib.Path().home(), "platform-tools")))
         return False
     if r:
+        return False
+    if not app.settings['adb'].get_value():
         return False
     res = input("Could not find ADB in your path. ADB is required for Car Thing connection, but is not required otherwise. Would you like to download it automatically [y/N]?")
     if res.lower() == "y":
@@ -51,6 +55,8 @@ def ensure_adb(r=False):
             os.system(f"chmod +x '{os.path.join(pathlib.Path.home(), "platform-tools", "adb")}'")
         app.logger.info("ADB has been downloaded to %s", os.path.abspath(os.path.join(pathlib.Path().home(), "platform-tools")))
         return ensure_adb(r=True)
+    elif res.lower() == "n":
+        app.settings['adb'].set_value(False)
     return False
 
 def run_adb_cmd(serial: str, command: list[str]):
