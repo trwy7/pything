@@ -69,15 +69,15 @@
 {% endblock %}
 {% block script %}
 <script>
-    let index = 0
-    const appList = document.getElementById("apps")
-    const apps = appList.children
+    let index = 0;
+    let sframe = false;
+    let lastapp = document.body;
+    const appList = document.getElementById("apps");
+    const apps = appList.children;
     function updateSelected() {
-        const selected = document.querySelectorAll(".selected");
-        for (let i = 0; i < selected.length; i++) {
-            selected[i].classList.remove('selected');
-        }
+        lastapp.classList.remove('selected');
         apps[index].classList.add('selected');
+        lastapp = apps[index];
     }
     document.addEventListener('keydown', function(event) {
         switch (event.key) {
@@ -95,14 +95,17 @@
         }
     });
     document.addEventListener('wheel', function(event) {
-        if (event.deltaX < 0) {
-            // TODO: Something is going on here and the wheel is being registered twice
-            // Note to future me; find the exact amount the wheel scrolls and check for it in specific. (also put in readme)
+        if (sframe) return;
+        sframe = true;
+        if (event.deltaX == -53) {
             index = (index - 1 + apps.length) % apps.length;
-        } else {
+        } else if (event.deltaX == 53) {
             index = (index + 1) % apps.length;
         }
         updateSelected();
+        setTimeout(() => {
+            sframe = false; // The carthing wheel sometimes triggers twice when rotated once, this should hopefully help it
+        }, 75);
     });
     updateSelected();
 </script>
