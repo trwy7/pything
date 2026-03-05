@@ -205,6 +205,7 @@ class App:
     def broadcast(self, event: str, *args, **kwargs):
         if event not in broadcast_listeners:
             logger.debug("A broadcast to %s was sent by %s, but that event has no listeners", event, self.id)
+            return
         for listener in broadcast_listeners[event]:
             listener(*args, **kwargs)
     def on_setting_update(self, func: Callable):
