@@ -355,6 +355,9 @@ if __name__ == "__main__":
                 raise RuntimeError(f"Custom app '{modapp}' is attempting to overwrite a built in app. Please rename your app directory to avoid conflicts.")
             import_app(os.path.join("customapps", modapp))
 
+    # Sort apps dict
+    apps = dict(sorted(apps.items()))
+
     # Start clock thread
     threading.Thread(target=clock_thread, daemon=True).start()
 
