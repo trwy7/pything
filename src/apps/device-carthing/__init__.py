@@ -29,7 +29,7 @@ def ensure_adb(r=False):
         return False
     if r:
         return False
-    res = input("Could not find ADB in your path. Would you like to download it automatically [y/N]?")
+    res = input("Could not find ADB in your path. ADB is required for Car Thing connection, but is not required otherwise. Would you like to download it automatically [y/N]?")
     if res.lower() == "y":
         system = platform.system().lower()
         urls = {
