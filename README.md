@@ -22,9 +22,11 @@ Go to [releases](https://github.com/trwy7/pything/releases), and download the re
 
 ### From source
 
+You must know the basics of python development, and how to make a virtual environment.
+
 Clone this repo
 
-Install dependencies with `pip install -r requirements.txt`, on linux you may need to make a virtual environment first
+Create a virtual environment named `.venv`, and activate it
 
 Run `python3 src/init.py`
 
