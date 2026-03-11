@@ -1,3 +1,4 @@
+import pip_system_certs.wrapt_requests; pip_system_certs.wrapt_requests.inject_truststore()
 import os
 import sys
 import datetime
