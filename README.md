@@ -13,6 +13,21 @@ PYThing is a python version of [DeskThing](https://github.com/ItsRiprod/DeskThin
 
 <details>
    <summary>
+      <h3>🎥 Demo</h2>
+   </summary>
+
+   It's a little blurry, sorry.
+
+   
+
+https://github.com/user-attachments/assets/195cf5e3-359a-40ab-b324-632c53cb3aad
+
+
+
+</details>
+
+<details>
+   <summary>
       <h2>🏃 Running</h2>
    </summary>
 
