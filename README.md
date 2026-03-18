@@ -11,6 +11,17 @@ PYThing is a python version of [DeskThing](https://github.com/ItsRiprod/DeskThin
 - No internet is required, unless an app needs it.
 - Very modular, all features that are not important to the core are within apps that can be removed/replaced easily
 
+### Optimization
+
+- The client facing html/css/js is written with as little dependencies as possible to save space and load time.
+- With as modular as this app is, any unneeded features can be taken away by removing the app responsible for it.
+- Apps have access to an `app.should_poll()` function, which returns true if any client has the app open. This allows apps to not poll a service when no clients have the app open.
+    - This helps performance and helps prevent rate limits from being hit.
+- All built in apps use a cache when, like the lyrics app, which stores in memory and wipes after a song change, and spotify, that stores until an app restart, or until manually cleared in development.
+    - This saves a lot of data from being re-downloaded constantly, at the cost of extra storage writes.
+- The server only sends data to clients that need the data, by having the server keep track of what app is open, so when an app sends data, it only goes to clients that have the app open.
+    - This saves a lot of bandwidth
+
 <details>
    <summary>
       <h2>🏃 Running</h2>
