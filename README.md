@@ -134,7 +134,7 @@ If you use this code, you should have a `/apps/<id>/pages/settings.html` with so
 {% endblock %}
 {% block content %}
 <!-- Anything visible goes here -->
-<h1 id="auto-time"></h1> <!-- This is automatically filled in with the current time by the app, no javascript needed. -->
+<h1 id="auto-time"></h1> <!-- This is automatically filled in with the current time by the client, no javascript needed. -->
 <span id="appid">This is the {{app.id}} app!</span>
 {% endblock %}
 {% block script %}
