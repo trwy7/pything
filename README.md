@@ -29,7 +29,7 @@ PYThing is a python version of [DeskThing](https://github.com/ItsRiprod/DeskThin
 
 ### Prebuilt
 
-Go to [releases](https://github.com/trwy7/pything/releases), and download the release for your device, and run it. On linux, you may need to run `chmod +x pything-linux` before running. If you are using an ARM device, or a mac, you will need to run from source.
+Go to [releases](https://github.com/trwy7/pything/releases), and download the release for your device, and run it. On linux, you may need to run `chmod +x pything-linux` before running. If you are using an ARM device or a mac, you will need to run from source.
 
 ### From source
 
@@ -39,7 +39,7 @@ Clone this repo
 
 Create a virtual environment named `.venv`, and activate it
 
-Run `python3 src/init.py`
+Run `src/init.py` using python3
 
 ## Usage
 
