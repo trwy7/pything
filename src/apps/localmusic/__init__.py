@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import binascii
+from datetime import datetime, timezone
 import hashlib
 import os
 import shutil
@@ -28,6 +29,7 @@ app = App("Local Music", [
 art_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache", "art")
 os.makedirs(art_dir, exist_ok=True)
 accent_cache: dict[str, int | None] = {}
+windows_position_cache: dict[str, tuple[int, int, float]] = {}
 
 
 def write_art(path: str, data: bytes) -> None:
@@ -123,6 +125,7 @@ def update_playback(track: LocalTrack | None) -> None:
 async def windows_track() -> LocalTrack | None:
     from winsdk.windows.media.control import (  # type: ignore[import-not-found]
         GlobalSystemMediaTransportControlsSessionManager,
+        GlobalSystemMediaTransportControlsSessionPlaybackStatus,
     )
     from winsdk.windows.storage.streams import DataReader  # type: ignore[import-not-found]
 
@@ -134,13 +137,17 @@ async def windows_track() -> LocalTrack | None:
         properties = await session.try_get_media_properties_async()
         if properties.title:
             provider = str(session.source_app_user_model_id or "Unknown")
-            status = str(session.get_playback_info().playback_status)
-            if status.endswith("PLAYING"):
+            status = session.get_playback_info().playback_status
+            if status == GlobalSystemMediaTransportControlsSessionPlaybackStatus.PLAYING:
                 playing_providers.append(provider)
             candidates.append((session, properties, provider, status))
     set_provider_label(playing_providers)
     candidates = [candidate for candidate in candidates if not denied(candidate[2])]
-    selected = next((candidate for candidate in candidates if candidate[3].endswith("PLAYING")), None)
+    selected = next(
+        (candidate for candidate in candidates
+         if candidate[3] == GlobalSystemMediaTransportControlsSessionPlaybackStatus.PLAYING),
+        None,
+    )
     if selected is None and candidates:
         selected = candidates[0]
     if selected is None:
@@ -170,10 +177,36 @@ async def windows_track() -> LocalTrack | None:
         except (OSError, ValueError):
             app.logger.debug("Could not read Windows album art", exc_info=True)
 
+    playback_info = selected.get_playback_info()
+    status = playback_info.playback_status
     timeline = selected.get_timeline_properties()
-    position = int(timeline.position.total_seconds() * 1000)
-    duration = int(timeline.end_time.total_seconds() * 1000)
-    status = str(selected.get_playback_info().playback_status)
+    track_key = provider + ":" + selected_properties.title
+    now_monotonic = time.monotonic()
+    playback_rate = float(getattr(playback_info, "playback_rate", None) or 1.0)
+    if timeline is None:
+        app.logger.debug("Windows media session has no timeline properties")
+        position = 0
+        duration = 0
+    else:
+        position = int(timeline.position.total_seconds() * 1000)
+        duration = int(timeline.end_time.total_seconds() * 1000)
+        if status == GlobalSystemMediaTransportControlsSessionPlaybackStatus.PLAYING:
+            last_updated = timeline.last_updated_time
+            if last_updated.tzinfo is None:
+                last_updated = last_updated.replace(tzinfo=timezone.utc)
+            elapsed = max(0, (datetime.now(timezone.utc) - last_updated).total_seconds())
+            position += int(elapsed * playback_rate * 1000)
+        position = min(position, duration) if duration else position
+    reported_position = position
+    cached_position = windows_position_cache.get(track_key)
+    if status == GlobalSystemMediaTransportControlsSessionPlaybackStatus.PLAYING and cached_position and reported_position == cached_position[0]:
+        position = max(position, cached_position[1] + int((now_monotonic - cached_position[2]) * playback_rate * 1000))
+    if status == GlobalSystemMediaTransportControlsSessionPlaybackStatus.PLAYING:
+        windows_position_cache[track_key] = (reported_position, position, now_monotonic)
+    else:
+        windows_position_cache.pop(track_key, None)
+    position = min(position, duration) if duration else position
+    app.logger.debug("Windows media session: provider=%s, title=%s, artist=%s, album=%s, position=%d, duration=%d", provider, selected_properties.title, selected_properties.artist, selected_properties.album_title, position, duration)
     return LocalTrack(
         provider,
         str(selected_properties.track_number) + ":" + selected_properties.title,
@@ -182,7 +215,7 @@ async def windows_track() -> LocalTrack | None:
         selected_properties.album_title or "Unknown album",
         duration,
         position,
-        status.endswith("PLAYING"),
+        status == GlobalSystemMediaTransportControlsSessionPlaybackStatus.PLAYING,
         art_url,
     )
 
@@ -192,6 +225,7 @@ async def linux_track(bus) -> LocalTrack | None:
 
     names = await bus.call(Message(destination="org.freedesktop.DBus", path="/org/freedesktop/DBus", interface="org.freedesktop.DBus", member="ListNames"))
     services = [name for name in names.body[0] if name.startswith("org.mpris.MediaPlayer2.")]
+    app.logger.debug("Found MPRIS services: %s", services)
     candidates = []
     playing_providers = []
     for service in services:
