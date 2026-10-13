@@ -227,29 +227,6 @@ apps: dict[str, App] = {}
 def get_apps():
     return apps
 
-def get_apps_by_category(category: str):
-    return {k: v for k, v in apps.items() if v.category == category}
-
-def get_categories():
-    cats = set()
-    for app in apps.values():
-        if app.category is not None:
-            cats.add(app.category)
-    return sorted(cats)
-
-def get_apps_by_category_and_name():
-    result = {}
-    for app in apps.values():
-        if app.category is not None:
-            if app.category not in result:
-                result[app.category] = {}
-            result[app.category][app.id] = app
-    # Sort
-    result = dict(sorted(result.items(), key=lambda x: (x[0] == "uncategorized", x[0])))
-    for category in result:
-        result[category] = dict(sorted(result[category].items(), key=lambda x: x[1].display_name))
-    return result
-
 # Client tracking
 class Client:
     def __init__(self, sid) -> None:
@@ -292,9 +269,25 @@ def main_client():
 
 @app.route("/settings")
 def settings_editor():
+    # sort and hide apps with no visible settings, beware of ai slop
+    sapps: dict[str, list[App]] = {}
+    for app in apps.values():
+        if not any(not s.hidden for s in app.settings.values()):
+            continue
+        if not app.category in sapps:
+            sapps[app.category] = []
+        sapps[app.category].append(app)
+    sapps = {
+        category: sorted(category_apps, key=lambda a: a.display_name)
+        for category, category_apps in sorted(
+            sapps.items(),
+            key=lambda item: (item[0] == "uncategorized", item[0].casefold()),
+        )
+    }
+    # end ai
     return render_template(
         "settings.html",
-        apps=get_apps_by_category_and_name(),
+        apps=sapps,
         readable_categories=READABLE_CATEGORIES,
         custom_hue=config.get("customizer", {}).get("hue", 151),
     )

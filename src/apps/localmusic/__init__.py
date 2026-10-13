@@ -20,7 +20,7 @@ from init import App, BooleanSetting, LabelSetting, StringSetting
 
 app = App("Local Music", [
     BooleanSetting("enabled", "Enabled", False, False),
-    LabelSetting("providers", "Currently playing providers: None"),
+    LabelSetting("providers", "Enable this app to show what apps are currently playing music"),
     StringSetting("deny", "Deny providers (comma separated)", ""),
 ], category="musicprovider")
 

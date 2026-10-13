@@ -128,7 +128,7 @@
     <form id="apps" method="POST">
         {% for category, iapps in apps.items() %}
             <h2>{{readable_categories[category]}}</h2>
-            {% for app in iapps.values() %}
+            {% for app in iapps %}
                 {% if app.settings | length > 0 %}
                 <div id="app-{{app.id}}">
                     <h3>{{app.display_name}}</h3>
