@@ -1,6 +1,6 @@
 # PYThing
 
-PYThing is a python version of [DeskThing](https://github.com/ItsRiprod/DeskThing), designed to be easy to write apps for, and to be light on the client.
+PYThing is a alternative UI for the discontinued Spotify Car Thing to be used at a desk without needing to be tied to a spotify account and phone. Designed to be modular, new apps and even new devices can be supported.
 
 ## Features
 
@@ -13,29 +13,14 @@ PYThing is a python version of [DeskThing](https://github.com/ItsRiprod/DeskThin
 
 ### Optimization
 
-- The client facing html/css/js is written with as little dependencies as possible to save space and load time.
-- With as modular as this app is, any unneeded features can be taken away by removing the app responsible for it.
+- The client facing html is written with as little dependencies as possible to save space and load time, no frameworks are used.
+- With as modular as this app is, any unneeded features can be taken away by removing the app responsible for it, even Car Thing support can be removed if only other clients are being used.
 - Apps have access to an `app.should_poll()` function, which returns true if any client has the app open. This allows apps to not poll a service when no clients have the app open.
     - This helps performance and helps prevent rate limits from being hit.
 - All built in apps use a cache when, like the lyrics app, which stores in memory and wipes after a song change, and spotify, that stores until an app restart, or until manually cleared in development.
     - This saves a lot of data from being re-downloaded constantly, at the cost of extra storage writes.
 - The server only sends data to clients that need the data, by having the server keep track of what app is open, so when an app sends data, it only goes to clients that have the app open.
     - This saves a lot of bandwidth
-
-<details>
-   <summary>
-      <h3>🎥 Demo</h2>
-   </summary>
-
-   It's a little blurry, sorry.
-
-   
-
-https://github.com/user-attachments/assets/195cf5e3-359a-40ab-b324-632c53cb3aad
-
-
-
-</details>
 
 <details>
    <summary>
