@@ -33,19 +33,17 @@ Go to [releases](https://github.com/trwy7/pything/releases), and download the re
 
 ### From source
 
-You must know the basics of python development, and how to make a virtual environment.
+You must know the basics of python development and have [uv](https://docs.astral.sh/uv/getting-started/installation/) installed.
 
 Clone this repo
 
-Create a virtual environment named `.venv`, and activate it
-
-Run `src/init.py` using python3
+Run `uv run src/init.py`
 
 ## Usage
 
 If you have a Car Thing, it should be detected automatically. If you do not, you may visit the web UI from http://127.0.0.1:5192.
 
-All app settings can be configured from http://127.0.0.1:5192/settings. Some apps require this to work.
+All app settings can be configured from http://127.0.0.1:5192/settings.
 
 </details>
 
