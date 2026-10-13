@@ -125,18 +125,27 @@ class LabelSetting(ElementSetting):
 ## Apps
 
 broadcast_listeners: dict[str, list[Callable]] = {}
+READABLE_CATEGORIES = {
+    "core": "Core",
+    "musicprovider": "Music Providers",
+    "device": "Devices",
+    "music": "Music",
+    "system": "System",
+    "uncategorized": "Uncategorized"
+}
 
 class App:
     # TODO: docstring these functions to make it easier to build apps
     """
     Represents a pything app, use this class to create your app, and specify settings
     """
-    def __init__(self, display_name: str, settings: list[Setting | ElementSetting], aid: str | None=None):
+    def __init__(self, display_name: str, settings: list[Setting | ElementSetting], aid: str | None=None, category: str="uncategorized"):
         global apps
         stack = inspect.stack()
         self.dir = os.path.dirname(os.path.abspath(stack[1].filename))
         self.dirname = os.path.basename(self.dir)
         atype = os.path.basename(os.path.dirname(self.dir))
+        self.category = category
         if aid is None:
             aname = os.path.basename(self.dir)
             aid = aname
@@ -218,6 +227,29 @@ apps: dict[str, App] = {}
 def get_apps():
     return apps
 
+def get_apps_by_category(category: str):
+    return {k: v for k, v in apps.items() if v.category == category}
+
+def get_categories():
+    cats = set()
+    for app in apps.values():
+        if app.category is not None:
+            cats.add(app.category)
+    return sorted(cats)
+
+def get_apps_by_category_and_name():
+    result = {}
+    for app in apps.values():
+        if app.category is not None:
+            if app.category not in result:
+                result[app.category] = {}
+            result[app.category][app.id] = app
+    # Sort
+    result = dict(sorted(result.items(), key=lambda x: (x[0] == "uncategorized", x[0])))
+    for category in result:
+        result[category] = dict(sorted(result[category].items(), key=lambda x: x[1].display_name))
+    return result
+
 # Client tracking
 class Client:
     def __init__(self, sid) -> None:
@@ -260,7 +292,7 @@ def main_client():
 
 @app.route("/settings")
 def settings_editor():
-    return render_template("settings.html")
+    return render_template("settings.html", apps=get_apps_by_category_and_name(), readable_categories=READABLE_CATEGORIES)
 
 @app.route("/settings", methods=['POST'])
 def settings_set():

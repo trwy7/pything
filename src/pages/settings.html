@@ -17,38 +17,41 @@
 </head>
 <body>
     <form id="apps" method="POST">
-        {% for app in apps.values() %}
-            {% if app.settings | length > 0 %}
-            <div id="app-{{app.id}}">
-                <h1>{{app.display_name}}</h1>
-                <div class="settings">
-                    {% for setting in app.settings.values() %}
-                        {% if not setting.hidden %}
-                        <div id="setting-{{app.id}}-{{setting.id}}" class="setting">
-                            {% if setting.type == "string" %}
-                                <span class="settinglabel">{{setting.display_name}}</span>
-                                <input type="text" name="{{app.id}}-{{setting.id}}" value="{{setting.get_value()}}">
-                            {% elif setting.type == "bool" %}
-                                <span class="settinglabel">{{setting.display_name}}</span>
-                                <input type="checkbox" name="{{app.id}}-{{setting.id}}"{% if setting.get_value() %} checked{% endif %}>
-                                <input type="hidden" name="{{app.id}}-{{setting.id}}" value="off">
-                            {% elif setting.type == "float" %}
-                                <span class="settinglabel">{{setting.display_name}}</span>
-                                <input type="number" name="{{app.id}}-{{setting.id}}" pattern="[0-9]*[.,]?[0-9]*" step="0.01" value="{{setting.get_value()}}">
-                            {% elif setting.type == "int" %}
-                                <span class="settinglabel">{{setting.display_name}}</span>
-                                <input type="number" name="{{app.id}}-{{setting.id}}" pattern="[0-9]*" onkeypress="return event.charCode >= 48 && event.charCode <= 57" value="{{setting.get_value()}}">
-                            {% elif setting.type == "link" %}
-                                <a class="link" href="{{setting.link}}">{{setting.label}}</a>
-                            {% elif setting.type == "label" %}
-                                <span class="settinglabel">{{setting.label}}</span>
+        {% for category, iapps in apps.items() %}
+            <h1>{{readable_categories[category]}}</h1>
+            {% for app in iapps.values() %}
+                {% if app.settings | length > 0 %}
+                <div id="app-{{app.id}}">
+                    <h2>{{app.display_name}}</h1>
+                    <div class="settings">
+                        {% for setting in app.settings.values() %}
+                            {% if not setting.hidden %}
+                            <div id="setting-{{app.id}}-{{setting.id}}" class="setting">
+                                {% if setting.type == "string" %}
+                                    <span class="settinglabel">{{setting.display_name}}</span>
+                                    <input type="text" name="{{app.id}}-{{setting.id}}" value="{{setting.get_value()}}">
+                                {% elif setting.type == "bool" %}
+                                    <span class="settinglabel">{{setting.display_name}}</span>
+                                    <input type="checkbox" name="{{app.id}}-{{setting.id}}"{% if setting.get_value() %} checked{% endif %}>
+                                    <input type="hidden" name="{{app.id}}-{{setting.id}}" value="off">
+                                {% elif setting.type == "float" %}
+                                    <span class="settinglabel">{{setting.display_name}}</span>
+                                    <input type="number" name="{{app.id}}-{{setting.id}}" pattern="[0-9]*[.,]?[0-9]*" step="0.01" value="{{setting.get_value()}}">
+                                {% elif setting.type == "int" %}
+                                    <span class="settinglabel">{{setting.display_name}}</span>
+                                    <input type="number" name="{{app.id}}-{{setting.id}}" pattern="[0-9]*" onkeypress="return event.charCode >= 48 && event.charCode <= 57" value="{{setting.get_value()}}">
+                                {% elif setting.type == "link" %}
+                                    <a class="link" href="{{setting.link}}">{{setting.label}}</a>
+                                {% elif setting.type == "label" %}
+                                    <span class="settinglabel">{{setting.label}}</span>
+                                {% endif %}
+                            </div>
                             {% endif %}
-                        </div>
-                        {% endif %}
-                    {% endfor %}
+                        {% endfor %}
+                    </div>
                 </div>
-            </div>
-            {% endif %}
+                {% endif %}
+            {% endfor %}
         {% endfor %}
         <input type="submit" value="Save">
     </form>

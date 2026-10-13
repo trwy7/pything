@@ -5,7 +5,7 @@ from .types import playback
 
 app = App("Music", [
     BooleanSetting("accent", "Set accent color to art accent", True)
-])
+], category="music")
 
 @app.on("get")
 @playback.on_update

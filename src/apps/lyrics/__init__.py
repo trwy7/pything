@@ -5,7 +5,7 @@ from flask import render_template, request
 from init import App
 from apps.music.types import playback
 
-app = App("Lyrics", [])
+app = App("Lyrics", [], category="music")
 USER_AGENT = "PYThing Lyrics (https://github.com/trwy7/pything)"
 current_lrc: tuple[str, list[tuple[int, str]]] | tuple[str, list[str]] | tuple[str, str] = ("", "")
 get_lrc_lock = Lock()

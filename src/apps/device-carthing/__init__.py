@@ -12,7 +12,7 @@ from init import App, BooleanSetting
 
 app = App("Car Thing connector", [
     BooleanSetting("adb", "Ask to download ADB", True)
-])
+], category="device")
 
 adb = False
 

@@ -7,7 +7,7 @@ from init import App, BooleanSetting
 
 app = App("System", [
     BooleanSetting("gib", "Values in GiB", False)
-])
+], category="system")
 
 onet = psutil.net_io_counters()
 net_ld = onet.bytes_recv

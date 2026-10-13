@@ -22,7 +22,7 @@ app = App("Local Music", [
     BooleanSetting("enabled", "Enabled", False, False),
     LabelSetting("providers", "Currently playing providers: None"),
     StringSetting("deny", "Deny providers (comma separated)", ""),
-])
+], category="musicprovider")
 
 art_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache", "art")
 os.makedirs(art_dir, exist_ok=True)

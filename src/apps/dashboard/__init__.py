@@ -3,7 +3,7 @@ from init import App, get_apps, BooleanSetting
 
 app = App("Dashboard", [
     BooleanSetting('warn', "Show settings hint", True)
-])
+], category="core")
 
 @app.blueprint.route("/launch")
 def launch():
