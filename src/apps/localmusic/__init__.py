@@ -10,6 +10,7 @@ import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
+from pathlib import Path
 from urllib.parse import unquote, unquote_to_bytes, urlparse
 
 from flask import abort, send_file
@@ -73,6 +74,8 @@ def get_art(track: LocalTrack) -> str | None:
                 source = unquote(parsed.path)
                 if sys.platform == "win32" and source.startswith("/") and len(source) > 2 and source[2] == ":":
                     source = source[1:]
+                if not source or not os.path.isfile(source):
+                    return None
                 shutil.copyfile(source, path)
             elif parsed.scheme == "" and os.path.isfile(track.art_url):
                 shutil.copyfile(track.art_url, path)
@@ -163,7 +166,7 @@ async def windows_track() -> LocalTrack | None:
                 os.path.join(art_dir, identifier + ".jpg"),
                 data,
             )
-            art_url = "file://" + os.path.join(art_dir, identifier + ".jpg")
+            art_url = Path(art_dir, identifier + ".jpg").as_uri()
         except (OSError, ValueError):
             app.logger.debug("Could not read Windows album art", exc_info=True)
 
