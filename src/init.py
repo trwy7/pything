@@ -292,7 +292,12 @@ def main_client():
 
 @app.route("/settings")
 def settings_editor():
-    return render_template("settings.html", apps=get_apps_by_category_and_name(), readable_categories=READABLE_CATEGORIES)
+    return render_template(
+        "settings.html",
+        apps=get_apps_by_category_and_name(),
+        readable_categories=READABLE_CATEGORIES,
+        custom_hue=config.get("customizer", {}).get("hue", 151),
+    )
 
 @app.route("/settings", methods=['POST'])
 def settings_set():
