@@ -150,9 +150,19 @@ async def windows_track() -> LocalTrack | None:
             stream = await selected_properties.thumbnail.open_read_async()
             reader = DataReader(stream)
             await reader.load_async(stream.size)
-            data = reader.read_buffer(stream.size).to_bytes()
-            identifier = hashlib.sha256((selected_properties.title + selected_properties.album_title).encode("utf-8")).hexdigest()
-            await asyncio.to_thread(write_art, os.path.join(art_dir, identifier + ".jpg"), data)
+            buffer = bytearray(stream.size)
+            reader.read_bytes(buffer)
+            data = bytes(buffer)
+            reader.close()
+
+            identifier = hashlib.sha256(
+                (selected_properties.title + selected_properties.album_title).encode("utf-8")
+            ).hexdigest()
+            await asyncio.to_thread(
+                write_art,
+                os.path.join(art_dir, identifier + ".jpg"),
+                data,
+            )
             art_url = "file://" + os.path.join(art_dir, identifier + ".jpg")
         except (OSError, ValueError):
             app.logger.debug("Could not read Windows album art", exc_info=True)
