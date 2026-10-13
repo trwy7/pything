@@ -12,7 +12,7 @@ from init import App, StringSetting, LinkSetting, BooleanSetting, DataSetting, L
 
 app = App("Spotify", [
     BooleanSetting("enabled", "Enabled", False, False),
-    LabelSetting("callbackhint", "Create a spotify developer application from https://developer.spotify.com/dashboard. The callback url should be http://127.0.0.1:5192/apps/spotify/callback"),
+    LabelSetting("callbackhint", "Create a spotify developer application from <a href='https://developer.spotify.com/dashboard' target='_blank'>https://developer.spotify.com/dashboard</a>. The callback url should be <code>http://127.0.0.1:5192/apps/spotify/callback</code>"),
     StringSetting("client_id", "Client ID", "", False),
     StringSetting("client_secret", "Client Secret", "", False),
     LinkSetting("auth", "Authenticate", "", True),

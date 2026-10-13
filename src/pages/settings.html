@@ -150,9 +150,9 @@
                                     <span class="settinglabel">{{setting.display_name}}</span>
                                     <input type="number" name="{{app.id}}-{{setting.id}}" pattern="[0-9]*" onkeypress="return event.charCode >= 48 && event.charCode <= 57" value="{{setting.get_value()}}">
                                 {% elif setting.type == "link" %}
-                                    <a class="link" href="{{setting.link}}">{{setting.label}}</a>
+                                    <a class="link" href="{{setting.link}}">{{setting.label | safe}}</a>
                                 {% elif setting.type == "label" %}
-                                    <span class="settinglabel">{{setting.label}}</span>
+                                    <span class="settinglabel">{{setting.label | safe}}</span>
                                 {% endif %}
                             </div>
                             {% endif %}
