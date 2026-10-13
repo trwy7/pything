@@ -151,6 +151,15 @@ wheels = [
 ]
 
 [[package]]
+name = "dbus-next"
+version = "0.2.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ce/45/6a40fbe886d60a8c26f480e7d12535502b5ba123814b3b9a0b002ebca198/dbus_next-0.2.3.tar.gz", hash = "sha256:f4eae26909332ada528c0a3549dda8d4f088f9b365153952a408e28023a626a5", size = 71112, upload-time = "2021-07-25T22:11:28.398Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d2/fc/c0a3f4c4eaa5a22fbef91713474666e13d0ea2a69c84532579490a9f2cc8/dbus_next-0.2.3-py3-none-any.whl", hash = "sha256:58948f9aff9db08316734c0be2a120f6dc502124d9642f55e90ac82ffb16a18b", size = 57885, upload-time = "2021-07-25T22:11:25.466Z" },
+]
+
+[[package]]
 name = "flask"
 version = "3.1.2"
 source = { registry = "https://pypi.org/simple" }
@@ -520,6 +529,7 @@ name = "pything"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "dbus-next", marker = "sys_platform == 'linux'" },
     { name = "flask" },
     { name = "flask-socketio" },
     { name = "humanize" },
@@ -529,10 +539,12 @@ dependencies = [
     { name = "pyinstaller" },
     { name = "requests" },
     { name = "scikit-learn" },
+    { name = "winsdk", marker = "sys_platform == 'win32'" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "dbus-next", marker = "sys_platform == 'linux'", specifier = "==0.2.3" },
     { name = "flask", specifier = "==3.1.2" },
     { name = "flask-socketio", specifier = "==5.5.1" },
     { name = "humanize", specifier = "==4.15.0" },
@@ -542,6 +554,7 @@ requires-dist = [
     { name = "pyinstaller", specifier = "==6.19.0" },
     { name = "requests", specifier = "==2.32.5" },
     { name = "scikit-learn", specifier = "==1.8.0" },
+    { name = "winsdk", marker = "sys_platform == 'win32'", specifier = "==1.0.0b10" },
 ]
 
 [[package]]
@@ -720,6 +733,12 @@ sdist = { url = "https://files.pythonhosted.org/packages/a4/34/4dd12fc8bb7d61c91
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a1/38/df03f564f43cec2684823f3cccae1a652ee7face1cbaa76fb223096e64d7/werkzeug-3.1.9-py3-none-any.whl", hash = "sha256:6392e50c78460ba618e5b21f08a71f59c99ce99cdc6cf6e3dd7e6ccca8754fab", size = 228700, upload-time = "2026-09-27T18:33:39.685Z" },
 ]
+
+[[package]]
+name = "winsdk"
+version = "1.0.0b10"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f5/01/005772332e79947013aa33c7cb20431e3efd6ac46eb54aed3472c14afe50/winsdk-1.0.0b10.tar.gz", hash = "sha256:8f39ea759626797449371f857c9085b84bb9f3b6d493dc6525e2cedcb3d15ea2", size = 7061492, upload-time = "2023-08-11T19:47:58.008Z" }
 
 [[package]]
 name = "wsproto"
