@@ -22,7 +22,10 @@ def send_song(_=None):
 
 @playback.on_update
 def playback_listener():
-    app.logger.debug("Got playback update: %s", playback.song.title if playback.song else "None")
+    if playback.song:
+        app.logger.debug("Got playback update: id=%s, title=%s, position=%s, playing=%s", playback.song.id, playback.song.title, playback.position, playback.playing)
+    else:
+        app.logger.debug("Got playback update: None")
     socket.emit("music", [
         ((playback.position / playback.song.duration) * 100) if playback.song and playback.position else None,
         playback.playing
