@@ -61,7 +61,7 @@ def set_provider_label(providers: list[str]) -> None:
 
 
 def art_id(track: LocalTrack) -> str:
-    return hashlib.sha256((track.id + track.title + track.artist + track.album).encode("utf-8")).hexdigest()
+    return hashlib.sha256((track.art_url or (track.id + track.title + track.artist + track.album)).encode("utf-8")).hexdigest()
 
 
 def get_art(track: LocalTrack) -> str | None:
