@@ -18,7 +18,7 @@ from flask import abort, send_file
 
 from apps.music.types import Album, Artist, Song, playback
 from apps.music.utils import get_accent
-from init import App, BooleanSetting, LabelSetting, StringSetting
+from init import App, BooleanSetting, LabelSetting, StringSetting, clients
 
 app = App("Local Music", [
     BooleanSetting("enabled", "Enabled", False, False),
@@ -298,7 +298,7 @@ async def linux_loop() -> None:
         return
     while True:
         await asyncio.sleep(1)
-        if not app.settings["enabled"].get_value():
+        if not app.settings["enabled"].get_value() or not clients:
             continue
         try:
             update_playback(await linux_track(bus))
@@ -315,4 +315,6 @@ def art_route(filename: str):
 
 
 if sys.platform in ("win32", "linux"):
-    threading.Thread(target=music_thread, daemon=True).start()
+    @app.on_startup
+    def start_music_thread() -> None:
+        threading.Thread(target=music_thread, daemon=True).start()

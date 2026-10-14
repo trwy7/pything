@@ -60,5 +60,6 @@ def send_stats_thread():
         dsk_lw = dsk_tw
         app.send("upd", payload)
         time.sleep(1)
-
-threading.Thread(target=send_stats_thread, daemon=True).start()
+@app.on_startup
+def start_monitoring():
+    threading.Thread(target=send_stats_thread, daemon=True).start()

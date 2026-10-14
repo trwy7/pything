@@ -162,6 +162,6 @@ def full_replace_carthing(serials: list | None=None):
 
 adb = ensure_adb()
 if adb:
-    threading.Thread(target=inject_thread, daemon=True).start()
+    threading.Thread(target=inject_thread, daemon=True).start() # start as soon as possible without waiting for other apps
 else:
     app.logger.warning("ADB is not available, the carthing will not be able to connect.")

@@ -198,4 +198,6 @@ def art_route(ap):
         return abort(404)
     return send_file(os.path.join(art_dir, ap))
 
-threading.Thread(target=music_thread, daemon=True).start()
+@app.on_startup
+def start_music_thread():
+    threading.Thread(target=music_thread, daemon=True).start()

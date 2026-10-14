@@ -163,6 +163,7 @@ class App:
         self.settings = {s.id: s for s in settings}
         self.hidden = True # updated on init
         self.listeners = {}
+        self.startup_listeners: list[Callable] = []
         self.settingupdatelisteners: list[Callable] = []
         if not aid in config:
             config[aid] = {}
@@ -203,8 +204,15 @@ class App:
             for c in self.get_open_clients():
                 if c.sid in to:
                     socket.emit("app_com", [self.id, event, data], to=c.sid)
+            return
         for c in self.get_open_clients():
             socket.emit("app_com", [self.id, event, data], to=c.sid)
+    def on_startup(self, func: Callable):
+        self.startup_listeners.append(func)
+        return func
+    def startup(self):
+        for listener in self.startup_listeners:
+            listener()
     def on_broadcast(self, event: str):
         def decorator(func):
             if event not in broadcast_listeners:
@@ -376,18 +384,21 @@ if __name__ == "__main__":
     logger.debug("Init apps...")
 
     # Load apps
-    for modapp in os.listdir("apps"):
+    for modapp in sorted(os.listdir("apps")):
         import_app(os.path.join("apps", modapp))
 
     # Load custom apps
     if os.path.isdir("customapps"):
-        for modapp in os.listdir("customapps"):
+        for modapp in sorted(os.listdir("customapps")):
             if os.path.isdir(os.path.join("apps", modapp)):
                 raise RuntimeError(f"Custom app '{modapp}' is attempting to overwrite a built in app. Please rename your app directory to avoid conflicts.")
             import_app(os.path.join("customapps", modapp))
 
     # Sort apps dict
     apps = dict(sorted(apps.items()))
+
+    for loaded_app in apps.values():
+        loaded_app.startup()
 
     # Start clock thread
     threading.Thread(target=clock_thread, daemon=True).start()

@@ -27,7 +27,9 @@ def playback_listener():
     else:
         app.logger.debug("Got playback update: None")
     socket.emit("music", [
-        ((playback.position / playback.song.duration) * 100) if playback.song and playback.position else None,
+        ((playback.position / playback.song.duration) * 100)
+        if playback.song and playback.position and playback.song.duration > 0
+        else None,
         playback.playing
     ])
     if playback.song and app.settings['accent'].get_value():
