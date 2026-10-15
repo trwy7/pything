@@ -41,11 +41,11 @@ def get_current_lrc() -> list[tuple[int, str]] | list[str] | str:
             headers={"User-Agent": USER_AGENT}
         )
         if req.status_code != 200:
-            app.logger.debug("Could not find lyrics for '%s': %s", cpbs.title, req.status_code)
+            app.logger.debug("Could not find lyrics for '%s' by '%s': %s", cpbs.title, cpbs.artists[0].name, req.status_code)
             if playback.song and cpbs.id == playback.song.id:
-                current_lrc = (cpbs.id, f"Could not find lyrics for {cpbs.title}")
+                current_lrc = (cpbs.id, f"Could not find lyrics for '{cpbs.title}' by '{cpbs.artists[0].name}'")
                 app.send("lyrics", current_lrc[1])
-            return f"Could not find lyrics for {cpbs.title}"
+            return f"Could not find lyrics for '{cpbs.title}' by '{cpbs.artists[0].name}'"
         data = req.json()
         if data['syncedLyrics']:
             app.logger.debug("Found synced lyrics for song '%s'", cpbs.title)
