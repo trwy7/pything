@@ -1,11 +1,20 @@
 """Provider for all music related things, an example of an advanced app"""
 from flask import render_template
-from init import App, socket, BooleanSetting
+from init import App, socket, BooleanSetting, SelectSetting
 from .types import playback
 
 app = App("Music", [
-    BooleanSetting("accent", "Set accent color to art accent", True)
+    BooleanSetting("accent", "Set accent color to art accent", True),
+    SelectSetting("playbar_style", "Playbar style", "rounded", {
+        "rounded": "Rounded",
+        "flat": "Flat",
+        "off": "Off"
+    })
 ], category="music")
+
+@app.on_setting_update
+def send_playbar_style():
+    socket.emit("music_playbar_style", app.settings["playbar_style"].get_value())
 
 @app.on("get")
 @playback.on_update

@@ -12,6 +12,17 @@
         transition: transform 1s;
         transform: translateY(20px);
     }
+    #music-playbar.off {
+        display: none;
+    }
+    #music-playbar.flat {
+        border-radius: 0;
+        bottom: 0;
+        margin: 0;
+    }
+    #music-playbar.flat #music-playbarinner {
+        border-radius: 0;
+    }
     #music-playbar.show {
         transform: translateY(0px);
     }
@@ -30,13 +41,33 @@
     <div id="music-playbarinner" style="width: 0%;"></div>
 </div>
 <script>
+    const musicPlaybar = document.getElementById("music-playbar")
+    const musicPlaybarInner = document.getElementById("music-playbarinner")
+
+    function setMusicPlaybarStyle(style) {
+        musicPlaybar.classList.toggle("off", style === "off")
+        musicPlaybar.classList.toggle("flat", style === "flat")
+        if (style === "off") {
+            document.getElementById("appframe").style.height = ""
+        }
+    }
+
+    setMusicPlaybarStyle("{{ app.settings['playbar_style'].get_value() }}")
+    socket.on("music_playbar_style", setMusicPlaybarStyle)
+
     socket.on("music", (d) => {
         if (d[1]) {
-            document.getElementById("music-playbar").classList = ["show"]
-            document.getElementById("music-playbarinner").style.width = d[0] + "%"
-            document.getElementById("appframe").style.height = "calc(100% - 20px)"
+            musicPlaybar.classList.add("show")
+            musicPlaybarInner.style.width = d[0] + "%"
+            if (musicPlaybar.classList.contains("off")) {
+                document.getElementById("appframe").style.height = ""
+            } else if (musicPlaybar.classList.contains("flat")) {
+                document.getElementById("appframe").style.height = "calc(100% - 15px)"
+            } else {
+                document.getElementById("appframe").style.height = "calc(100% - 20px)"
+            }
         } else {
-            document.getElementById("music-playbar").classList = []
+            musicPlaybar.classList.remove("show")
             document.getElementById("appframe").style.height = ""
         }
     })
