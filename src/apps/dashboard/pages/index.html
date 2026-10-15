@@ -99,7 +99,6 @@
         } else if (event.deltaX == 53) {
             index = (index + 1) % apps.length;
         }
-        send("debug", "Wheel event: " + event.deltaX);
         updateSelected();
     });
     updateSelected();
