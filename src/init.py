@@ -341,6 +341,9 @@ def app_client_communications(app, event, data):
     if app not in apps:
         logger.error("A client just sent a request to non-existent app '%s'", app)
         return
+    if event == "debug":
+        logger.debug("Client debug message to %s: %s", app, data)
+        return
     if event not in apps[app].listeners:
         logger.warning("A client just sent a message to '%s' with non-existent event '%s'", app, event)
         return
