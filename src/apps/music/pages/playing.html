@@ -27,8 +27,8 @@
     }
 
     #art {
-        width: 200px;
-        height: 200px;
+        max-width: 200px;
+        max-height: 200px;
         object-fit: cover;
         border-radius: 16px;
         border: 2px solid hsl(var(--custom-hue, 151), 100%, 93%); 
@@ -38,15 +38,12 @@
         display: flex;
         flex-direction: column;
         justify-content: center;
-        padding-left: 20px;
-        text-align: center;
     }
 
     #title {
         font-size: 1.8rem;
         font-weight: 800;
         letter-spacing: -0.5px;
-        padding: 10px;
         color: hsl(var(--custom-hue, 151), 100%, 85%);
     }
 
@@ -92,8 +89,15 @@
         if (song.art) {
             document.getElementById("art").src = song.art;
             document.getElementById("art").hidden = false;
+            document.getElementById("song").style.justifyContent = null;
+            document.getElementById("details").style.textAlign = "left";
+            document.getElementById("details").style.paddingLeft = "20px";
         } else {
             document.getElementById("art").hidden = true;
+            document.getElementById("art").src = "";
+            document.getElementById("song").style.justifyContent = "center";
+            document.getElementById("details").style.textAlign = "center";
+            document.getElementById("details").style.paddingLeft = "0px";
         }
     })
     send("get", 0)
