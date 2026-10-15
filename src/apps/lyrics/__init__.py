@@ -24,11 +24,11 @@ def get_current_lrc() -> list[tuple[int, str]] | list[str] | str:
         return "This song has no artists"
     global current_lrc
     if current_lrc and cpbs.id == current_lrc[0]:
-        app.logger.debug("Using cached lyrics")
+        app.logger.debug("Using cached lyrics for song '%s'", cpbs.title)
         return current_lrc[1]
     with get_lrc_lock:
         if current_lrc and cpbs.id == current_lrc[0]:
-            app.logger.debug("Using cached lyrics")
+            app.logger.debug("Using cached lyrics for song '%s'", cpbs.title)
             return current_lrc[1]
         req = requests.get(
             "https://lrclib.net/api/get",

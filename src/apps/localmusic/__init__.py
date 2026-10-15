@@ -4,6 +4,7 @@ import binascii
 from datetime import datetime, timezone
 import hashlib
 import os
+import re
 import shutil
 import sys
 import threading
@@ -60,6 +61,11 @@ def set_provider_label(providers: list[str]) -> None:
     app.settings["providers"].label = "Currently playing providers: " + names
 
 
+def get_artists(artist_names: str) -> list[Artist]:
+    names = [name.strip() for name in re.split(r"[,;/]", artist_names) if name.strip()]
+    return [Artist("local", name, name) for name in names]
+
+
 def art_id(track: LocalTrack) -> str:
     return hashlib.sha256((track.art_url or (track.id + track.title + track.artist + track.album)).encode("utf-8")).hexdigest()
 
@@ -106,7 +112,7 @@ def update_playback(track: LocalTrack | None) -> None:
     if track is None:
         playback.reset()
         return
-    artists = [Artist("local", track.artist, track.artist)]
+    artists = get_artists(track.artist)
     album = Album(
         "local",
         hashlib.sha256((track.album + track.artist).encode("utf-8")).hexdigest(),
