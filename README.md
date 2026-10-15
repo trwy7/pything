@@ -102,14 +102,18 @@ All apps can store data in the form of settings, you can access any visible sett
 To create a custom app, you must be using the source build. Apps have a defined structure, but not all files are needed. Apps can either be in `/src/apps` or `/src/customapps`. `/src/customapps` are excluded from git, but `/src/apps` is not., they are both loaded the same way, but a custom app cannot take the same id as a built in app. All apps are loaded as a python module, so your init script should be in `/src/apps/<id>/__init__.py`. The app needs to expose an `app` variable, of the `App` class. This is a basic example of an app that has a few settings.
 ```python
 from flask import render_template, redirect
-from init import App, StringSetting, FloatSetting, IntegerSetting, BooleanSetting
+from init import App, StringSetting, FloatSetting, IntegerSetting, BooleanSetting, SelectSetting
 
 app = App("Test App", [
     StringSetting("string-test", "Test string", "Test one\nType whatever you want", "Hello!"),
     StringSetting("hidden-string-test", "", "", "default", True),
     FloatSetting("float-test", "Test float", "Test two\nType a float", 3.14),
     IntegerSetting("integer-test", "Test integer", "Test three\nType an integer", 42),
-    BooleanSetting("boolean-test", "Test boolean", "Test four\nToggle this", False)
+    BooleanSetting("boolean-test", "Test boolean", "Test four\nToggle this", False),
+    SelectSetting("select-test", "Test select", "value1", {
+        "value1": "Value 1",
+        "value2": "Value 2 (readable)"
+    })
 ])
 
 @app.blueprint.route("/settings")  # Results in /apps/<app.id>/settings, which becomes /apps/demoapp/settings for this app

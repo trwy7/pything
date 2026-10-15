@@ -65,7 +65,8 @@
             color: var(--muted);
         }
         input[type="text"],
-        input[type="number"] {
+        input[type="number"],
+        select {
             width: min(52%, 320px);
             min-height: 36px;
             padding: 7px 10px;
@@ -77,9 +78,14 @@
             font: inherit;
         }
         input[type="text"]:focus,
-        input[type="number"]:focus {
+        input[type="number"]:focus,
+        select:focus {
             border-color: var(--accent);
             box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 45%, transparent);
+        }
+        select option {
+            background: #272727;
+            color: white;
         }
         input[type="checkbox"] {
             width: 20px;
@@ -117,7 +123,8 @@
                 gap: 8px;
             }
             input[type="text"],
-            input[type="number"] {
+            input[type="number"],
+            select {
                 width: 100%;
             }
         }
@@ -149,6 +156,13 @@
                                 {% elif setting.type == "int" %}
                                     <span class="settinglabel">{{setting.display_name}}</span>
                                     <input type="number" name="{{app.id}}-{{setting.id}}" pattern="[0-9]*" onkeypress="return event.charCode >= 48 && event.charCode <= 57" value="{{setting.get_value()}}">
+                                {% elif setting.type == "select" %}
+                                    <span class="settinglabel">{{setting.display_name}}</span>
+                                    <select name="{{app.id}}-{{setting.id}}">
+                                        {% for value, label in setting.options.items() %}
+                                        <option value="{{value}}"{% if setting.get_value() == value %} selected{% endif %}>{{label}}</option>
+                                        {% endfor %}
+                                    </select>
                                 {% elif setting.type == "link" %}
                                     <a class="link" href="{{setting.link}}">{{setting.label | safe}}</a>
                                 {% elif setting.type == "label" %}

@@ -97,6 +97,11 @@ class IntegerSetting(Setting):
     def __init__(self, id: str, display_name: str, default: int, hidden: bool=False):
         super().__init__(id, display_name, default, "int", hidden)
 
+class SelectSetting(Setting):
+    def __init__(self, id: str, display_name: str, default: str, options: dict[str, str], hidden: bool=False):
+        super().__init__(id, display_name, default, "select", hidden)
+        self.options = options
+
 class DataSetting(Setting):
     def __init__(self, id: str, default: Any):
         super().__init__(id, "", default, "data", True)
@@ -315,6 +320,9 @@ def settings_set():
                         nd = int(nd)
                     case "float":
                         nd = float(nd)
+                    case "select":
+                        if nd not in setting.options:
+                            raise ValueError(f"Invalid value for select setting '{setting.id}'")
                 logger.debug(f"Setting as {nd}")
                 setting.set_value(nd)
         for sl in app.settingupdatelisteners:
