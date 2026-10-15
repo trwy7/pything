@@ -70,7 +70,6 @@
 {% block script %}
 <script>
     let index = 0;
-    let sframe = false;
     let lastapp = document.body;
     const appList = document.getElementById("apps");
     const apps = appList.children;
@@ -95,17 +94,13 @@
         }
     });
     document.addEventListener('wheel', function(event) {
-        if (sframe) return;
-        sframe = true;
         if (event.deltaX == -53) {
             index = (index - 1 + apps.length) % apps.length;
         } else if (event.deltaX == 53) {
             index = (index + 1) % apps.length;
         }
+        send("debug", "Wheel event: " + event.deltaX);
         updateSelected();
-        setTimeout(() => {
-            sframe = false; // The carthing wheel sometimes triggers twice when rotated once, this should hopefully help it
-        }, 75);
     });
     updateSelected();
 </script>
