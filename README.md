@@ -11,21 +11,7 @@ PYThing is a alternative UI for the discontinued Spotify Car Thing to be used at
 - No internet is required, unless an app needs it.
 - Very modular, all features that are not important to the core are within apps that can be removed/replaced easily
 
-### Optimization
-
-- The client facing html is written with as little dependencies as possible to save space and load time, no frameworks are used.
-- With as modular as this app is, any unneeded features can be taken away by removing the app responsible for it, even Car Thing support can be removed if only other clients are being used.
-- Apps have access to an `app.should_poll()` function, which returns true if any client has the app open. This allows apps to not poll a service when no clients have the app open.
-    - This helps performance and helps prevent rate limits from being hit.
-- All built in apps use a cache when, like the lyrics app, which stores in memory and wipes after a song change, and spotify, that stores until an app restart, or until manually cleared in development.
-    - This saves a lot of data from being re-downloaded constantly, at the cost of extra storage writes.
-- The server only sends data to clients that need the data, by having the server keep track of what app is open, so when an app sends data, it only goes to clients that have the app open.
-    - This saves a lot of bandwidth
-
-<details>
-   <summary>
-      <h2>🏃 Running</h2>
-   </summary>
+## Installing
 
 ### Prebuilt
 
@@ -47,7 +33,7 @@ All app settings can be configured from http://127.0.0.1:5192/settings.
 
 ### Using the Car Thing
 
-If you have a Car Thing, it should be detected automatically. Two firmwares are currently supported:
+If you have a Car Thing, it should be detected automatically on a supported firmware. Two firmwares are supported at this time:
 
 - [Thing Labs](https://thingify.tools/firmware/P3QZbZIDWnp5m_azQFQqP/Sn_vBLpPfJjic6DZtCj6k) (Recommended for just PYThing)
     - Boots into PYThing automatically when launched
@@ -60,8 +46,6 @@ If you have a Car Thing, it should be detected automatically. Two firmwares are 
     - Not tested as frequently
 
 Firmware can be flashed from [Terbium](https://terbium.app/)
-
-</details>
 
 <details>
    <summary>
@@ -104,6 +88,8 @@ All apps can store data in the form of settings, you can access any visible sett
 - Customizer
     - An app that provides custom colors to the UI
     - Takes broadcasts from other apps so any app can set the accent color
+- Addons
+    - An app that adds features that shouldn't be in the core (e.g. screen locking)
 - `device-carthing`
     - Sets up any connected Car Things
     - Prompts to download ADB if it is not already installed.
@@ -209,4 +195,20 @@ If you want to make hardware to be used with PYThing, there are some basic rules
 - Back key (Key Backspace)
 - Button row (Numbers 1-4)
 The device should boot to a chromium webview (Should be v70 or higher if possible), and when ready, load the page `http://localhost:5192/client?device=<id>`, feel free to make the ID whatever you want. You may check if the server is ready by pinging `http://localhost:5192/isready`, and loading when it is.
+</details>
+
+<details>
+   <summary>
+      <h2>🏃 Optimization info</h2>
+   </summary>
+### Optimization
+
+- The client facing html is written with as little dependencies as possible to save space and load time, no frameworks are used.
+- With as modular as this app is, any unneeded features can be taken away by removing the app responsible for it, even Car Thing support can be removed if only other clients are being used.
+- Apps have access to an `app.should_poll()` function, which returns true if any client has the app open. This allows apps to not poll a service when no clients have the app open.
+    - This helps performance and helps prevent rate limits from being hit.
+- All built in apps use a cache when, like the lyrics app, which stores in memory and wipes after a song change, and spotify, that stores until an app restart, or until manually cleared in development.
+    - This saves a lot of data from being re-downloaded constantly, at the cost of extra storage writes.
+- The server only sends data to clients that need the data, by having the server keep track of what app is open, so when an app sends data, it only goes to clients that have the app open.
+    - This saves a lot of bandwidth
 </details>
