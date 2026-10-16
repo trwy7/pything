@@ -264,9 +264,9 @@ class App:
 
         return decorator
 
-    def send(self, event: str, data, to: list[str] | str | None = None):
+    def send(self, event: str, data, to: set[str] | str | None = None):
         logger.debug("serverapp>clientapp: %s > %s", self.id, event)
-        if isinstance(to, list):
+        if isinstance(to, set):
             for c in self.get_open_clients():
                 if c.sid in to:
                     socket.emit("app_com", [self.id, event, data], to=c.sid)

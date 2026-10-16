@@ -92,7 +92,7 @@ def on_pb_change():
 
 @app.on("open")
 def send_lrc(_):
-    app.send("lyrics", get_current_lrc(), to=request.sid)  # type: ignore
+    app.send("lyrics", get_current_lrc(), to=request.sid)
     app.send("music", [playback.position, playback.playing])
 
 
