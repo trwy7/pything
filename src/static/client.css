@@ -14,7 +14,7 @@ body {
     background: linear-gradient(350deg, #272727, #1f1f1f);
 }
 body.round {
-    clip-path: inset(0 round 20px);
+    clip-path: inset(0 round 17px);
 }
 #appframe, body {
     width: 100%;
