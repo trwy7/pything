@@ -7,16 +7,22 @@ from apps.music.types import playback
 
 app = App("Lyrics", [], category="music")
 USER_AGENT = "PYThing Lyrics (https://github.com/trwy7/pything)"
-current_lrc: tuple[str, list[tuple[int, str]]] | tuple[str, list[str]] | tuple[str, str] = ("", "")
+current_lrc: (
+    tuple[str, list[tuple[int, str]]] | tuple[str, list[str]] | tuple[str, str]
+) = ("", "")
 get_lrc_lock = Lock()
-bpre = re.compile(r"\[(?P<min>[0-9]{1,2}):(?P<sec>[0-9]{1,2})\.(?P<ms>[0-9]{2,3})\](?P<line>.*)")
+bpre = re.compile(
+    r"\[(?P<min>[0-9]{1,2}):(?P<sec>[0-9]{1,2})\.(?P<ms>[0-9]{2,3})\](?P<line>.*)"
+)
+
 
 @app.blueprint.route("/launch")
 def launch():
     return render_template(f"{app.dirname}/pages/lyrics.html")
 
+
 def get_current_lrc() -> list[tuple[int, str]] | list[str] | str:
-    cpbs = playback.song # should avoid race conditions
+    cpbs = playback.song  # should avoid race conditions
     if not cpbs:
         return "Nothing is playing right now"
     if not cpbs.artists:
@@ -36,27 +42,37 @@ def get_current_lrc() -> list[tuple[int, str]] | list[str] | str:
                 "track_name": cpbs.title,
                 "artist_name": cpbs.artists[0].name,
                 "album_name": cpbs.album.title,
-                "duration": int(cpbs.duration / 1000)
+                "duration": int(cpbs.duration / 1000),
             },
-            headers={"User-Agent": USER_AGENT}
+            headers={"User-Agent": USER_AGENT},
         )
         if req.status_code != 200:
-            app.logger.debug("Could not find lyrics for '%s' by '%s': %s", cpbs.title, cpbs.artists[0].name, req.status_code)
+            app.logger.debug(
+                "Could not find lyrics for '%s' by '%s': %s",
+                cpbs.title,
+                cpbs.artists[0].name,
+                req.status_code,
+            )
             if playback.song and cpbs.id == playback.song.id:
-                current_lrc = (cpbs.id, f"Could not find lyrics for '{cpbs.title}' by '{cpbs.artists[0].name}'")
+                current_lrc = (
+                    cpbs.id,
+                    f"Could not find lyrics for '{cpbs.title}' by '{cpbs.artists[0].name}'",
+                )
                 app.send("lyrics", current_lrc[1])
-            return f"Could not find lyrics for '{cpbs.title}' by '{cpbs.artists[0].name}'"
+            return (
+                f"Could not find lyrics for '{cpbs.title}' by '{cpbs.artists[0].name}'"
+            )
         data = req.json()
-        if data['syncedLyrics']:
+        if data["syncedLyrics"]:
             app.logger.debug("Found synced lyrics for song '%s'", cpbs.title)
-            lyr = parse_lrc(data['syncedLyrics'].splitlines())
+            lyr = parse_lrc(data["syncedLyrics"].splitlines())
             if playback.song and cpbs.id == playback.song.id:
                 current_lrc = (cpbs.id, lyr)
                 app.send("lyrics", lyr)
             return lyr
-        elif data['plainLyrics']:
+        elif data["plainLyrics"]:
             app.logger.debug("Found plain lyrics for song '%s'", cpbs.title)
-            lyr = data['plainLyrics'].splitlines()
+            lyr = data["plainLyrics"].splitlines()
             if playback.song and cpbs.id == playback.song.id:
                 current_lrc = (cpbs.id, lyr)
                 app.send("lyrics", lyr)
@@ -66,27 +82,32 @@ def get_current_lrc() -> list[tuple[int, str]] | list[str] | str:
             app.send("lyrics", current_lrc[1])
         return "Song is instrumental"
 
+
 @playback.on_update
 def on_pb_change():
     if app.should_poll():
         get_current_lrc()
         app.send("music", [playback.position, playback.playing])
 
+
 @app.on("open")
 def send_lrc(_):
-    app.send("lyrics", get_current_lrc(), to=request.sid) # type: ignore
+    app.send("lyrics", get_current_lrc(), to=request.sid)  # type: ignore
     app.send("music", [playback.position, playback.playing])
+
 
 def parse_lrc(lrc: list[str]) -> list[tuple[int, str]]:
     nlrc = []
     for line in lrc:
-        if line.strip() == '':
+        if line.strip() == "":
             continue
         res = re.fullmatch(bpre, line.strip())
         if res == None:
             app.logger.warning("Could not match line: %s", line)
             continue
         tms = res.group("ms")
-        ms = ((60 * int(res.group("min"))) + int(res.group("sec"))) * 1000 + int(tms) * (10 if len(tms) == 2 else 1)
+        ms = ((60 * int(res.group("min"))) + int(res.group("sec"))) * 1000 + int(
+            tms
+        ) * (10 if len(tms) == 2 else 1)
         nlrc.append((ms, res.group("line").strip()))
     return nlrc

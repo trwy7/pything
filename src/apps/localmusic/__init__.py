@@ -21,11 +21,17 @@ from apps.music.types import Album, Artist, Song, playback
 from apps.music.utils import get_accent
 from init import App, BooleanSetting, LabelSetting, StringSetting, clients
 
-app = App("Local Music", [
-    BooleanSetting("enabled", "Enabled", False, False),
-    LabelSetting("providers", "Enable this app to show what apps are currently playing music"),
-    StringSetting("deny", "Deny providers (comma separated)", ""),
-], category="musicprovider")
+app = App(
+    "Local Music",
+    [
+        BooleanSetting("enabled", "Enabled", False, False),
+        LabelSetting(
+            "providers", "Enable this app to show what apps are currently playing music"
+        ),
+        StringSetting("deny", "Deny providers (comma separated)", ""),
+    ],
+    category="musicprovider",
+)
 
 art_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache", "art")
 os.makedirs(art_dir, exist_ok=True)
@@ -53,7 +59,9 @@ class LocalTrack:
 
 def denied(provider: str) -> bool:
     denied_providers = app.settings["deny"].get_value().split(",")
-    return provider.casefold() in {item.strip().casefold() for item in denied_providers if item.strip()}
+    return provider.casefold() in {
+        item.strip().casefold() for item in denied_providers if item.strip()
+    }
 
 
 def set_provider_label(providers: list[str]) -> None:
@@ -67,7 +75,11 @@ def get_artists(artist_names: str) -> list[Artist]:
 
 
 def art_id(track: LocalTrack) -> str:
-    return hashlib.sha256((track.art_url or (track.id + track.title + track.artist + track.album)).encode("utf-8")).hexdigest()
+    return hashlib.sha256(
+        (track.art_url or (track.id + track.title + track.artist + track.album)).encode(
+            "utf-8"
+        )
+    ).hexdigest()
 
 
 def get_art(track: LocalTrack) -> str | None:
@@ -80,7 +92,12 @@ def get_art(track: LocalTrack) -> str | None:
         try:
             if parsed.scheme == "file":
                 source = unquote(parsed.path)
-                if sys.platform == "win32" and source.startswith("/") and len(source) > 2 and source[2] == ":":
+                if (
+                    sys.platform == "win32"
+                    and source.startswith("/")
+                    and len(source) > 2
+                    and source[2] == ":"
+                ):
                     source = source[1:]
                 if not source or not os.path.isfile(source):
                     return None
@@ -144,14 +161,21 @@ async def windows_track() -> LocalTrack | None:
         if properties.title:
             provider = str(session.source_app_user_model_id or "Unknown")
             status = session.get_playback_info().playback_status
-            if status == GlobalSystemMediaTransportControlsSessionPlaybackStatus.PLAYING:
+            if (
+                status
+                == GlobalSystemMediaTransportControlsSessionPlaybackStatus.PLAYING
+            ):
                 playing_providers.append(provider)
             candidates.append((session, properties, provider, status))
     set_provider_label(playing_providers)
     candidates = [candidate for candidate in candidates if not denied(candidate[2])]
     selected = next(
-        (candidate for candidate in candidates
-         if candidate[3] == GlobalSystemMediaTransportControlsSessionPlaybackStatus.PLAYING),
+        (
+            candidate
+            for candidate in candidates
+            if candidate[3]
+            == GlobalSystemMediaTransportControlsSessionPlaybackStatus.PLAYING
+        ),
         None,
     )
     if selected is None and candidates:
@@ -172,7 +196,9 @@ async def windows_track() -> LocalTrack | None:
             reader.close()
 
             identifier = hashlib.sha256(
-                (selected_properties.title + selected_properties.album_title).encode("utf-8")
+                (selected_properties.title + selected_properties.album_title).encode(
+                    "utf-8"
+                )
             ).hexdigest()
             await asyncio.to_thread(
                 write_art,
@@ -200,19 +226,37 @@ async def windows_track() -> LocalTrack | None:
             last_updated = timeline.last_updated_time
             if last_updated.tzinfo is None:
                 last_updated = last_updated.replace(tzinfo=timezone.utc)
-            elapsed = max(0, (datetime.now(timezone.utc) - last_updated).total_seconds())
+            elapsed = max(
+                0, (datetime.now(timezone.utc) - last_updated).total_seconds()
+            )
             position += int(elapsed * playback_rate * 1000)
         position = min(position, duration) if duration else position
     reported_position = position
     cached_position = windows_position_cache.get(track_key)
-    if status == GlobalSystemMediaTransportControlsSessionPlaybackStatus.PLAYING and cached_position and reported_position == cached_position[0]:
-        position = max(position, cached_position[1] + int((now_monotonic - cached_position[2]) * playback_rate * 1000))
+    if (
+        status == GlobalSystemMediaTransportControlsSessionPlaybackStatus.PLAYING
+        and cached_position
+        and reported_position == cached_position[0]
+    ):
+        position = max(
+            position,
+            cached_position[1]
+            + int((now_monotonic - cached_position[2]) * playback_rate * 1000),
+        )
     if status == GlobalSystemMediaTransportControlsSessionPlaybackStatus.PLAYING:
         windows_position_cache[track_key] = (reported_position, position, now_monotonic)
     else:
         windows_position_cache.pop(track_key, None)
     position = min(position, duration) if duration else position
-    app.logger.debug("Windows media session: provider=%s, title=%s, artist=%s, album=%s, position=%d, duration=%d", provider, selected_properties.title, selected_properties.artist, selected_properties.album_title, position, duration)
+    app.logger.debug(
+        "Windows media session: provider=%s, title=%s, artist=%s, album=%s, position=%d, duration=%d",
+        provider,
+        selected_properties.title,
+        selected_properties.artist,
+        selected_properties.album_title,
+        position,
+        duration,
+    )
     return LocalTrack(
         provider,
         str(selected_properties.track_number) + ":" + selected_properties.title,
@@ -229,21 +273,32 @@ async def windows_track() -> LocalTrack | None:
 async def linux_track(bus) -> LocalTrack | None:
     from dbus_next import Message
 
-    names = await bus.call(Message(destination="org.freedesktop.DBus", path="/org/freedesktop/DBus", interface="org.freedesktop.DBus", member="ListNames"))
-    services = [name for name in names.body[0] if name.startswith("org.mpris.MediaPlayer2.")]
+    names = await bus.call(
+        Message(
+            destination="org.freedesktop.DBus",
+            path="/org/freedesktop/DBus",
+            interface="org.freedesktop.DBus",
+            member="ListNames",
+        )
+    )
+    services = [
+        name for name in names.body[0] if name.startswith("org.mpris.MediaPlayer2.")
+    ]
     app.logger.debug("Found MPRIS services: %s", services)
     candidates = []
     playing_providers = []
     for service in services:
         try:
-            reply = await bus.call(Message(
-                destination=service,
-                path="/org/mpris/MediaPlayer2",
-                interface="org.freedesktop.DBus.Properties",
-                member="GetAll",
-                signature="s",
-                body=["org.mpris.MediaPlayer2.Player"],
-            ))
+            reply = await bus.call(
+                Message(
+                    destination=service,
+                    path="/org/mpris/MediaPlayer2",
+                    interface="org.freedesktop.DBus.Properties",
+                    member="GetAll",
+                    signature="s",
+                    body=["org.mpris.MediaPlayer2.Player"],
+                )
+            )
             values = {key: value.value for key, value in reply.body[0].items()}
             metadata = {key: value.value for key, value in values["Metadata"].items()}
             title = metadata.get("xesam:title")
@@ -256,22 +311,28 @@ async def linux_track(bus) -> LocalTrack | None:
                 playing_providers.append(provider)
             duration = int(metadata.get("mpris:length", 0) / 1000)
             position = int(values.get("Position", 0) / 1000)
-            candidates.append(LocalTrack(
-                provider,
-                str(metadata.get("mpris:trackid", title)),
-                title,
-                artist,
-                metadata.get("xesam:album", "Unknown album"),
-                duration,
-                position,
-                status == "Playing",
-                metadata.get("mpris:artUrl"),
-            ))
+            candidates.append(
+                LocalTrack(
+                    provider,
+                    str(metadata.get("mpris:trackid", title)),
+                    title,
+                    artist,
+                    metadata.get("xesam:album", "Unknown album"),
+                    duration,
+                    position,
+                    status == "Playing",
+                    metadata.get("mpris:artUrl"),
+                )
+            )
         except (KeyError, TypeError, ValueError, OSError):
             app.logger.debug("Could not read MPRIS player %s", service, exc_info=True)
     set_provider_label(playing_providers)
-    candidates = [candidate for candidate in candidates if not denied(candidate.provider)]
-    return next((candidate for candidate in candidates if candidate.playing), None) or (candidates[0] if candidates else None)
+    candidates = [
+        candidate for candidate in candidates if not denied(candidate.provider)
+    ]
+    return next((candidate for candidate in candidates if candidate.playing), None) or (
+        candidates[0] if candidates else None
+    )
 
 
 def music_thread() -> None:
@@ -315,12 +376,15 @@ async def linux_loop() -> None:
 @app.blueprint.route("/art/<string:filename>")
 def art_route(filename: str):
     path = os.path.join(art_dir, filename)
-    if not os.path.isfile(path) or os.path.dirname(os.path.abspath(path)) != os.path.abspath(art_dir):
+    if not os.path.isfile(path) or os.path.dirname(
+        os.path.abspath(path)
+    ) != os.path.abspath(art_dir):
         return abort(404)
     return send_file(path)
 
 
 if sys.platform in ("win32", "linux"):
+
     @app.on_startup
     def start_music_thread() -> None:
         threading.Thread(target=music_thread, daemon=True).start()

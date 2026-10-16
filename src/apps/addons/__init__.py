@@ -5,14 +5,17 @@ import threading
 
 from init import App, BooleanSetting, socket
 
-app = App("Extras", [
-    BooleanSetting("lockstate", "Hide the display when the screen is locked", True)
-], category="system")
+app = App(
+    "Extras",
+    [BooleanSetting("lockstate", "Hide the display when the screen is locked", True)],
+    category="system",
+)
 
 app.screenlockstate = False
 listener_lock = threading.Lock()
 listener_thread: threading.Thread | None = None
 listener_stop_event: threading.Event | None = None
+
 
 def update_lock_state(locked: bool) -> None:
     if locked == app.screenlockstate:
@@ -28,7 +31,9 @@ async def linux_lock_loop(stop_event: threading.Event) -> None:
 
     bus = await MessageBus(bus_type=BusType.SYSTEM).connect()
     manager = await bus.introspect("org.freedesktop.login1", "/org/freedesktop/login1")
-    manager_object = bus.get_proxy_object("org.freedesktop.login1", "/org/freedesktop/login1", manager)
+    manager_object = bus.get_proxy_object(
+        "org.freedesktop.login1", "/org/freedesktop/login1", manager
+    )
     manager_interface = manager_object.get_interface("org.freedesktop.login1.Manager")
     session_id = os.environ.get("XDG_SESSION_ID")
     if not session_id:
@@ -36,15 +41,24 @@ async def linux_lock_loop(stop_event: threading.Event) -> None:
 
     session_path = await manager_interface.call_get_session(session_id)
     session = await bus.introspect("org.freedesktop.login1", session_path)
-    session_object = bus.get_proxy_object("org.freedesktop.login1", session_path, session)
+    session_object = bus.get_proxy_object(
+        "org.freedesktop.login1", session_path, session
+    )
     properties = session_object.get_interface("org.freedesktop.DBus.Properties")
 
     def on_properties_changed(interface_name, changed, _invalidated) -> None:
-        if interface_name == "org.freedesktop.login1.Session" and "LockedHint" in changed:
+        if (
+            interface_name == "org.freedesktop.login1.Session"
+            and "LockedHint" in changed
+        ):
             update_lock_state(changed["LockedHint"].value)
 
     properties.on_properties_changed(on_properties_changed)
-    update_lock_state((await properties.call_get("org.freedesktop.login1.Session", "LockedHint")).value)
+    update_lock_state(
+        (
+            await properties.call_get("org.freedesktop.login1.Session", "LockedHint")
+        ).value
+    )
     await asyncio.to_thread(stop_event.wait)
     bus.disconnect()
 
@@ -95,7 +109,9 @@ def windows_lock_loop(stop_event: threading.Event) -> None:
         return user32.DefWindowProcW(hwnd, message, wparam, lparam)
 
     hinstance = kernel32.GetModuleHandleW(None)
-    window_class = WNDCLASSW(lpfnWndProc=window_proc, hInstance=hinstance, lpszClassName=class_name)
+    window_class = WNDCLASSW(
+        lpfnWndProc=window_proc, hInstance=hinstance, lpszClassName=class_name
+    )
     if not user32.RegisterClassW(ctypes.byref(window_class)):
         raise ctypes.WinError(ctypes.get_last_error())
 
@@ -120,7 +136,10 @@ def windows_lock_loop(stop_event: threading.Event) -> None:
 
     thread_id = kernel32.GetCurrentThreadId()
     stop_watcher = threading.Thread(
-        target=lambda: (stop_event.wait(), user32.PostThreadMessageW(thread_id, 0x0012, 0, 0)),
+        target=lambda: (
+            stop_event.wait(),
+            user32.PostThreadMessageW(thread_id, 0x0012, 0, 0),
+        ),
         daemon=True,
     )
     stop_watcher.start()
@@ -146,7 +165,9 @@ def lock_thread(stop_event: threading.Event) -> None:
         try:
             asyncio.run(linux_lock_loop(stop_event))
         except ModuleNotFoundError:
-            app.logger.warning("Screen lock tracking requires the dbus-next package on Linux")
+            app.logger.warning(
+                "Screen lock tracking requires the dbus-next package on Linux"
+            )
         except (OSError, RuntimeError):
             app.logger.debug("Failed to subscribe to screen lock state", exc_info=True)
     elif sys.platform == "win32":
@@ -171,13 +192,18 @@ def stop_lock_listener() -> None:
 
 def start_lock_listener() -> None:
     global listener_thread, listener_stop_event
-    if sys.platform not in ("win32", "linux") or not app.settings["lockstate"].get_value():
+    if (
+        sys.platform not in ("win32", "linux")
+        or not app.settings["lockstate"].get_value()
+    ):
         return
     with listener_lock:
         if listener_thread is not None and listener_thread.is_alive():
             return
         listener_stop_event = threading.Event()
-        listener_thread = threading.Thread(target=lock_thread, args=(listener_stop_event,), daemon=True)
+        listener_thread = threading.Thread(
+            target=lock_thread, args=(listener_stop_event,), daemon=True
+        )
         listener_thread.start()
 
 

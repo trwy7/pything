@@ -3,6 +3,7 @@ from PIL import Image
 from sklearn.cluster import KMeans
 import colorsys
 
+
 def get_accent(path: str) -> int | None:
     # Convert every pixel to RGB so each pixel has exactly three numeric
     # channels, regardless of whether the source image is grayscale, indexed,
@@ -23,9 +24,7 @@ def get_accent(path: str) -> int | None:
     # KMeans cannot create more useful clusters than there are distinct RGB
     # values. This also avoids convergence warnings for flat-color artwork.
     distinct_colors = len(np.unique(pixels, axis=0))
-    kmean = KMeans(
-        n_clusters=min(5, distinct_colors), n_init="auto", random_state=0
-    )
+    kmean = KMeans(n_clusters=min(5, distinct_colors), n_init="auto", random_state=0)
     kmean.fit(pixels)
 
     # Each cluster center is a representative RGB color for part of the

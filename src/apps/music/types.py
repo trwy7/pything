@@ -1,11 +1,23 @@
-from collections.abc import Callable # why cant this be in typing :(
+from collections.abc import Callable  # why cant this be in typing :(
+
+
 class Artist:
     def __init__(self, platform: str, id: str, name: str):
         self.platform = platform
         self.id = id
         self.name = name
+
+
 class Album:
-    def __init__(self, platform: str, id: str, title: str, artists: list[Artist], art: str | None, accent: int | None):
+    def __init__(
+        self,
+        platform: str,
+        id: str,
+        title: str,
+        artists: list[Artist],
+        art: str | None,
+        accent: int | None,
+    ):
         """Represents an album
 
         Args:
@@ -21,8 +33,18 @@ class Album:
         self.artists = artists
         self.art = art
         self.accent = accent
+
+
 class Song:
-    def __init__(self, platform: str, id: str, title: str, album: Album, artists: list[Artist], duration: int):
+    def __init__(
+        self,
+        platform: str,
+        id: str,
+        title: str,
+        album: Album,
+        artists: list[Artist],
+        duration: int,
+    ):
         """Represents a song
 
         Args:
@@ -39,26 +61,32 @@ class Song:
         self.album = album
         self.artists = artists
         self.duration = duration
+
+
 class Playback:
     def __init__(self):
         self.song: Song | None = None
         self.playing: bool | None = None
         self.position: int | None = None
         self.listeners: list[Callable] = []
+
     def update(self, song: Song, playing: bool | None, position: int | None):
         self.song = song
         self.playing = playing
         self.position = position
         for listener in self.listeners:
             listener()
+
     def reset(self):
         self.song = None
         self.playing = None
         self.position = None
         for listener in self.listeners:
             listener()
+
     def on_update(self, func: Callable):
         self.listeners.append(func)
         return func
+
 
 playback = Playback()
