@@ -54,7 +54,9 @@ Firmware can be flashed from [Terbium](https://terbium.app/)
 
 ## My Car Thing won't connect
 
-Make sure you are running the custom Thing Labs firmware, if the device is not detected by the script, make sure the device shows up in ADB. You may need udev rules on linux. If it is not detected when your computer turns on, it may need to be manually unplugged and replugged.
+Make sure you are running the Thing Labs/Bridgething firmware, if the device is not detected by the script, make sure the device shows up when running `adb devices`. You may need udev rules on linux. If it is not detected when your computer turns on, it may need to be manually unplugged and replugged.
+
+Some AMD processors require the norndis firmware to be used instead of the regular one, if nothing else works, try that.
 
 </details>
 
