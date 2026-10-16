@@ -46,7 +46,8 @@ If you have a Car Thing, it should be detected automatically on a supported firm
     - Not tested as frequently
 
 Firmware can be flashed from [Terbium](https://terbium.app/). The Thing Labs firmware needs to be downloaded manually from the site linked above.
-
+> [!IMPORTANT]  
+> `Factory Reset to Spotify` in Terbium is NOT the same as the Thing Labs firmware, you must use the local archive option.
 <details>
    <summary>
       <h2>❓ Troubleshooting</h2>
