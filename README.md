@@ -41,9 +41,25 @@ Run `uv run src/init.py`
 
 ## Usage
 
-If you have a Car Thing, it should be detected automatically. If you do not, you may visit the web UI from http://127.0.0.1:5192.
+The web UI is visible at http://127.0.0.1:5192.
 
 All app settings can be configured from http://127.0.0.1:5192/settings.
+
+### Using the Car Thing
+
+If you have a Car Thing, it should be detected automatically. Two firmwares are currently supported:
+
+- [Thing Labs](https://thingify.tools/firmware/P3QZbZIDWnp5m_azQFQqP/Sn_vBLpPfJjic6DZtCj6k) (Recommended for just PYThing)
+    - Boots into PYThing automatically when launched
+    - Everything works
+    - You may need to flash the `*_norndis` image if you have problems the first time
+- [Bridgething](https://bridgething.com/)
+    - You must open the browser app and open `http://127.0.0.1:5192?device=bridgething` on every boot
+    - Only the desktop version of Bridgething is supported
+    - Some buttons may not work
+    - Not tested as frequently
+
+Firmware can be flashed from [Terbium](https://terbium.app/)
 
 </details>
 

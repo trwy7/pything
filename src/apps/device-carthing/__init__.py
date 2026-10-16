@@ -113,12 +113,24 @@ def is_carthing_serial(serial: str):
     ).stdout.strip()
     if result == "exists":
         app.logger.debug(f"Found device {serial}")
-        serial_cache[serial] = [True, False]
+        serial_cache[serial] = [True, False, False]
         return True
     else:
-        app.logger.debug("Device %s is not a superbird", serial)
-        serial_cache[serial] = [False, False]
-        return False
+        # Check if "Bridgething" is in /etc/superbird
+
+        if "Bridgething" in subprocess.run(
+            ["adb", "-s", serial, "shell", "cat /etc/superbird"],
+            capture_output=True,
+            text=True,
+            check=False,
+        ).stdout:
+            app.logger.debug("Device %s is a superbird (probably bridgething)", serial)
+            serial_cache[serial] = [True, False, True]
+            return True
+        else:
+            app.logger.debug("Device %s is not a superbird", serial)
+            serial_cache[serial] = [False, False, False]
+            return False
 
 
 # Get a list of connected carthings
@@ -147,8 +159,12 @@ def inject_thread():
         for serial in connected:
             if serial_cache[serial][1]:
                 continue
-            ct_connect = False
             run_adb_cmd(serial, ["reverse", "tcp:5192", "tcp:5192"])
+            if serial_cache[serial][2]:
+                app.logger.debug("No need to push webapp for %s (bridgething)", serial)
+                app.logger.info("Bridgething detected for %s, you may want to bookmark http://127.0.0.1:5192?device=bridgething in the browser", serial)
+                serial_cache[serial][1] = True
+                continue
             if (
                 os.popen(
                     f"adb -s {serial} shell '[ -f /usr/share/qt-superbird-app/webapp/pythingclient2.txt ] && echo exists'"
