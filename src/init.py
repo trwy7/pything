@@ -87,11 +87,12 @@ class Setting:
             raise ValueError("Setting must be added to an app")
         return config[self.app.id][self.id]
 
-    def set_value(self, value: Any):
+    def set_value(self, value: Any, persist: bool = True):
         if self.app is None:
             raise ValueError("Setting must be added to an app before setting a value")
         config[self.app.id][self.id] = value
-        save_config()
+        if persist:
+            save_config()
 
 
 class StringSetting(Setting):
@@ -396,6 +397,7 @@ def settings_editor():
 @app.route("/settings", methods=["POST"])
 def settings_set():
     logger.debug("Got new settings: %s", request.form)
+    settings_changed = False
     for app in apps.values():
         changed: dict[str, Any] = {}
         for setting in app.settings.values():
@@ -417,10 +419,13 @@ def settings_set():
                 logger.debug(f"Setting as {nd}")
                 if setting.get_value() != nd:
                     changed[setting.id] = nd
-                setting.set_value(nd)
+                    setting.set_value(nd, persist=False)
+                    settings_changed = True
         if changed:
             for sl in app.settingupdatelisteners:
                 sl(changed)
+    if settings_changed:
+        save_config()
     return redirect("/settings")
 
 
