@@ -20,8 +20,9 @@ app = App(
 
 
 @app.on_setting_update
-def send_playbar_style():
-    socket.emit("music_playbar_style", app.settings["playbar_style"].get_value())
+def send_playbar_style(changed: dict[str, object]):
+    if "playbar_style" in changed:
+        socket.emit("music_playbar_style", changed["playbar_style"])
 
 
 @app.on("get")

@@ -397,6 +397,7 @@ def settings_editor():
 def settings_set():
     logger.debug("Got new settings: %s", request.form)
     for app in apps.values():
+        changed: dict[str, Any] = {}
         for setting in app.settings.values():
             if f"{app.id}-{setting.id}" in request.form:
                 nd = request.form[f"{app.id}-{setting.id}"]
@@ -414,9 +415,12 @@ def settings_set():
                                 f"Invalid value for select setting '{setting.id}'"
                             )
                 logger.debug(f"Setting as {nd}")
+                if setting.get_value() != nd:
+                    changed[setting.id] = nd
                 setting.set_value(nd)
-        for sl in app.settingupdatelisteners:
-            sl()
+        if changed:
+            for sl in app.settingupdatelisteners:
+                sl(changed)
     return redirect("/settings")
 
 

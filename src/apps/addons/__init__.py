@@ -246,9 +246,11 @@ def start_lock_listener() -> None:
 
 
 @app.on_setting_update
-def update_lock_listener() -> None:
+def update_lock_listener(changed: dict[str, object]) -> None:
+    if "lockstate" not in changed:
+        return
     stop_lock_listener()
-    if app.settings["lockstate"].get_value():
+    if changed["lockstate"]:
         start_lock_listener()
     else:
         update_lock_state(False)

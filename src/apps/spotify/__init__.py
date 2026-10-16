@@ -39,6 +39,8 @@ art_lock = threading.Lock()
 downloading: list[str] = []
 accent_cache: dict[str, int | None] = {}
 accent_lock = threading.Lock()
+client_id = app.settings["client_id"].get_value()
+client_secret = app.settings["client_secret"].get_value()
 
 if not os.path.isdir(art_dir):
     os.makedirs(art_dir)
@@ -104,10 +106,13 @@ def get_endpoint(endpoint: str):
 
 
 @app.on_setting_update
-def update_auth_url():
-    if (not app.settings["client_id"].get_value()) or (
-        not app.settings["client_secret"].get_value()
-    ):
+def update_auth_url(changed: dict[str, object]):
+    global client_id, client_secret
+    if "client_id" in changed:
+        client_id = changed["client_id"]
+    if "client_secret" in changed:
+        client_secret = changed["client_secret"]
+    if not client_id or not client_secret:
         app.logger.debug("Hiding auth link")
         app.settings["auth"].hidden = True
         return
@@ -115,7 +120,7 @@ def update_auth_url():
     app.settings["auth"].hidden = False
     app.settings[
         "auth"
-    ].link = f"https://accounts.spotify.com/authorize?response_type=code&client_id={app.settings['client_id'].get_value()}&scope=user-read-playback-state&redirect_uri=http://127.0.0.1:5192/apps/spotify/callback"  # type: ignore
+    ].link = f"https://accounts.spotify.com/authorize?response_type=code&client_id={client_id}&scope=user-read-playback-state&redirect_uri=http://127.0.0.1:5192/apps/spotify/callback"  # type: ignore
 
 
 def get_art(url: str, id: str):
@@ -156,7 +161,7 @@ def download_art(url: str, id: str):
     accent_thread(id)
 
 
-update_auth_url()
+update_auth_url({})
 
 
 @app.blueprint.route("/callback")

@@ -7,11 +7,12 @@ app = App(
 
 
 @app.on_setting_update
-def hidewarn():
-    app.settings["warn"].hidden = not app.settings["warn"].get_value()
+def hidewarn(changed: dict[str, object]):
+    if "warn" in changed:
+        app.settings["warn"].hidden = not changed["warn"]
 
 
-hidewarn()
+hidewarn({})
 
 
 @app.blueprint.route("/launch")
