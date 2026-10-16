@@ -79,11 +79,48 @@ def windows_lock_loop(stop_event: threading.Event) -> None:
             ("cbWndExtra", ctypes.c_int),
             ("hInstance", wintypes.HINSTANCE),
             ("hIcon", wintypes.HICON),
-            ("hCursor", wintypes.HCURSOR),
+            ("hCursor", wintypes.HANDLE),
             ("hbrBackground", wintypes.HBRUSH),
             ("lpszMenuName", wintypes.LPCWSTR),
             ("lpszClassName", wintypes.LPCWSTR),
         ]
+
+    user32.DefWindowProcW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+    user32.DefWindowProcW.restype = ctypes.c_ssize_t
+    user32.RegisterClassW.argtypes = [ctypes.POINTER(WNDCLASSW)]
+    user32.RegisterClassW.restype = wintypes.ATOM
+    user32.CreateWindowExW.argtypes = [
+        wintypes.DWORD,
+        wintypes.LPCWSTR,
+        wintypes.LPCWSTR,
+        wintypes.DWORD,
+        ctypes.c_int,
+        ctypes.c_int,
+        ctypes.c_int,
+        ctypes.c_int,
+        wintypes.HWND,
+        wintypes.HANDLE,
+        wintypes.HINSTANCE,
+        ctypes.c_void_p,
+    ]
+    user32.CreateWindowExW.restype = wintypes.HWND
+    user32.GetMessageW.argtypes = [ctypes.POINTER(wintypes.MSG), wintypes.HWND, wintypes.UINT, wintypes.UINT]
+    user32.GetMessageW.restype = ctypes.c_int
+    user32.TranslateMessage.argtypes = [ctypes.POINTER(wintypes.MSG)]
+    user32.TranslateMessage.restype = wintypes.BOOL
+    user32.DispatchMessageW.argtypes = [ctypes.POINTER(wintypes.MSG)]
+    user32.DispatchMessageW.restype = ctypes.c_ssize_t
+    user32.PostThreadMessageW.argtypes = [wintypes.DWORD, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+    user32.PostThreadMessageW.restype = wintypes.BOOL
+    user32.DestroyWindow.argtypes = [wintypes.HWND]
+    user32.DestroyWindow.restype = wintypes.BOOL
+    kernel32.GetModuleHandleW.argtypes = [wintypes.LPCWSTR]
+    kernel32.GetModuleHandleW.restype = wintypes.HINSTANCE
+    kernel32.GetCurrentThreadId.restype = wintypes.DWORD
+    wtsapi32.WTSRegisterSessionNotification.argtypes = [wintypes.HWND, wintypes.DWORD]
+    wtsapi32.WTSRegisterSessionNotification.restype = wintypes.BOOL
+    wtsapi32.WTSUnRegisterSessionNotification.argtypes = [wintypes.HWND]
+    wtsapi32.WTSUnRegisterSessionNotification.restype = wintypes.BOOL
 
     @wnd_proc_type
     def window_proc(hwnd, message, wparam, lparam):
