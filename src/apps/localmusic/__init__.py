@@ -285,9 +285,7 @@ async def linux_track(bus) -> LocalTrack | None:
         name for name in names.body[0] if name.startswith("org.mpris.MediaPlayer2.")
     ]
     app.logger.debug("Found MPRIS services: %s", services)
-    candidates = []
-    playing_providers = []
-    for service in services:
+    async def read_service(service: str) -> tuple[str, LocalTrack | None]:
         try:
             reply = await bus.call(
                 Message(
@@ -303,29 +301,32 @@ async def linux_track(bus) -> LocalTrack | None:
             metadata = {key: value.value for key, value in values["Metadata"].items()}
             title = metadata.get("xesam:title")
             if not title:
-                continue
+                return service.removeprefix("org.mpris.MediaPlayer2."), None
             artist = (metadata.get("xesam:artist") or ["Unknown artist"])[0]
             status = values.get("PlaybackStatus")
             provider = service.removeprefix("org.mpris.MediaPlayer2.")
-            if status == "Playing":
-                playing_providers.append(provider)
             duration = int(metadata.get("mpris:length", 0) / 1000)
             position = int(values.get("Position", 0) / 1000)
-            candidates.append(
-                LocalTrack(
-                    provider,
-                    str(metadata.get("mpris:trackid", title)),
-                    title,
-                    artist,
-                    metadata.get("xesam:album", "Unknown album"),
-                    duration,
-                    position,
-                    status == "Playing",
-                    metadata.get("mpris:artUrl"),
-                )
+            return provider, LocalTrack(
+                provider,
+                str(metadata.get("mpris:trackid", title)),
+                title,
+                artist,
+                metadata.get("xesam:album", "Unknown album"),
+                duration,
+                position,
+                status == "Playing",
+                metadata.get("mpris:artUrl"),
             )
         except (KeyError, TypeError, ValueError, OSError):
             app.logger.debug("Could not read MPRIS player %s", service, exc_info=True)
+            return service.removeprefix("org.mpris.MediaPlayer2."), None
+
+    results = await asyncio.gather(*(read_service(service) for service in services))
+    playing_providers = [
+        provider for provider, candidate in results if candidate and candidate.playing
+    ]
+    candidates = [candidate for _, candidate in results if candidate is not None]
     set_provider_label(playing_providers)
     candidates = [
         candidate for candidate in candidates if not denied(candidate.provider)
@@ -338,16 +339,17 @@ async def linux_track(bus) -> LocalTrack | None:
 def music_thread() -> None:
     if sys.platform == "win32":
         while True:
-            time.sleep(1)
             if not app.settings["enabled"].get_value():
                 continue
             try:
                 update_playback(asyncio.run(windows_track()))
             except ModuleNotFoundError:
                 app.logger.warning("Local Music requires the winsdk package on Windows")
+                time.sleep(1)
                 return
             except (OSError, RuntimeError, TypeError, ValueError):
                 app.logger.debug("Could not read Windows media session", exc_info=True)
+            time.sleep(1)
     elif sys.platform == "linux":
         try:
             asyncio.run(linux_loop())
@@ -364,13 +366,14 @@ async def linux_loop() -> None:
         app.logger.warning("Local Music requires a running Linux D-Bus session")
         return
     while True:
-        await asyncio.sleep(1)
         if not app.settings["enabled"].get_value() or not clients:
+            await asyncio.sleep(1)
             continue
         try:
             update_playback(await linux_track(bus))
         except Exception:
             app.logger.debug("Could not read MPRIS media session", exc_info=True)
+        await asyncio.sleep(1)
 
 
 @app.blueprint.route("/art/<string:filename>")
