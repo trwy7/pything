@@ -6,6 +6,7 @@ import sys
 import datetime
 import time
 import pickle
+import shutil
 import inspect
 import importlib
 import logging
@@ -24,9 +25,16 @@ DEVMODE = bool(os.environ.get("DEV", False))
 logging.basicConfig(level=logging.DEBUG if DEVMODE else logging.INFO)
 logger = logging.getLogger("pything")
 if os.name == "nt":
-    data_path = os.path.join(os.environ["APPDATA"], "pything.pkl")
+    config_dir = os.path.join(os.environ["APPDATA"], "pything")
+    old_data_path = os.path.join(os.environ["APPDATA"], "pything.pkl")
 else:
-    data_path = os.path.join(os.path.expanduser("~"), ".config", "pything.pkl")
+    config_dir = os.path.join(os.path.expanduser("~"), ".config", "pything")
+    old_data_path = os.path.join(os.path.expanduser("~"), ".config", "pything.pkl")
+data_path = os.path.join(config_dir, "data.pkl")
+
+if os.path.exists(old_data_path) and not os.path.exists(data_path):
+    os.makedirs(config_dir, exist_ok=True)
+    shutil.move(old_data_path, data_path)
 
 app = Flask(__name__, static_folder="static", template_folder="pages")
 socket = SocketIO(app, async_mode="threading")
@@ -50,6 +58,7 @@ if not logger.isEnabledFor(logging.DEBUG):
 
 
 def save_config():
+    os.makedirs(config_dir, exist_ok=True)
     with open(data_path, "wb") as cfw:
         pickle.dump(config, cfw)
 
