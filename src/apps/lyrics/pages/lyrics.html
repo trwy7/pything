@@ -59,7 +59,12 @@
     .lyric.current {
         font-size: 25px;
         font-weight: 999;
-        color: hsla(var(--custom-hue, 151), 100%, 85%, 1);
+        color: hsl(var(--custom-hue, 151), 100%, 85%);
+    }
+    body.unsynced .lyric {
+        font-size: 25px;
+        font-weight: 999;
+        color: hsl(var(--custom-hue, 151), 5%, 90%);
     }
 </style>
 {% endblock %}
