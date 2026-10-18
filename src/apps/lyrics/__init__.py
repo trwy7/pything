@@ -41,7 +41,7 @@ def get_current_lrc() -> list[tuple[int, str]] | list[str] | str:
             return current_lrc[1]
         attempt_again = False
         req = requests.get(
-            f"{app.settings['base_url']}/api/get",
+            f"{app.settings['base_url'].get_value()}/api/get",
             params={
                 "track_name": cpbs.title,
                 "artist_name": cpbs.artists[0].name,
