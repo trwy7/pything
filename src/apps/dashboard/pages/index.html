@@ -48,7 +48,7 @@
 </style>
 {% endblock %}
 {% block content %}
-<h1>Apps</h1>
+<h1 onclick="window.location.href = '/apps?from=dashboard'">Apps</h1>
 <div id="divider"></div>
 {% if app.settings.warn.get_value() %}
 <h2>Most apps have settings to change their function! Check it out at http://127.0.0.1:5192/settings.</h2>
