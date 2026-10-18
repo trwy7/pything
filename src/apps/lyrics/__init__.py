@@ -50,6 +50,20 @@ def get_current_lrc() -> list[tuple[int, str]] | list[str] | str:
             },
             headers={"User-Agent": USER_AGENT},
         )
+        if req.status_code == 429:
+            app.logger.warning(
+                "Rate limited while getting lyrics for '%s' by '%s': %s",
+                cpbs.title,
+                cpbs.artists[0].name,
+                req.status_code,
+            )
+            if playback.song and cpbs.id == playback.song.id:
+                current_lrc = (
+                    cpbs.id,
+                    f"Rate limited while getting lyrics for '{cpbs.title}' by '{cpbs.artists[0].name}'",
+                )
+                app.send("lyrics", current_lrc[1])
+            return f"Rate limited while getting lyrics for '{cpbs.title}' by '{cpbs.artists[0].name}'"
         if req.status_code == 404:
             app.logger.debug(
                 "Could not find lyrics for '%s' by '%s': %s",
