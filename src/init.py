@@ -435,12 +435,11 @@ def app_manifest(app_dir: str) -> dict[str, Any]:
     if not isinstance(dependencies, dict):
         raise RuntimeError(f"Manifest for app directory '{app_dir}' has invalid dependencies")
     for dependency_type in ("required", "optional"):
-        values = dependencies.get(dependency_type, [])
+        values = dependencies.setdefault(dependency_type, [])
         if not isinstance(values, list) or not all(isinstance(value, str) for value in values):
             raise RuntimeError(
                 f"Manifest for app directory '{app_dir}' has invalid {dependency_type} dependencies"
             )
-        dependencies[dependency_type] = values
     manifest["dependencies"] = dependencies
     return manifest
 

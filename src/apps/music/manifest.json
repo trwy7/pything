@@ -5,7 +5,6 @@
   "codeowners": ["@trwy7"],
   "category": "music",
   "dependencies": {
-    "required": [],
     "optional": ["customizer"]
   }
 }
