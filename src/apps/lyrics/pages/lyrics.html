@@ -8,6 +8,12 @@
         height: 100%;
         width: 100%;
     }
+    body.unsynced {
+        overflow-y: auto;
+    }
+    body.unsynced::-webkit-scrollbar {
+        display: none;
+    }
     #status {
         font-size: 2em;
         position: absolute;
@@ -15,13 +21,35 @@
         left: 50%;
         transform: translate(-50%, -50%);
     }
+    #unsynced-notice {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        background-color: hsla(var(--custom-hue, 151), 40%, 20%, 0.9);
+        color: hsl(var(--custom-hue, 151), 100%, 95%);
+        font-size: 1.5em;
+        padding: 10px 0;
+    }
+    body.unsynced #unsynced-notice {
+        display: block;
+    }
     #lyrics {
         font-size: 20px;
         transition: transform 500ms;
         transform: translateY(50vh);
         width: calc(100% - 50px);
-        padding-left: 25px;
+        padding: 0 25px;
+        display: flex;
         flex-direction: column;
+        box-sizing: border-box;
+    }
+    body.unsynced #lyrics {
+        transform: none !important;
+        padding-top: 60px;
+        padding-bottom: 60px;
+        min-height: 100%;
     }
     .lyric {
         transition: font-size 500ms, color 500ms;
@@ -36,10 +64,9 @@
 </style>
 {% endblock %}
 {% block content %}
-<div id="status">
-</div>
-<div id="lyrics">
-</div>
+<div id="status"></div>
+<div id="unsynced-notice">Unsynced</div>
+<div id="lyrics"></div>
 {% endblock %}
 {% block script %}
 <script>
@@ -104,6 +131,7 @@
         timedLyrics = [];
         automove = true;
         currentIndex = -1;
+        document.body.classList.remove("unsynced");
         resetLyricsPosition();
 
         if (typeof lyr === "string") {
@@ -131,8 +159,10 @@
             lyricsInner.appendChild(span);
         }
 
-        // Sync immediately for the currently known playback position
-        if (automove && timedLyrics.length) {
+        if (!automove) {
+            document.body.classList.add("unsynced");
+        } else if (timedLyrics.length) {
+            // Sync immediately for the currently known playback position
             const now = performance.now();
             const effectivePos = basePos + (playing ? (now - lastSyncTs) : 0);
             setCurrentIndex(findCurrentIndexByTime(effectivePos));
