@@ -5,7 +5,7 @@ import humanize
 from flask import render_template
 from init import App, BooleanSetting
 
-app = App("System", [BooleanSetting("gib", "Values in GiB", False)], category="system")
+app = App([BooleanSetting("gib", "Values in GiB", False)])
 
 onet = psutil.net_io_counters()
 net_ld = onet.bytes_recv

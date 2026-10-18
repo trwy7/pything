@@ -1,7 +1,7 @@
 from flask import render_template
 from init import App
 
-app = App("Clock", [], category="system")
+app = App([])
 
 
 @app.blueprint.route("/launch")

@@ -1,9 +1,7 @@
 from flask import render_template
 from init import App, get_apps, BooleanSetting
 
-app = App(
-    "Dashboard", [BooleanSetting("warn", "Show settings hint", True)], category="core"
-)
+app = App([BooleanSetting("warn", "Show settings hint", True)])
 
 
 @app.on_setting_update

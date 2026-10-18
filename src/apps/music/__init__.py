@@ -5,7 +5,6 @@ from init import App, socket, BooleanSetting, SelectSetting
 from .types import playback
 
 app = App(
-    "Music",
     [
         BooleanSetting("accent", "Set accent color to art accent", True),
         SelectSetting(
@@ -15,7 +14,6 @@ app = App(
             {"rounded": "Rounded", "flat": "Flat", "off": "Off"},
         ),
     ],
-    category="music",
 )
 
 

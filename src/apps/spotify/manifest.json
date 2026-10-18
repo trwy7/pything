@@ -1,0 +1,6 @@
+{
+  "id": "spotify",
+  "name": "Spotify",
+  "codeowners": ["@trwy7"],
+  "category": "musicprovider"
+}

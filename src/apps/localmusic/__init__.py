@@ -22,7 +22,6 @@ from apps.music.utils import get_accent
 from init import App, BooleanSetting, LabelSetting, StringSetting, clients
 
 app = App(
-    "Local Music",
     [
         BooleanSetting("enabled", "Enabled", False, False),
         LabelSetting(
@@ -30,7 +29,6 @@ app = App(
         ),
         StringSetting("deny", "Deny providers (comma separated)", ""),
     ],
-    category="musicprovider",
 )
 
 art_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache", "art")
@@ -76,8 +74,7 @@ def get_artists(artist_names: str) -> list[Artist]:
 
 def song_id(track: LocalTrack) -> str:
     return hashlib.sha256(
-        f"{track.provider}\0{track.id}\0{track.title}\0{track.artist}\0{track.album}".encode(
-        )
+        f"{track.provider}\0{track.id}\0{track.title}\0{track.artist}\0{track.album}".encode()
     ).hexdigest()
 
 
@@ -292,6 +289,7 @@ async def linux_track(bus) -> LocalTrack | None:
         name for name in names.body[0] if name.startswith("org.mpris.MediaPlayer2.")
     ]
     app.logger.debug("Found MPRIS services: %s", services)
+
     async def read_service(service: str) -> tuple[str, LocalTrack | None]:
         try:
             reply = await bus.call(

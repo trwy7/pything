@@ -5,9 +5,7 @@ from flask import render_template, request
 from init import App, StringSetting
 from apps.music.types import playback
 
-app = App("Lyrics", [
-    StringSetting("base_url", "LRCLIB base URL", "https://lrclib.net")
-], category="music")
+app = App([StringSetting("base_url", "LRCLIB base URL", "https://lrclib.net")])
 USER_AGENT = "PYThing Lyrics (https://github.com/trwy7/pything)"
 current_lrc: (
     tuple[str, list[tuple[int, str]]] | tuple[str, list[str]] | tuple[str, str]
@@ -86,7 +84,7 @@ def get_current_lrc() -> list[tuple[int, str]] | list[str] | str:
                 cpbs.title,
                 cpbs.artists[0].name,
                 req.status_code,
-                req.text
+                req.text,
             )
             if playback.song and cpbs.id == playback.song.id:
                 current_lrc = (
@@ -95,7 +93,9 @@ def get_current_lrc() -> list[tuple[int, str]] | list[str] | str:
                 )
                 app.send("lyrics", current_lrc[1])
             attempt_again = True
-            return f"Failed to get lyrics for '{cpbs.title}' by '{cpbs.artists[0].name}'"
+            return (
+                f"Failed to get lyrics for '{cpbs.title}' by '{cpbs.artists[0].name}'"
+            )
         data = req.json()
         if data["syncedLyrics"]:
             app.logger.debug("Found synced lyrics for song '%s'", cpbs.title)

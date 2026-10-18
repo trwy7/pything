@@ -1,0 +1,6 @@
+{
+  "id": "localmusic",
+  "name": "Local Music",
+  "codeowners": ["@trwy7"],
+  "category": "musicprovider"
+}

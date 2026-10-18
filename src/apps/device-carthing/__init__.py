@@ -11,9 +11,7 @@ import urllib.request
 from init import App, BooleanSetting
 
 app = App(
-    "Car Thing connector",
     [BooleanSetting("adb", "Ask to download ADB", True)],
-    category="device",
 )
 
 adb = False
@@ -118,12 +116,15 @@ def is_carthing_serial(serial: str):
     else:
         # Check if "Bridgething" is in /etc/superbird
 
-        if "Bridgething" in subprocess.run(
-            ["adb", "-s", serial, "shell", "cat /etc/superbird"],
-            capture_output=True,
-            text=True,
-            check=False,
-        ).stdout:
+        if (
+            "Bridgething"
+            in subprocess.run(
+                ["adb", "-s", serial, "shell", "cat /etc/superbird"],
+                capture_output=True,
+                text=True,
+                check=False,
+            ).stdout
+        ):
             app.logger.debug("Device %s is a superbird (probably bridgething)", serial)
             serial_cache[serial] = [True, False, True]
             return True
@@ -162,7 +163,10 @@ def inject_thread():
             run_adb_cmd(serial, ["reverse", "tcp:5192", "tcp:5192"])
             if serial_cache[serial][2]:
                 app.logger.debug("No need to push webapp for %s (bridgething)", serial)
-                app.logger.info("Bridgething detected for %s, you may want to bookmark http://127.0.0.1:5192?device=bridgething in the browser", serial)
+                app.logger.info(
+                    "Bridgething detected for %s, you may want to bookmark http://127.0.0.1:5192?device=bridgething in the browser",
+                    serial,
+                )
                 serial_cache[serial][1] = True
                 continue
             if (

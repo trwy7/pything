@@ -6,9 +6,7 @@ import threading
 from init import App, BooleanSetting, socket
 
 app = App(
-    "Extras",
     [BooleanSetting("lockstate", "Hide the display when the screen is locked", True)],
-    category="system",
 )
 
 app.screenlockstate = False
@@ -100,7 +98,12 @@ def windows_lock_loop(stop_event: threading.Event) -> None:
             ("lpszClassName", wintypes.LPCWSTR),
         ]
 
-    user32.DefWindowProcW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+    user32.DefWindowProcW.argtypes = [
+        wintypes.HWND,
+        wintypes.UINT,
+        wintypes.WPARAM,
+        wintypes.LPARAM,
+    ]
     user32.DefWindowProcW.restype = ctypes.c_ssize_t
     user32.RegisterClassW.argtypes = [ctypes.POINTER(WNDCLASSW)]
     user32.RegisterClassW.restype = wintypes.ATOM
@@ -119,13 +122,23 @@ def windows_lock_loop(stop_event: threading.Event) -> None:
         ctypes.c_void_p,
     ]
     user32.CreateWindowExW.restype = wintypes.HWND
-    user32.GetMessageW.argtypes = [ctypes.POINTER(wintypes.MSG), wintypes.HWND, wintypes.UINT, wintypes.UINT]
+    user32.GetMessageW.argtypes = [
+        ctypes.POINTER(wintypes.MSG),
+        wintypes.HWND,
+        wintypes.UINT,
+        wintypes.UINT,
+    ]
     user32.GetMessageW.restype = ctypes.c_int
     user32.TranslateMessage.argtypes = [ctypes.POINTER(wintypes.MSG)]
     user32.TranslateMessage.restype = wintypes.BOOL
     user32.DispatchMessageW.argtypes = [ctypes.POINTER(wintypes.MSG)]
     user32.DispatchMessageW.restype = ctypes.c_ssize_t
-    user32.PostThreadMessageW.argtypes = [wintypes.DWORD, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+    user32.PostThreadMessageW.argtypes = [
+        wintypes.DWORD,
+        wintypes.UINT,
+        wintypes.WPARAM,
+        wintypes.LPARAM,
+    ]
     user32.PostThreadMessageW.restype = wintypes.BOOL
     user32.DestroyWindow.argtypes = [wintypes.HWND]
     user32.DestroyWindow.restype = wintypes.BOOL

@@ -1,0 +1,6 @@
+{
+  "id": "hwmonitor",
+  "name": "System",
+  "codeowners": ["@trwy7"],
+  "category": "system"
+}

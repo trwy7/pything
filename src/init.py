@@ -3,6 +3,7 @@ import pip_system_certs.wrapt_requests
 pip_system_certs.wrapt_requests.inject_truststore()
 import os
 import sys
+import json
 import datetime
 import time
 import pickle
@@ -195,24 +196,45 @@ class App:
 
     def __init__(
         self,
-        display_name: str,
         settings: list[Setting | ElementSetting],
-        aid: str | None = None,
-        category: str = "uncategorized",
     ):
         global apps
         stack = inspect.stack()
         self.dir = os.path.dirname(os.path.abspath(stack[1].filename))
         self.dirname = os.path.basename(self.dir)
         atype = os.path.basename(os.path.dirname(self.dir))
-        self.category = category
-        if aid is None:
-            aname = os.path.basename(self.dir)
-            aid = aname
-        self.id = aid
+        manifest_path = os.path.join(self.dir, "manifest.json")
+        try:
+            with open(manifest_path, encoding="utf-8") as manifest_file:
+                manifest = json.load(manifest_file)
+        except (OSError, json.JSONDecodeError) as exc:
+            raise RuntimeError(
+                f"Failed to load manifest for app directory '{self.dir}'"
+            ) from exc
+        required_manifest_fields = {"id", "name", "codeowners", "category"}
+        if not isinstance(manifest, dict) or not required_manifest_fields.issubset(
+            manifest
+        ):
+            if not isinstance(manifest, dict):
+                missing_fields = required_manifest_fields
+            else:
+                missing_fields = required_manifest_fields - manifest.keys()
+            raise RuntimeError(
+                f"Manifest for app directory '{self.dir}' is missing: "
+                + ", ".join(sorted(missing_fields))
+            )
+        if not all(
+            isinstance(manifest[field], str) for field in ("id", "name", "category")
+        ):
+            raise RuntimeError(
+                f"Manifest for app directory '{self.dir}' has invalid metadata"
+            )
+        self.id = manifest["id"]
+        self.display_name = manifest["name"]
+        self.category = manifest["category"]
         apps[self.id] = self
         self.logger = logging.getLogger("pything.app." + self.id)
-        logger.debug(f"Initializing app '{display_name}' with id '{aid}'")
+        logger.debug(f"Initializing app '{self.display_name}' with id '{self.id}'")
         self.blueprint = Blueprint(
             self.id, __name__, static_folder=os.path.abspath(self.dir) + "/static"
         )
@@ -221,18 +243,17 @@ class App:
         def inject_app():
             return {"app": self}
 
-        if not os.path.isdir(atype + os.sep + aid):
+        if not os.path.isdir(atype + os.sep + self.id):
             raise RuntimeError(
-                f"Failed to find app directory for '{display_name}'"
+                f"Failed to find app directory for '{self.display_name}'"
             )  # sanity check
-        self.display_name = display_name
         self.settings = {s.id: s for s in settings}
         self.hidden = True  # updated on init
         self.listeners = {}
         self.startup_listeners: list[Callable] = []
         self.settingupdatelisteners: list[Callable] = []
-        if not aid in config:
-            config[aid] = {}
+        if not self.id in config:
+            config[self.id] = {}
         schange = False
         for setting in settings:
             if not isinstance(setting, Setting):
@@ -242,12 +263,12 @@ class App:
                     "Settings must be instances of the Setting or ElementSetting class"
                 )
             setting.app = self
-            if not setting.id in config[aid]:
+            if not setting.id in config[self.id]:
                 schange = True
                 logger.debug(
-                    f"Setting {setting.id} for {aid} to default of {str(setting.default)}"
+                    f"Setting {setting.id} for {self.id} to default of {str(setting.default)}"
                 )
-                config[aid][setting.id] = setting.default
+                config[self.id][setting.id] = setting.default
         if schange:
             logger.debug("Saving config with new default settings")
             save_config()

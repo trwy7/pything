@@ -1,0 +1,6 @@
+{
+  "id": "addons",
+  "name": "Extras",
+  "codeowners": ["@trwy7"],
+  "category": "system"
+}

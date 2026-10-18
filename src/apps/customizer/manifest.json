@@ -1,0 +1,6 @@
+{
+  "id": "customizer",
+  "name": "Customize",
+  "codeowners": ["@trwy7"],
+  "category": "system"
+}

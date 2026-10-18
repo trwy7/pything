@@ -1,0 +1,6 @@
+{
+  "id": "dashboard",
+  "name": "Dashboard",
+  "codeowners": ["@trwy7"],
+  "category": "core"
+}

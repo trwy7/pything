@@ -1,12 +1,10 @@
 from init import App, IntegerSetting, socket
 
 app = App(
-    "Customize",
     [
         IntegerSetting("hue", "App hue", 151),
         IntegerSetting("background", "Background lightness (percent)", 24),
     ],
-    category="system",
 )
 
 temp_accent = app.settings["hue"].get_value()

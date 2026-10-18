@@ -1,0 +1,6 @@
+{
+  "id": "clock",
+  "name": "Clock",
+  "codeowners": ["@trwy7"],
+  "category": "system"
+}

@@ -18,7 +18,6 @@ from init import (
 )
 
 app = App(
-    "Spotify",
     [
         BooleanSetting("enabled", "Enabled", False, False),
         LabelSetting(
@@ -31,7 +30,6 @@ app = App(
         DataSetting("access_token", {"token": "", "expiry": datetime.now()}),
         DataSetting("refresh_token", ""),
     ],
-    category="musicprovider",
 )
 USER_AGENT = "PYThing Spotify Provider (https://github.com/trwy7/pything)"
 art_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache", "art")
