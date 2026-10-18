@@ -79,6 +79,7 @@
     let automove = true;
     let timedLyrics = [];
     let currentIndex = -1;
+    let lyricsFrame = null;
 
     let basePos = 0;              // last reported position from "music"
     let playing = false;
@@ -132,6 +133,10 @@
     }
 
     on("lyrics", (lyr) => {
+        if (lyricsFrame !== null) {
+            cancelAnimationFrame(lyricsFrame);
+            lyricsFrame = null;
+        }
         lyricsInner.innerHTML = "";
         timedLyrics = [];
         automove = true;
@@ -172,6 +177,7 @@
             const effectivePos = basePos + (playing ? (now - lastSyncTs) : 0);
             setCurrentIndex(findCurrentIndexByTime(effectivePos));
         }
+        scheduleLyricsTick();
     });
 
     on("music", (tpos) => {
@@ -183,19 +189,25 @@
             const idx = findCurrentIndexByTime(basePos);
             setCurrentIndex(idx);
         }
+        scheduleLyricsTick();
     });
 
-    function tick() {
-        if (automove && timedLyrics.length) {
-            const now = performance.now();
-            const effectivePos = basePos + (playing ? (now - lastSyncTs) : 0);
-            const idx = findCurrentIndexByTime(effectivePos);
-            setCurrentIndex(idx);
+    function scheduleLyricsTick() {
+        if (lyricsFrame === null && automove && timedLyrics.length && playing) {
+            lyricsFrame = requestAnimationFrame(tick);
         }
-        requestAnimationFrame(tick);
     }
 
-    requestAnimationFrame(tick);
+    function tick() {
+        lyricsFrame = null;
+        if (automove && timedLyrics.length && playing) {
+            const now = performance.now();
+            const effectivePos = basePos + (now - lastSyncTs);
+            const idx = findCurrentIndexByTime(effectivePos);
+            setCurrentIndex(idx);
+            scheduleLyricsTick();
+        }
+    }
     send("open", 0);
 </script>
 {% endblock %}

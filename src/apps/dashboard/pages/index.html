@@ -74,11 +74,13 @@
     const appList = document.getElementById("apps");
     const apps = appList.children;
     function updateSelected() {
+        if (!apps.length) return;
         lastapp.classList.remove('selected');
         apps[index].classList.add('selected');
         lastapp = apps[index];
     }
     document.addEventListener('keydown', function(event) {
+        if (!apps.length) return;
         switch (event.key) {
             case 'Enter':
                 apps[index].click();
@@ -94,6 +96,7 @@
         }
     });
     document.addEventListener('wheel', function(event) {
+        if (!apps.length) return;
         if (event.deltaX == -53) {
             index = (index - 1 + apps.length) % apps.length;
         } else if (event.deltaX == 53) {

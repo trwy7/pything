@@ -345,6 +345,7 @@ def music_thread() -> None:
     if sys.platform == "win32":
         while True:
             if not app.settings["enabled"].get_value():
+                time.sleep(1)
                 continue
             try:
                 update_playback(asyncio.run(windows_track()))

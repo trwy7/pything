@@ -209,7 +209,7 @@ def callback():
 def music_thread():
     while True:
         time.sleep(2)
-        if not app.settings["enabled"].get_value():
+        if not app.settings["enabled"].get_value() or not app.should_poll():
             continue
         try:
             rdata = get_endpoint("/v1/me/player")
