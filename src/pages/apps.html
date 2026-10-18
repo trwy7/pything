@@ -20,17 +20,22 @@
         body {
             min-height: 100vh;
             margin: 0;
-            padding: 32px clamp(18px, 5vw, 80px) 48px;
+            padding: 32px 18px 48px;
+            padding: 32px 5vw 48px;
             background: linear-gradient(350deg, #272727, #1f1f1f);
             color: white;
             font-family: Arial, Helvetica, sans-serif;
         }
-        form { width: min(100%, 900px); margin: 0 auto; }
-        h1 { margin: 0 0 28px; font-size: clamp(1.8rem, 4vw, 2.5rem); }
+        form { width: 100%; max-width: 900px; margin: 0 auto; }
+        h1 { margin: 0 0 28px; font-size: 1.8rem; }
+        @media (min-width: 560px) {
+            body { padding-left: 5vw; padding-right: 5vw; }
+            h1 { font-size: 2.5rem; }
+        }
         h2 { margin: 0 0 12px; color: var(--accent); font-size: 1.25rem; }
         .settings {
             display: grid;
-            gap: 1px;
+            grid-gap: 1px;
             overflow: hidden;
             border: 1px solid var(--border);
             border-radius: 10px;
@@ -41,13 +46,12 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 20px;
             min-height: 58px;
             padding: 12px 16px;
             background: var(--panel);
         }
         .setting:hover { background: var(--panel-strong); }
-        .settinglabel { color: var(--muted); }
+        .settinglabel { margin-right: 20px; color: var(--muted); }
         .settinglabel strong { display: block; color: white; }
         .dependency { display: block; font-size: 0.9rem; }
         .message { margin-top: 5px; color: #ffb4a8; font-size: 0.9rem; }
@@ -65,7 +69,8 @@
         }
         input[type="submit"]:hover, button:hover { background: hsl(var(--custom-hue, 158), 40%, 36%); }
         dialog {
-            width: min(90vw, 440px);
+            width: 90%;
+            max-width: 440px;
             border: 1px solid var(--border);
             border-radius: 10px;
             background: #272727;
@@ -76,13 +81,18 @@
         dialog label { display: block; margin: 12px 0; color: var(--muted); }
         dialog button { margin: 12px 8px 0 0; }
         @media (max-width: 560px) {
-            .setting { align-items: flex-start; flex-direction: column; gap: 8px; }
+            .setting { align-items: flex-start; flex-direction: column; }
+            .settinglabel { margin-right: 0; margin-bottom: 8px; }
         }
     </style>
 </head>
 <body>
     <h1><center>PYThing Apps</center></h1>
+    {% if request.args.get("from") == "dashboard" %}
+    <a href="/apps/dashboard/launch"><center>Back to dashboard</center></a>
+    {% else %}
     <a href="/settings"><center>Back to Settings</center></a>
+    {% endif %}
     <form method="POST" id="apps-form">
         <h2>Installed apps</h2>
         <div class="settings">
