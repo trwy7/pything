@@ -1,6 +1,11 @@
 {
   "id": "localmusic",
   "name": "Local Music",
+  "description": "Reads the active media session from Windows or Linux.",
   "codeowners": ["@trwy7"],
-  "category": "musicprovider"
+  "category": "musicprovider",
+  "dependencies": {
+    "required": ["music"],
+    "optional": []
+  }
 }

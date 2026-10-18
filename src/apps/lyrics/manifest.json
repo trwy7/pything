@@ -1,6 +1,11 @@
 {
   "id": "lyrics",
   "name": "Lyrics",
+  "description": "Fetches lyrics for the current song from the music provider.",
   "codeowners": ["@trwy7"],
-  "category": "music"
+  "category": "music",
+  "dependencies": {
+    "required": ["music"],
+    "optional": []
+  }
 }

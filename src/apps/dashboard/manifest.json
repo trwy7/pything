@@ -1,6 +1,8 @@
 {
   "id": "dashboard",
   "name": "Dashboard",
+  "description": "Provides the main dashboard for launching apps.",
+  "core": true,
   "codeowners": ["@trwy7"],
   "category": "core"
 }

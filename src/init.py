@@ -32,6 +32,8 @@ else:
     config_dir = os.path.join(os.path.expanduser("~"), ".config", "pything")
     old_data_path = os.path.join(os.path.expanduser("~"), ".config", "pything.pkl")
 data_path = os.path.join(config_dir, "data.pkl")
+APP_CONFIG_ID = "_apps"
+RESTART_EXIT_CODE = 65
 
 if os.path.exists(old_data_path) and not os.path.exists(data_path):
     os.makedirs(config_dir, exist_ok=True)
@@ -424,6 +426,158 @@ def settings_editor():
     )
 
 
+def app_manifest(app_dir: str) -> dict[str, Any]:
+    with open(os.path.join(app_dir, "manifest.json"), encoding="utf-8") as manifest_file:
+        manifest = json.load(manifest_file)
+    if not isinstance(manifest, dict):
+        raise RuntimeError(f"Manifest for app directory '{app_dir}' must be an object")
+    dependencies = manifest.get("dependencies", {})
+    if not isinstance(dependencies, dict):
+        raise RuntimeError(f"Manifest for app directory '{app_dir}' has invalid dependencies")
+    for dependency_type in ("required", "optional"):
+        values = dependencies.get(dependency_type, [])
+        if not isinstance(values, list) or not all(isinstance(value, str) for value in values):
+            raise RuntimeError(
+                f"Manifest for app directory '{app_dir}' has invalid {dependency_type} dependencies"
+            )
+        dependencies[dependency_type] = values
+    manifest["dependencies"] = dependencies
+    return manifest
+
+
+def discover_apps() -> dict[str, dict[str, Any]]:
+    discovered: dict[str, dict[str, Any]] = {}
+    for app_root in ("apps", "customapps"):
+        if not os.path.isdir(app_root):
+            continue
+        for app_name in sorted(os.listdir(app_root)):
+            app_dir = os.path.join(app_root, app_name)
+            if not os.path.isdir(app_dir) or not os.path.isfile(
+                os.path.join(app_dir, "manifest.json")
+            ):
+                continue
+            manifest = app_manifest(app_dir)
+            app_id = manifest.get("id")
+            if not isinstance(app_id, str):
+                raise RuntimeError(f"Manifest for app directory '{app_dir}' has invalid id")
+            if app_id in discovered:
+                raise RuntimeError(f"App id '{app_id}' is defined more than once")
+            discovered[app_id] = {
+                "id": app_id,
+                "name": manifest.get("name", app_id),
+                "description": manifest.get("description", ""),
+                "core": manifest.get("core", False),
+                "category": manifest.get("category", "uncategorized"),
+                "dependencies": manifest["dependencies"],
+                "directory": app_dir,
+            }
+    return discovered
+
+
+def required_dependency_closure(
+    selected: set[str], manifests: dict[str, dict[str, Any]]
+) -> set[str]:
+    enabled = selected & set(manifests)
+    changed = True
+    while changed:
+        changed = False
+        for app_id in tuple(enabled):
+            for dependency in manifests[app_id]["dependencies"]["required"]:
+                if dependency not in manifests:
+                    enabled.remove(app_id)
+                    changed = True
+                    break
+                if dependency not in enabled:
+                    enabled.add(dependency)
+                    changed = True
+    return enabled
+
+
+def enabled_apps(manifests: dict[str, dict[str, Any]]) -> set[str]:
+    disabled = set(config.get(APP_CONFIG_ID, {}).get("disabled", []))
+    core_apps = {
+        app_id for app_id, manifest in manifests.items() if manifest["core"]
+    }
+    return required_dependency_closure(set(manifests) - disabled | core_apps, manifests)
+
+
+def app_dependency_view(manifests: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+    enabled = enabled_apps(manifests)
+    app_names = {app_id: manifest["name"] for app_id, manifest in manifests.items()}
+    required_by: dict[str, set[str]] = {app_id: set() for app_id in manifests}
+    for app_id, manifest in manifests.items():
+        for dependency in manifest["dependencies"]["required"]:
+            if dependency in required_by and app_id in enabled:
+                required_by[dependency].add(app_id)
+    result = []
+    for app_id in sorted(
+        manifests,
+        key=lambda item: (manifests[item]["core"], manifests[item]["name"].casefold()),
+    ):
+        manifest = manifests[app_id]
+        missing_required = [
+            dependency
+            for dependency in manifest["dependencies"]["required"]
+            if dependency not in manifests
+        ]
+        result.append(
+            {
+                **manifest,
+                "enabled": app_id in enabled,
+                "required_names": [
+                    app_names.get(dependency, dependency)
+                    for dependency in manifest["dependencies"]["required"]
+                ],
+                "optional_names": [
+                    app_names.get(dependency, dependency)
+                    for dependency in manifest["dependencies"]["optional"]
+                ],
+                "required_by_names": [
+                    app_names.get(dependency, dependency)
+                    for dependency in sorted(required_by[app_id])
+                ],
+                "missing_required": missing_required,
+                "missing_required_names": [
+                    app_names.get(dependency, dependency)
+                    for dependency in missing_required
+                ],
+            }
+        )
+    return result
+
+
+@app.route("/apps", methods=["GET"])
+def apps_editor():
+    manifests = discover_apps()
+    return render_template(
+        "apps.html",
+        installed_apps=app_dependency_view(manifests),
+        custom_hue=config.get("customizer", {}).get("hue", 151),
+    )
+
+
+@app.route("/apps", methods=["POST"])
+def apps_set():
+    manifests = discover_apps()
+    selected = {
+        app_id
+        for app_id in manifests
+        if f"app-{app_id}" in request.form
+    }
+    selected.update(
+        app_id for app_id, manifest in manifests.items() if manifest["core"]
+    )
+    enabled = required_dependency_closure(selected, manifests)
+    config[APP_CONFIG_ID] = {"disabled": sorted(set(manifests) - enabled)}
+    save_config()
+
+    def restart() -> None:
+        os._exit(RESTART_EXIT_CODE)
+
+    threading.Timer(0.5, restart).start()
+    return "<h1>PYThing is restarting...</h1>"
+
+
 @app.route("/settings", methods=["POST"])
 def settings_set():
     logger.debug("Got new settings: %s", request.form)
@@ -545,21 +699,14 @@ def import_app(iappd: str):
             break
 
 
-if __name__ == "__main__":
+def main() -> None:
+    global apps
     logger.debug("Init apps...")
 
-    # Load apps
-    for modapp in sorted(os.listdir("apps")):
-        import_app(os.path.join("apps", modapp))
-
-    # Load custom apps
-    if os.path.isdir("customapps"):
-        for modapp in sorted(os.listdir("customapps")):
-            if os.path.isdir(os.path.join("apps", modapp)):
-                raise RuntimeError(
-                    f"Custom app '{modapp}' is attempting to overwrite a built in app. Please rename your app directory to avoid conflicts."
-                )
-            import_app(os.path.join("customapps", modapp))
+    # Load enabled apps
+    manifests = discover_apps()
+    for app_id in sorted(enabled_apps(manifests)):
+        import_app(manifests[app_id]["directory"])
 
     # Sort apps dict
     apps = dict(sorted(apps.items()))

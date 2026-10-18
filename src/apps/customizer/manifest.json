@@ -1,6 +1,7 @@
 {
   "id": "customizer",
-  "name": "Customize",
+  "name": "Customizer",
+  "description": "Provides custom colors for the interface.",
   "codeowners": ["@trwy7"],
   "category": "system"
 }

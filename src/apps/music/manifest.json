@@ -1,6 +1,11 @@
 {
   "id": "music",
   "name": "Music",
+  "description": "Coordinates music providers and displays the playback bar.",
   "codeowners": ["@trwy7"],
-  "category": "music"
+  "category": "music",
+  "dependencies": {
+    "required": [],
+    "optional": ["customizer"]
+  }
 }

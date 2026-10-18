@@ -1,1 +1,1 @@
-pyinstaller --onefile --name pything-windows --add-data "src/apps:apps" --add-data "src/pages:pages" --add-data "src/static:static" src/init.py
+python -m PyInstaller --onefile --name pything-windows --paths src --add-data "src/apps;apps" --add-data "src/pages;pages" --add-data "src/static;static" launcher.py

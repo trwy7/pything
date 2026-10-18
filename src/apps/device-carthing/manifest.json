@@ -1,6 +1,7 @@
 {
   "id": "device-carthing",
-  "name": "Car Thing connector",
+  "name": "Car Thing Support",
+  "description": "Mounts and configures the web UI on connected Car Things.",
   "codeowners": ["@trwy7"],
   "category": "device"
 }

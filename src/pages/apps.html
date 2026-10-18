@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PYThing Apps</title>
+    <style>
+        :root {
+            --custom-hue: {{ custom_hue }};
+            --panel: rgba(255, 255, 255, 0.08);
+            --panel-strong: rgba(255, 255, 255, 0.12);
+            --border: rgba(255, 255, 255, 0.2);
+            --muted: rgba(255, 255, 255, 0.68);
+            --accent: hsl(var(--custom-hue, 158), 100%, 78%);
+        }
+        * { box-sizing: border-box; }
+        a {
+            color: var(--accent);
+        }
+        body {
+            min-height: 100vh;
+            margin: 0;
+            padding: 32px clamp(18px, 5vw, 80px) 48px;
+            background: linear-gradient(350deg, #272727, #1f1f1f);
+            color: white;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        form { width: min(100%, 900px); margin: 0 auto; }
+        h1 { margin: 0 0 28px; font-size: clamp(1.8rem, 4vw, 2.5rem); }
+        h2 { margin: 0 0 12px; color: var(--accent); font-size: 1.25rem; }
+        .settings {
+            display: grid;
+            gap: 1px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--border);
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.18);
+        }
+        .setting {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            min-height: 58px;
+            padding: 12px 16px;
+            background: var(--panel);
+        }
+        .setting:hover { background: var(--panel-strong); }
+        .settinglabel { color: var(--muted); }
+        .settinglabel strong { display: block; color: white; }
+        .dependency { display: block; font-size: 0.9rem; }
+        .message { margin-top: 5px; color: #ffb4a8; font-size: 0.9rem; }
+        input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent); }
+        input[type="submit"], button {
+            margin-top: 30px;
+            padding: 11px 24px;
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            background: hsl(var(--custom-hue, 158), 35%, 28%);
+            color: white;
+            cursor: pointer;
+            font: inherit;
+            font-weight: bold;
+        }
+        input[type="submit"]:hover, button:hover { background: hsl(var(--custom-hue, 158), 40%, 36%); }
+        dialog {
+            width: min(90vw, 440px);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: #272727;
+            color: white;
+        }
+        dialog::backdrop { background: rgba(0, 0, 0, 0.65); }
+        dialog h2 { margin-bottom: 18px; }
+        dialog label { display: block; margin: 12px 0; color: var(--muted); }
+        dialog button { margin: 12px 8px 0 0; }
+        @media (max-width: 560px) {
+            .setting { align-items: flex-start; flex-direction: column; gap: 8px; }
+        }
+    </style>
+</head>
+<body>
+    <h1><center>PYThing Apps</center></h1>
+    <a href="/settings"><center>Back to Settings</center></a>
+    <form method="POST" id="apps-form">
+        <h2>Installed apps</h2>
+        <div class="settings">
+            {% for app in installed_apps %}
+            <div class="setting">
+                <span class="settinglabel">
+                    <strong>{{ app.name }}</strong>
+                    {% if app.description %}
+                    <span class="description">{{ app.description }}</span>
+                    {% endif %}
+                    {% if app.required_names %}
+                    <span class="dependency">Requires: {{ app.required_names | join(", ") }}</span>
+                    {% endif %}
+                    {% if app.optional_names %}
+                    <span class="dependency">Wants: {{ app.optional_names | join(", ") }}</span>
+                    {% endif %}
+                    {% if app.missing_required %}
+                    <span class="message">Disabled: missing required app{{ "s" if app.missing_required | length != 1 else "" }}: {{ app.missing_required_names | join(", ") }}</span>
+                    {% elif app.required_by_names %}
+                    <span class="message">Required by: {{ app.required_by_names | join(", ") }}</span>
+                    {% endif %}
+                </span>
+                <input type="checkbox" name="app-{{ app.id }}" data-app-id="{{ app.id }}" data-required='{{ app.dependencies.required | tojson }}' data-missing-required="{{ app.missing_required | length > 0 }}" data-core="{{ app.core }}"{% if app.enabled %} checked{% endif %}{% if app.missing_required or app.core %} disabled{% endif %}>
+            </div>
+            {% endfor %}
+        </div>
+        <input type="submit" value="Save and restart">
+    <script>
+        const appCheckboxes = [...document.querySelectorAll("input[data-app-id]")];
+        function updateDependencies() {
+            const appById = new Map(appCheckboxes.map((checkbox) => [checkbox.dataset.appId, checkbox]));
+            const requiredDependencies = new Set();
+            const visitDependencies = (checkbox) => {
+                JSON.parse(checkbox.dataset.required).forEach((dependencyId) => {
+                    if (requiredDependencies.has(dependencyId)) return;
+                    const dependency = appById.get(dependencyId);
+                    if (!dependency) return;
+                    requiredDependencies.add(dependencyId);
+                    visitDependencies(dependency);
+                });
+            };
+            appCheckboxes.filter((checkbox) => checkbox.checked).forEach(visitDependencies);
+            requiredDependencies.forEach((dependencyId) => {
+                appById.get(dependencyId).checked = true;
+            });
+            appCheckboxes.forEach((checkbox) => {
+                checkbox.disabled = checkbox.dataset.missingRequired === "True" || checkbox.dataset.core === "True" || requiredDependencies.has(checkbox.dataset.appId);
+            });
+        }
+        appCheckboxes.forEach((checkbox) => {
+            checkbox.addEventListener("change", updateDependencies);
+        });
+        updateDependencies();
+    </script>
+    </form>
+</body>
+</html>
