@@ -74,6 +74,13 @@ def get_artists(artist_names: str) -> list[Artist]:
     return [Artist("local", name, name) for name in names]
 
 
+def song_id(track: LocalTrack) -> str:
+    return hashlib.sha256(
+        f"{track.provider}\0{track.id}\0{track.title}\0{track.artist}\0{track.album}".encode(
+        )
+    ).hexdigest()
+
+
 def art_id(track: LocalTrack) -> str:
     return hashlib.sha256(
         (track.art_url or (track.id + track.title + track.artist + track.album)).encode(
@@ -139,7 +146,7 @@ def update_playback(track: LocalTrack | None) -> None:
         accent_cache.get(art_id(track)),
     )
     playback.update(
-        Song("local", track.id, track.title, album, artists, track.duration),
+        Song("local", song_id(track), track.title, album, artists, track.duration),
         track.playing,
         track.position,
     )
