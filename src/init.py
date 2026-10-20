@@ -17,6 +17,7 @@ from collections.abc import Callable
 from flask import Flask, Blueprint, make_response, request, render_template, redirect
 from flask_socketio import SocketIO
 from jinja2 import ChoiceLoader, FileSystemLoader
+
 # pyinstaller
 import engineio.async_drivers.threading
 
@@ -428,16 +429,22 @@ def settings_editor():
 
 
 def app_manifest(app_dir: str) -> dict[str, Any]:
-    with open(os.path.join(app_dir, "manifest.json"), encoding="utf-8") as manifest_file:
+    with open(
+        os.path.join(app_dir, "manifest.json"), encoding="utf-8"
+    ) as manifest_file:
         manifest = json.load(manifest_file)
     if not isinstance(manifest, dict):
         raise RuntimeError(f"Manifest for app directory '{app_dir}' must be an object")
     dependencies = manifest.get("dependencies", {})
     if not isinstance(dependencies, dict):
-        raise RuntimeError(f"Manifest for app directory '{app_dir}' has invalid dependencies")
+        raise RuntimeError(
+            f"Manifest for app directory '{app_dir}' has invalid dependencies"
+        )
     for dependency_type in ("required", "optional"):
         values = dependencies.setdefault(dependency_type, [])
-        if not isinstance(values, list) or not all(isinstance(value, str) for value in values):
+        if not isinstance(values, list) or not all(
+            isinstance(value, str) for value in values
+        ):
             raise RuntimeError(
                 f"Manifest for app directory '{app_dir}' has invalid {dependency_type} dependencies"
             )
@@ -459,7 +466,9 @@ def discover_apps() -> dict[str, dict[str, Any]]:
             manifest = app_manifest(app_dir)
             app_id = manifest.get("id")
             if not isinstance(app_id, str):
-                raise RuntimeError(f"Manifest for app directory '{app_dir}' has invalid id")
+                raise RuntimeError(
+                    f"Manifest for app directory '{app_dir}' has invalid id"
+                )
             if app_id in discovered:
                 raise RuntimeError(f"App id '{app_id}' is defined more than once")
             discovered[app_id] = {
@@ -495,9 +504,7 @@ def required_dependency_closure(
 
 def enabled_apps(manifests: dict[str, dict[str, Any]]) -> set[str]:
     disabled = set(config.get(APP_CONFIG_ID, {}).get("disabled", []))
-    core_apps = {
-        app_id for app_id, manifest in manifests.items() if manifest["core"]
-    }
+    core_apps = {app_id for app_id, manifest in manifests.items() if manifest["core"]}
     return required_dependency_closure(set(manifests) - disabled | core_apps, manifests)
 
 
@@ -559,11 +566,7 @@ def apps_editor():
 @app.route("/apps", methods=["POST"])
 def apps_set():
     manifests = discover_apps()
-    selected = {
-        app_id
-        for app_id in manifests
-        if f"app-{app_id}" in request.form
-    }
+    selected = {app_id for app_id in manifests if f"app-{app_id}" in request.form}
     selected.update(
         app_id for app_id, manifest in manifests.items() if manifest["core"]
     )

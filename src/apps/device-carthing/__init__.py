@@ -11,7 +11,14 @@ import urllib.request
 from init import App, BooleanSetting
 
 app = App(
-    [BooleanSetting("adb", "Ask to download ADB", True), BooleanSetting("lockdisplay", "Turn off the display when the screen is locked (requires display hiding to be enabled in the addons app)", True)]
+    [
+        BooleanSetting("adb", "Ask to download ADB", True),
+        BooleanSetting(
+            "lockdisplay",
+            "Turn off the display when the screen is locked (requires display hiding to be enabled in the addons app)",
+            True,
+        ),
+    ]
 )
 
 adb = False
@@ -19,6 +26,7 @@ adb = False
 # Save time so we dont check for the superbird webapp directory every adb pass
 serial_cache = {}
 ADB = "adb"
+
 
 def check_adb():
     if shutil.which(ADB) is None:
@@ -30,6 +38,7 @@ def check_adb():
         return res.returncode == 0
     except (FileNotFoundError, subprocess.TimeoutExpired):
         return False
+
 
 # Install adb for people who do not already have it
 def ensure_adb(r=False):
@@ -182,13 +191,16 @@ def inject_thread():
                 )
                 serial_cache[serial][1] = True
                 continue
-            if run_adb_query(
-                serial,
-                [
-                    "shell",
-                    "[ -f /usr/share/qt-superbird-app/webapp/pythingclient2.txt ] && echo exists",
-                ],
-            ) == "exists":
+            if (
+                run_adb_query(
+                    serial,
+                    [
+                        "shell",
+                        "[ -f /usr/share/qt-superbird-app/webapp/pythingclient2.txt ] && echo exists",
+                    ],
+                )
+                == "exists"
+            ):
                 app.logger.debug("No need to repush webapp for %s", serial)
                 serial_cache[serial][1] = True
                 continue
@@ -245,6 +257,7 @@ def full_replace_carthing(serials: list | None = None):
         run_adb_cmd(serial, ["shell", "supervisorctl", "restart", "chromium"])
         run_adb_cmd(serial, ["shell", "mount -o remount,ro /"])
 
+
 @app.on_broadcast("lockstate")
 def on_lock(lock: bool):
     if not app.settings["lockdisplay"].get_value():
@@ -253,12 +266,17 @@ def on_lock(lock: bool):
         # Turn off screens of all connected carthings
         for serial in get_carthings():
             run_adb_cmd(serial, ["shell", "supervisorctl stop backlight"])
-            run_adb_cmd(serial, ["shell", "echo 0 > /sys/class/backlight/aml-bl/brightness"])
+            run_adb_cmd(
+                serial, ["shell", "echo 0 > /sys/class/backlight/aml-bl/brightness"]
+            )
     else:
         # Turn on screens of all connected carthings
         for serial in get_carthings():
-            run_adb_cmd(serial, ["shell", "echo 240 > /sys/class/backlight/aml-bl/brightness"]) # this is actually dark, but the backlight service will automatically brighten it again
+            run_adb_cmd(
+                serial, ["shell", "echo 240 > /sys/class/backlight/aml-bl/brightness"]
+            )  # this is actually dark, but the backlight service will automatically brighten it again
             run_adb_cmd(serial, ["shell", "supervisorctl start backlight"])
+
 
 adb = ensure_adb()
 if adb:

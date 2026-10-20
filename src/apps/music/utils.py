@@ -2,6 +2,7 @@ import numpy as np
 from PIL import Image
 from sklearn.cluster import KMeans
 import colorsys
+
 # pyinstaller
 import scipy._external.array_api_compat.numpy.fft
 import scipy._external.array_api_compat.numpy.linalg

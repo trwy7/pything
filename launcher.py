@@ -8,6 +8,7 @@ SERVER_MODE = "PYTHING_SERVER_MODE"
 if not getattr(sys, "frozen", False):
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
 
+
 def server_command() -> list[str]:
     if getattr(sys, "frozen", False):
         return [sys.executable, *sys.argv[1:]]
