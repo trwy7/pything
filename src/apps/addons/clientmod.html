@@ -10,6 +10,8 @@
         z-index: 9999;
         color: #222;
         text-align: center;
+        align-items: center;
+        justify-content: center;
     }
 </style>
 <div id="addons-locked">
@@ -20,7 +22,7 @@
 
     function addonsLockFunc(locked) {
         if (locked) {
-            addonsLocked.style.display = "block"
+            addonsLocked.style.display = "flex"
         } else {
             addonsLocked.style.display = "none"
         }

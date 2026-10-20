@@ -11,7 +11,7 @@ import urllib.request
 from init import App, BooleanSetting
 
 app = App(
-    [BooleanSetting("adb", "Ask to download ADB", True)],
+    [BooleanSetting("adb", "Ask to download ADB", True), BooleanSetting("lockdisplay", "Turn off the display when the screen is locked (requires display hiding to be enabled in the addons app)", True)]
 )
 
 adb = False
@@ -233,6 +233,20 @@ def full_replace_carthing(serials: list | None = None):
         run_adb_cmd(serial, ["shell", "supervisorctl", "restart", "chromium"])
         run_adb_cmd(serial, ["shell", "mount -o remount,ro /"])
 
+@app.on_broadcast("lockstate")
+def on_lock(lock: bool):
+    if not app.settings["lockdisplay"].get_value():
+        return
+    if lock:
+        # Turn off screens of all connected carthings
+        for serial in get_carthings():
+            run_adb_cmd(serial, ["shell", "supervisorctl stop backlight"])
+            run_adb_cmd(serial, ["shell", "echo 0 > /sys/class/backlight/aml-bl/brightness"])
+    else:
+        # Turn on screens of all connected carthings
+        for serial in get_carthings():
+            run_adb_cmd(serial, ["shell", "echo 240 > /sys/class/backlight/aml-bl/brightness"]) # this is actually dark, but the backlight service will automatically brighten it again
+            run_adb_cmd(serial, ["shell", "supervisorctl start backlight"])
 
 adb = ensure_adb()
 if adb:

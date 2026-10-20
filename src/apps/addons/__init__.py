@@ -21,6 +21,7 @@ def update_lock_state(locked: bool) -> None:
     app.screenlockstate = locked
     app.logger.debug("Screen lock state: %s", locked)
     socket.emit("addons_lockstate", locked)
+    app.broadcast("lockstate", locked)
 
 
 async def linux_lock_loop(stop_event: threading.Event) -> None:
