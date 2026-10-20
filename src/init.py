@@ -17,7 +17,8 @@ from collections.abc import Callable
 from flask import Flask, Blueprint, make_response, request, render_template, redirect
 from flask_socketio import SocketIO
 from jinja2 import ChoiceLoader, FileSystemLoader
-import pyinstallerdeps
+# pyinstaller
+import engineio.async_drivers.threading
 
 print(f"Starting PYThing as {__name__}...")
 sys.modules["init"] = sys.modules[__name__]
