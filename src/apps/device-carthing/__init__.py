@@ -18,11 +18,22 @@ adb = False
 
 # Save time so we dont check for the superbird webapp directory every adb pass
 serial_cache = {}
+ADB = "adb"
 
+def check_adb():
+    if shutil.which(ADB) is None:
+        return False
+    try:
+        res = subprocess.run(
+            [ADB, "devices"], capture_output=True, timeout=2, check=False
+        )
+        return res.returncode == 0
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return False
 
 # Install adb for people who do not already have it
 def ensure_adb(r=False):
-    if os.system("adb devices") == 0:
+    if check_adb():
         return True
     if os.path.isdir(
         os.path.abspath(os.path.join(pathlib.Path().home(), "platform-tools"))
@@ -32,7 +43,7 @@ def ensure_adb(r=False):
             + os.pathsep
             + os.environ.get("PATH", "")
         )
-        if os.system("adb devices") == 0:
+        if check_adb():
             return True
         app.logger.warning(
             "%s exists and does not contain a valid ADB install. Car thing integration will not work until you rename or remove it.",
@@ -64,9 +75,8 @@ def ensure_adb(r=False):
             os.remove(zpath)
             shutil.move(os.path.join(tempdir, "platform-tools"), pathlib.Path.home())
         if system != "windows":
-            os.system(
-                f"chmod +x '{os.path.join(pathlib.Path.home(), 'platform-tools', 'adb')}'"
-            )
+            adb_path = pathlib.Path.home() / "platform-tools" / "adb"
+            adb_path.chmod(adb_path.stat().st_mode | 0o111)
         app.logger.info(
             "ADB has been downloaded to %s",
             os.path.abspath(os.path.join(pathlib.Path().home(), "platform-tools")),
@@ -81,62 +91,65 @@ def run_adb_cmd(serial: str, command: list[str]):
     if not adb:
         app.logger.warning("An adb command was ran, but adb has not been validated")
         return
-    cmd = ["adb", "-s", serial]
+    cmd = [ADB, "-s", serial]
     cmd.extend(command)
     app.logger.debug("[%s] + %s", serial, " ".join(cmd))
     cmd_proc = subprocess.Popen(
         cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1
     )
-    for out in cmd_proc.stdout.readlines():  # type: ignore
+    output, _ = cmd_proc.communicate()
+    for out in output.splitlines():
         app.logger.debug("[%s] %s", serial, out)
-    while cmd_proc.poll() is None:
-        time.sleep(0.2)
     return cmd_proc.returncode
 
 
+def run_adb_query(serial: str, command: list[str], timeout: float = 3) -> str:
+    try:
+        result = subprocess.run(
+            [ADB, "-s", serial, *command],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            check=False,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return ""
+    return result.stdout.strip()
+
+
 # Make sure we don't run commands on a random device
-def is_carthing_serial(serial: str):
+def is_carthing_serial(serial: str) -> bool:
     if serial in serial_cache:
         return serial_cache[serial][0]
-    result = subprocess.run(
-        [
-            "adb",
-            "-s",
-            serial,
-            "shell",
-            "[ -d /usr/share/qt-superbird-app/webapp/ ] && echo exists",
-        ],
-        capture_output=True,
-        text=True,
-    ).stdout.strip()
-    if result == "exists":
+
+    # Combine file/directory checks into one remote command
+    check_cmd = "[ -d /usr/share/qt-superbird-app/webapp/ ] && echo 'webapp' || ([ -f /etc/superbird ] && grep -q 'Bridgething' /etc/superbird && echo 'bridgething')"
+    result = run_adb_query(serial, ["shell", check_cmd])
+
+    if "webapp" in result:
         app.logger.debug(f"Found device {serial}")
         serial_cache[serial] = [True, False, False]
         return True
-    else:
-        # Check if "Bridgething" is in /etc/superbird
+    elif "bridgething" in result:
+        app.logger.debug("Device %s is a superbird (bridgething)", serial)
+        serial_cache[serial] = [True, False, True]
+        return True
 
-        if (
-            "Bridgething"
-            in subprocess.run(
-                ["adb", "-s", serial, "shell", "cat /etc/superbird"],
-                capture_output=True,
-                text=True,
-                check=False,
-            ).stdout
-        ):
-            app.logger.debug("Device %s is a superbird (probably bridgething)", serial)
-            serial_cache[serial] = [True, False, True]
-            return True
-        else:
-            app.logger.debug("Device %s is not a superbird", serial)
-            serial_cache[serial] = [False, False, False]
-            return False
+    app.logger.debug("Device %s is not a superbird", serial)
+    serial_cache[serial] = [False, False, False]
+    return False
 
 
 # Get a list of connected carthings
 def get_carthings():
-    connected_devices = os.popen("adb devices").read().strip().splitlines()[1:]
+    try:
+        result = subprocess.run(
+            [ADB, "devices"], capture_output=True, text=True, timeout=2, check=False
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return []
+
+    connected_devices = result.stdout.splitlines()[1:]
     things = []
     for device in connected_devices:
         if device.strip():
@@ -169,14 +182,13 @@ def inject_thread():
                 )
                 serial_cache[serial][1] = True
                 continue
-            if (
-                os.popen(
-                    f"adb -s {serial} shell '[ -f /usr/share/qt-superbird-app/webapp/pythingclient2.txt ] && echo exists'"
-                )
-                .read()
-                .strip()
-                == "exists"
-            ):
+            if run_adb_query(
+                serial,
+                [
+                    "shell",
+                    "[ -f /usr/share/qt-superbird-app/webapp/pythingclient2.txt ] && echo exists",
+                ],
+            ) == "exists":
                 app.logger.debug("No need to repush webapp for %s", serial)
                 serial_cache[serial][1] = True
                 continue
