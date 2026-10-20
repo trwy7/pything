@@ -2,6 +2,7 @@ import asyncio
 import base64
 import binascii
 from datetime import datetime, timezone
+from functools import lru_cache
 import hashlib
 import os
 import re
@@ -72,18 +73,21 @@ def get_artists(artist_names: str) -> list[Artist]:
     return [Artist("local", name, name) for name in names]
 
 
+@lru_cache(maxsize=1024)
+def cached_sha256(value: str) -> str:
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
 def song_id(track: LocalTrack) -> str:
-    return hashlib.sha256(
-        f"{track.provider}\0{track.id}\0{track.title}\0{track.artist}\0{track.album}".encode()
-    ).hexdigest()
+    return cached_sha256(
+        f"{track.provider}\0{track.id}\0{track.title}\0{track.artist}\0{track.album}"
+    )
 
 
 def art_id(track: LocalTrack) -> str:
-    return hashlib.sha256(
-        (track.art_url or (track.id + track.title + track.artist + track.album)).encode(
-            "utf-8"
-        )
-    ).hexdigest()
+    return cached_sha256(
+        track.art_url or (track.id + track.title + track.artist + track.album)
+    )
 
 
 def get_art(track: LocalTrack) -> str | None:
@@ -136,7 +140,7 @@ def update_playback(track: LocalTrack | None) -> None:
     artists = get_artists(track.artist)
     album = Album(
         "local",
-        hashlib.sha256((track.album + track.artist).encode("utf-8")).hexdigest(),
+        cached_sha256(track.album + track.artist),
         track.album,
         artists,
         get_art(track),

@@ -58,8 +58,7 @@ async def linux_lock_loop(stop_event: threading.Event) -> None:
             await properties.call_get("org.freedesktop.login1.Session", "LockedHint")
         ).value
     )
-    while not stop_event.is_set():
-        await asyncio.sleep(0.1)
+    await asyncio.to_thread(stop_event.wait)
     bus.disconnect()
 
 
