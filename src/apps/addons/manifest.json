@@ -1,7 +1,8 @@
 {
   "id": "addons",
   "name": "Extras",
-  "description": "Adds features that do not belong in the core application.",
+  "description": "Adds features that do not belong in the core.",
   "codeowners": ["@trwy7"],
-  "category": "system"
+  "category": "system",
+  "default": true
 }

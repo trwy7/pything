@@ -3,5 +3,6 @@
   "name": "Customizer",
   "description": "Provides UI customization options.",
   "codeowners": ["@trwy7"],
-  "category": "system"
+  "category": "system",
+  "default": true
 }

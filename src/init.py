@@ -476,6 +476,7 @@ def discover_apps() -> dict[str, dict[str, Any]]:
                 "name": manifest.get("name", app_id),
                 "description": manifest.get("description", ""),
                 "core": manifest.get("core", False),
+                "default": manifest.get("default", False),
                 "category": manifest.get("category", "uncategorized"),
                 "dependencies": manifest["dependencies"],
                 "directory": app_dir,
@@ -503,6 +504,41 @@ def required_dependency_closure(
 
 
 def enabled_apps(manifests: dict[str, dict[str, Any]]) -> set[str]:
+    # Apply manifest defaults on first start and only to newly discovered apps later.
+    default_apps = {
+        app_id
+        for app_id, manifest in manifests.items()
+        if manifest.get("default") is True or manifest["core"]
+    }
+
+    # Save the initial selection and installed IDs for future update checks.
+    if APP_CONFIG_ID not in config:
+        initially_enabled = required_dependency_closure(default_apps, manifests)
+        config[APP_CONFIG_ID] = {
+            "disabled": sorted(set(manifests) - initially_enabled),
+            "known": sorted(manifests),
+        }
+        save_config()
+    else:
+        app_config = config[APP_CONFIG_ID]
+        if "known" not in app_config:
+            # Preserve existing choices when upgrading from configs created before
+            # app IDs were tracked.
+            app_config["known"] = sorted(manifests)
+            save_config()
+        else:
+            known_apps = set(app_config["known"])
+            # Apply defaults only to apps added since the last saved selection.
+            new_apps = set(manifests) - known_apps
+            if new_apps:
+                disabled = set(app_config.get("disabled", []))
+                disabled.update(new_apps - default_apps)
+                disabled.difference_update(new_apps & default_apps)
+                app_config["disabled"] = sorted(disabled)
+            if known_apps != set(manifests):
+                app_config["known"] = sorted(manifests)
+                save_config()
+
     disabled = set(config.get(APP_CONFIG_ID, {}).get("disabled", []))
     core_apps = {app_id for app_id, manifest in manifests.items() if manifest["core"]}
     return required_dependency_closure(set(manifests) - disabled | core_apps, manifests)

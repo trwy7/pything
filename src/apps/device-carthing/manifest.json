@@ -6,5 +6,6 @@
   "category": "device",
   "dependencies": {
     "optional": ["addons"]
-  }
+  },
+  "default": true
 }
