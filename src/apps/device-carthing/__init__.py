@@ -15,7 +15,7 @@ app = App(
         BooleanSetting("adb", "Ask to download ADB", True),
         BooleanSetting(
             "lockdisplay",
-            "Turn off the display when the screen is locked (requires display hiding to be enabled in the addons app)",
+            "Turn off the display when the screen is locked (requires the Extras app and display hiding)",
             True,
         ),
     ]
