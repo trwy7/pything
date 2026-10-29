@@ -614,7 +614,14 @@ def apps_set():
         os._exit(RESTART_EXIT_CODE)
 
     threading.Timer(0.5, restart).start()
-    return "<h1>PYThing is restarting...</h1>"
+    return (
+        "<style>html { background: linear-gradient(350deg, #272727, #1f1f1f); color:"
+        " #fff; }</style><h1>PYThing is restarting...</h1><script>const params = new"
+        " URLSearchParams(window.location.search); if (!params.has('from')) {"
+        " setInterval(() => { fetch('/apps').then(response =>"
+        " response.text()).then(data => { window.location.href = '/settings'; }); },"
+        " 1000); }</script>"
+    )
 
 
 @app.route("/settings", methods=["POST"])
