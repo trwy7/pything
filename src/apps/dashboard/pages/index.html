@@ -51,11 +51,11 @@
 </style>
 {% endblock %}
 {% block content %}
-<h1 onclick="window.location.href = '/apps?from=dashboard'">Apps</h1>
+<h1 onclick="window.location.href = '/apps/dashboard/settings'">Apps</h1>
 <div id="divider"></div>
 {% set visible_apps = apps.values() | selectattr('hidden', 'false') | rejectattr('id', 'equalto', app.id) | list %}
 {% if visible_apps | length == 0 %}
-    <h2>No visible apps installed, click <a href="/apps?from=dashboard">here</a> to enable some.</h2>
+    <h2>No visible apps installed, tap <a href="/apps?from=dashboard">here</a> to enable some.</h2>
 {% else %}
 {% if app.settings.warn.get_value() %}
 <h2>Most apps have settings to change their function! Check it out <a href="/apps/dashboard/settings">here</a>.</h2>

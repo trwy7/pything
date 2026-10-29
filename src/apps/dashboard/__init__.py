@@ -2,7 +2,7 @@ from flask import render_template, request, redirect
 from init import App, get_apps, BooleanSetting
 import webbrowser
 
-app = App([BooleanSetting("warn", "Show settings hint", True)])
+app = App([BooleanSetting("warn", "Show settings hint (turn me off)", True)])
 
 
 @app.on_setting_update
