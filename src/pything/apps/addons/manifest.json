@@ -4,5 +4,6 @@
   "description": "Adds features that do not belong in the core.",
   "codeowners": ["@trwy7"],
   "category": "system",
+  "requirements-linux": ["dbus-next==0.2.3"],
   "default": true
 }
