@@ -1,7 +1,0 @@
-{
-  "id": "hwmonitor",
-  "name": "System",
-  "description": "Shows information about your computer's hardware and network.",
-  "codeowners": ["@trwy7"],
-  "category": "system"
-}
