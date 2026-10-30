@@ -24,7 +24,6 @@ from init import App, BooleanSetting, LabelSetting, StringSetting, clients
 
 app = App(
     [
-        BooleanSetting("enabled", "Enabled", False, False),
         LabelSetting(
             "providers", "Enable this app to show what apps are currently playing music"
         ),
@@ -348,9 +347,6 @@ async def linux_track(bus) -> LocalTrack | None:
 def music_thread() -> None:
     if sys.platform == "win32":
         while True:
-            if not app.settings["enabled"].get_value():
-                time.sleep(1)
-                continue
             try:
                 update_playback(asyncio.run(windows_track()))
             except ModuleNotFoundError:
@@ -376,9 +372,6 @@ async def linux_loop() -> None:
         app.logger.warning("Local Music requires a running Linux D-Bus session")
         return
     while True:
-        if not app.settings["enabled"].get_value() or not clients:
-            await asyncio.sleep(1)
-            continue
         try:
             update_playback(await linux_track(bus))
         except Exception:

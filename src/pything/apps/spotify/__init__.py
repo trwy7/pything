@@ -19,7 +19,6 @@ from init import (
 
 app = App(
     [
-        BooleanSetting("enabled", "Enabled", False, False),
         LabelSetting(
             "callbackhint",
             "Create a spotify developer application from <a href='https://developer.spotify.com/dashboard' target='_blank'>https://developer.spotify.com/dashboard</a>. The callback url should be <code>http://127.0.0.1:5192/apps/spotify/callback</code>",
@@ -209,7 +208,7 @@ def callback():
 def music_thread():
     while True:
         time.sleep(2)
-        if not app.settings["enabled"].get_value() or not app.should_poll():
+        if not app.should_poll():
             continue
         try:
             rdata = get_endpoint("/v1/me/player")
