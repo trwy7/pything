@@ -1,0 +1,7 @@
+{
+  "id": "clock",
+  "name": "Clock",
+  "description": "Displays a basic clock.",
+  "codeowners": ["@trwy7"],
+  "category": "system"
+}

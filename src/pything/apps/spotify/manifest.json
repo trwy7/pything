@@ -1,0 +1,10 @@
+{
+  "id": "spotify",
+  "name": "Spotify",
+  "description": "Provides music from Spotify using the Spotify API.",
+  "codeowners": ["@trwy7"],
+  "category": "musicprovider",
+  "dependencies": {
+    "required": ["music"]
+  }
+}

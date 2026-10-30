@@ -1,0 +1,34 @@
+<style>
+    #addons-locked {
+        background-color: #000;
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 9999;
+        color: #222;
+        text-align: center;
+        align-items: center;
+        justify-content: center;
+    }
+</style>
+<div id="addons-locked">
+    <h1>PC Locked</h1>
+</div>
+<script>
+    const addonsLocked = document.getElementById("addons-locked")
+
+    function addonsLockFunc(locked) {
+        if (locked) {
+            addonsLocked.style.display = "flex"
+        } else {
+            addonsLocked.style.display = "none"
+        }
+    }
+
+    socket.on("addons_lockstate", addonsLockFunc)
+
+    addonsLockFunc("True" === "{{ app.screenlockstate }}")
+</script>

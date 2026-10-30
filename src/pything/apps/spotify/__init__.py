@@ -1,0 +1,265 @@
+from datetime import datetime, timedelta
+import threading
+import time
+import os
+import urllib.request
+import requests
+import requests.auth
+from flask import request, redirect, send_file, abort
+from apps.music.types import playback, Song, Album, Artist
+from apps.music.utils import get_accent
+from init import (
+    App,
+    StringSetting,
+    LinkSetting,
+    BooleanSetting,
+    DataSetting,
+    LabelSetting,
+)
+
+app = App(
+    [
+        BooleanSetting("enabled", "Enabled", False, False),
+        LabelSetting(
+            "callbackhint",
+            "Create a spotify developer application from <a href='https://developer.spotify.com/dashboard' target='_blank'>https://developer.spotify.com/dashboard</a>. The callback url should be <code>http://127.0.0.1:5192/apps/spotify/callback</code>",
+        ),
+        StringSetting("client_id", "Client ID", "", False),
+        StringSetting("client_secret", "Client Secret", "", False),
+        LinkSetting("auth", "Authenticate", "", True),
+        DataSetting("access_token", {"token": "", "expiry": datetime.now()}),
+        DataSetting("refresh_token", ""),
+    ],
+)
+USER_AGENT = "PYThing Spotify Provider (https://github.com/trwy7/pything)"
+art_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache", "art")
+art_lock = threading.Lock()
+downloading: list[str] = []
+accent_cache: dict[str, int | None] = {}
+accent_lock = threading.Lock()
+client_id = app.settings["client_id"].get_value()
+client_secret = app.settings["client_secret"].get_value()
+
+if not os.path.isdir(art_dir):
+    os.makedirs(art_dir)
+
+
+def request_new_token():
+    ref = app.settings["refresh_token"].get_value()
+    if not ref:
+        app.logger.debug(
+            "Something just requested a new access token without having a refresh token"
+        )
+        return
+    app.logger.debug("Requesting new token")
+    resp = requests.post(
+        "https://accounts.spotify.com/api/token",
+        headers={
+            "Content-Type": "application/x-www-form-urlencoded",
+            "User-Agent": USER_AGENT,
+        },
+        auth=requests.auth.HTTPBasicAuth(
+            app.settings["client_id"].get_value(),
+            app.settings["client_secret"].get_value(),
+        ),
+        data={"grant_type": "refresh_token", "refresh_token": ref},
+    )
+
+    if resp.status_code != 200:
+        app.logger.error("Failed to get access token: " + resp.text)
+        return False
+
+    data = resp.json()
+
+    app.settings["access_token"].set_value(
+        {
+            "token": data["access_token"],
+            "expiry": datetime.now() + timedelta(seconds=data["expires_in"] - 5),
+        }
+    )
+    if "refresh_token" in data and data["refresh_token"]:
+        app.settings["refresh_token"].set_value(data["refresh_token"])
+
+    return True
+
+
+def token_expired():
+    return datetime.now() > app.settings["access_token"].get_value()["expiry"]
+
+
+def get_endpoint(endpoint: str):
+    if token_expired():
+        rs = request_new_token()
+        if not rs:
+            return rs
+    if not app.settings["access_token"].get_value()["token"]:
+        return False
+    return requests.get(
+        "https://api.spotify.com" + endpoint,
+        headers={
+            "Authorization": f"Bearer {app.settings['access_token'].get_value()['token']}",
+            "User-Agent": USER_AGENT,
+        },
+    )
+
+
+@app.on_setting_update
+def update_auth_url(changed: dict[str, object]):
+    global client_id, client_secret
+    if "client_id" in changed:
+        client_id = changed["client_id"]
+    if "client_secret" in changed:
+        client_secret = changed["client_secret"]
+    if not client_id or not client_secret:
+        app.logger.debug("Hiding auth link")
+        app.settings["auth"].hidden = True
+        return
+    app.logger.debug("Showing auth link")
+    app.settings["auth"].hidden = False
+    app.settings[
+        "auth"
+    ].link = f"https://accounts.spotify.com/authorize?response_type=code&client_id={client_id}&scope=user-read-playback-state&redirect_uri=http://127.0.0.1:5192/apps/spotify/callback"  # type: ignore
+
+
+def get_art(url: str, id: str):
+    if os.path.exists(os.path.join(art_dir, id + ".jpg")):
+        app.logger.debug("Reusing art")
+        if id not in accent_cache:
+            threading.Thread(target=accent_thread, daemon=True, args=(id,)).start()
+        return "/apps/spotify/art/" + id + ".jpg"
+    app.logger.debug("Starting download thread")
+    threading.Thread(target=download_art, daemon=True, args=(url, id)).start()
+
+
+def accent_thread(id: str):
+    with accent_lock:
+        if id in accent_cache:
+            return
+        accent_cache[id] = get_accent(os.path.join(art_dir, id + ".jpg"))
+        if playback.song and id == playback.song.album.id:
+            playback.song.album.accent = accent_cache[id]
+            playback.update(playback.song, playback.playing, playback.position)
+
+
+def download_art(url: str, id: str):
+    if id in downloading:
+        return
+    with art_lock:
+        if os.path.exists(os.path.join(art_dir, id + ".jpg")):
+            return
+        downloading.append(id)
+        app.logger.debug("Downloading art for %s...", id)
+        urllib.request.urlretrieve(url, os.path.join(art_dir, id + ".jpg"))
+        downloading.remove(
+            id
+        )  # this should also mean if the download fails, it wont be re-attempted until app restart
+        if playback.song and id == playback.song.album.id:
+            playback.song.album.art = "/apps/spotify/art/" + id + ".jpg"
+            playback.update(playback.song, playback.playing, playback.position)
+    accent_thread(id)
+
+
+update_auth_url({})
+
+
+@app.blueprint.route("/callback")
+def callback():
+    if (not app.settings["client_id"].get_value()) or (
+        not app.settings["client_secret"].get_value()
+    ):
+        return "You have to add a client ID and secret first."
+    if "error" in request.args:
+        return "Error: " + request.args["error"]
+    if "code" not in request.args:
+        return "No response code was provided"
+
+    resp = requests.post(
+        "https://accounts.spotify.com/api/token",
+        headers={
+            "Content-Type": "application/x-www-form-urlencoded",
+            "User-Agent": USER_AGENT,
+        },
+        auth=requests.auth.HTTPBasicAuth(
+            app.settings["client_id"].get_value(),
+            app.settings["client_secret"].get_value(),
+        ),
+        data={
+            "grant_type": "authorization_code",
+            "code": request.args["code"],
+            "redirect_uri": "http://127.0.0.1:5192/apps/spotify/callback",
+        },
+    )
+
+    if resp.status_code != 200:
+        return "Error: \n" + resp.text
+
+    data = resp.json()
+
+    app.settings["access_token"].set_value(
+        {
+            "token": data["access_token"],
+            "expiry": datetime.now() + timedelta(seconds=data["expires_in"] - 5),
+        }
+    )
+    app.settings["refresh_token"].set_value(data["refresh_token"])
+
+    return redirect("/settings")
+
+
+def music_thread():
+    while True:
+        time.sleep(2)
+        if not app.settings["enabled"].get_value() or not app.should_poll():
+            continue
+        try:
+            rdata = get_endpoint("/v1/me/player")
+        except Exception as e:
+            app.logger.error("Error fetching data: %s", str(e))
+            continue
+        if rdata in (None, False):
+            continue
+        if rdata.status_code == 204:
+            playback.reset()
+            continue
+        data = rdata.json()
+        if data["item"]["type"] != "track":
+            playback.reset()
+            continue
+        song = Song(
+            "spotify",
+            data["item"]["id"],
+            data["item"]["name"],
+            Album(
+                "spotify",
+                data["item"]["album"]["id"],
+                data["item"]["album"]["name"],
+                [
+                    Artist("spotify", a["id"], a["name"])
+                    for a in data["item"]["album"]["artists"]
+                ],
+                get_art(
+                    data["item"]["album"]["images"][
+                        1 if len(data["item"]["album"]["images"]) > 1 else 0
+                    ]["url"],
+                    data["item"]["album"]["id"],
+                )
+                if len(data["item"]["album"]["images"]) > 0
+                else None,
+                accent_cache.get(data["item"]["album"]["id"]),
+            ),
+            [Artist("spotify", a["id"], a["name"]) for a in data["item"]["artists"]],
+            data["item"]["duration_ms"],
+        )
+        playback.update(song, data["is_playing"], data["progress_ms"])
+
+
+@app.blueprint.route("/art/<string:ap>")
+def art_route(ap):
+    if not os.path.exists(os.path.join(art_dir, ap)):
+        return abort(404)
+    return send_file(os.path.join(art_dir, ap))
+
+
+@app.on_startup
+def start_music_thread():
+    threading.Thread(target=music_thread, daemon=True).start()

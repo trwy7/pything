@@ -1,0 +1,7 @@
+#!/bin/bash
+uv run pyinstaller --onefile --name pything-linux --paths src \
+	--add-data "src/pything/apps:apps" \
+	--add-data "src/pything/pages:pages" \
+	--add-data "src/pything/static:static" \
+	--collect-submodules apps \
+	launcher.py
