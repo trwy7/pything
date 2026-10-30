@@ -18,6 +18,7 @@ hidewarn({})
 def launch():
     return render_template(f"{app.dirname}/pages/index.html", apps=get_apps())
 
+
 @app.blueprint.route("/settings")
 def opensettings():
     webbrowser.open_new("http://127.0.0.1:5192/settings")
