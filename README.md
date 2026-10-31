@@ -23,7 +23,7 @@ You must know the basics of python development and have [uv](https://docs.astral
 
 Clone this repo
 
-Run `uv run launcher.py`
+Run `uv run pything`
 
 ## Usage
 
