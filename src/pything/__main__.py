@@ -37,7 +37,7 @@ def main() -> int:
 
 def cli() -> int | None:
     if os.environ.get(SERVER_MODE) == "1":
-        from . import main as start
+        from pything import main as start
 
         return start()
     return main()

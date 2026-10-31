@@ -18,6 +18,8 @@ from flask import Flask, Blueprint, make_response, request, render_template, red
 from flask_socketio import SocketIO
 from jinja2 import ChoiceLoader, FileSystemLoader
 
+from .depends import install_app_requirements
+
 # pyinstaller
 import engineio.async_drivers.threading
 
@@ -754,7 +756,11 @@ def main() -> None:
 
     # Load enabled apps
     manifests = discover_apps()
-    for app_id in sorted(enabled_apps(manifests)):
+    enabled = sorted(enabled_apps(manifests))
+    install_app_requirements(
+        manifests[app_id]["directory"] for app_id in enabled
+    )
+    for app_id in enabled:
         import_app(manifests[app_id]["directory"])
 
     # Sort apps dict

@@ -8,7 +8,6 @@ PYThing is a alternative UI for the discontinued Spotify Car Thing to be used at
 - Many different clients can be used, as long as they provide chromium
 - Easy setup
 - Light on the client
-- No internet is required, unless an app needs it.
 - Very modular, all features that are not important to the core are within apps that can be removed/replaced easily
 
 ## Installing
@@ -23,7 +22,7 @@ You must know the basics of python development and have [uv](https://docs.astral
 
 Clone this repo
 
-Run `uv run launcher.py`
+Run `uv run pything`
 
 ## Usage
 

@@ -8,6 +8,7 @@ dependencies = [
     "flask==3.1.2",
     "flask-socketio==5.5.1",
     "pip-system-certs==5.3",
+    "packaging>=24.0",
 ]
 
 [project.scripts]
@@ -21,4 +22,5 @@ build-backend = "uv_build"
 dev = [
     "pyinstaller>=6.19.0",
     "ruff>=0.17.3",
+    "uv>=0.13.6",
 ]
