@@ -4,6 +4,7 @@
   "description": "Provides music from Spotify using the Spotify API.",
   "codeowners": ["@trwy7"],
   "category": "musicprovider",
+  "requirements": ["requests==2.32.5"],
   "dependencies": {
     "required": ["music"]
   }
