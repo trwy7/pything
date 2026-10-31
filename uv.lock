@@ -662,7 +662,7 @@ wheels = [
 
 [[package]]
 name = "pything"
-version = "0.1.0"
+version = "1.3.0a2"
 source = { editable = "." }
 dependencies = [
     { name = "dbus-next", marker = "sys_platform == 'linux'" },

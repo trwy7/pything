@@ -1,7 +1,7 @@
 [project]
 name = "pything"
-version = "0.1.0"
-description = "Add your description here"
+version = "1.3.0a1"
+description = "An alternative UI for the Spotify Car Thing"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -15,6 +15,9 @@ dependencies = [
     "scikit-learn==1.8.0",
     "winsdk==1.0.0b10; sys_platform == 'win32'",
     "dbus-next==0.2.3; sys_platform == 'linux'",
+]
+authors = [
+  { name = "trey", email = "trey@trey7658.com" }
 ]
 
 [project.scripts]
