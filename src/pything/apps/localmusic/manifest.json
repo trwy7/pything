@@ -4,6 +4,8 @@
   "description": "Reads the active media session from Windows or Linux.",
   "codeowners": ["@trwy7"],
   "category": "musicprovider",
+  "requirements-windows": ["winsdk==1.0.0b10"],
+  "requirements-linux": ["dbus-next==0.2.3"],
   "dependencies": {
     "required": ["music"]
   }
