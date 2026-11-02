@@ -1,20 +1,12 @@
 # -*- mode: python ; coding: utf-8 -*-
-import sys
-
-from PyInstaller.utils.hooks import collect_submodules
-
-# two standard packages required by apps, unfortunately
-# FIXME: find a way to force pyinstaller to include standard libraries
-hiddenimports = ["uv", "fileinput", "unittest"]
-hiddenimports += collect_submodules('apps')
 
 
 a = Analysis(
-    ['src/pything/__main__.py'],
-    pathex=['src'],
-    binaries=[],
-    datas=[('src/pything/apps', 'pything/apps'), ('src/pything/pages', 'pything/pages'), ('src/pything/static', 'pything/static')],
-    hiddenimports=hiddenimports,
+    ['/home/trey/Documents/pything/launch.py'],
+    pathex=[],
+    binaries=[('/home/trey/Documents/pything/.venv/bin/uv', 'bin')],
+    datas=[('/home/trey/Documents/pything/src', 'src'), ('/home/trey/Documents/pything/pyproject.toml', '.'), ('/home/trey/Documents/pything/uv.lock', '.'), ('/home/trey/Documents/pything/README.md', '.')],
+    hiddenimports=['uv'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -30,7 +22,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='pything-windows.exe' if sys.platform == 'win32' else 'pything-linux',
+    name='pything',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

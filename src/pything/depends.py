@@ -34,7 +34,7 @@ def _uv_command() -> list[str]:
         return [sys.executable, "-m", "uv"]
     raise RuntimeError(
         "App dependencies are missing and uv could not be found. Install uv and "
-        "ensure it is available on PATH, then restart PYThing."
+        "ensure it is available on PATH."
     )
 
 
