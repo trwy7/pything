@@ -757,9 +757,7 @@ def main() -> None:
     # Load enabled apps
     manifests = discover_apps()
     enabled = sorted(enabled_apps(manifests))
-    install_app_requirements(
-        manifests[app_id]["directory"] for app_id in enabled
-    )
+    install_app_requirements(manifests[app_id]["directory"] for app_id in enabled)
     for app_id in enabled:
         import_app(manifests[app_id]["directory"])
 

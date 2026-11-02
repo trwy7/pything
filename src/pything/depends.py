@@ -2,7 +2,7 @@ import importlib.metadata
 import json
 import logging
 import os
-import shutil
+import uv
 import subprocess
 import sys
 import sysconfig
@@ -24,18 +24,6 @@ def is_requirement_installed(req_str: str) -> bool:
         return req.specifier.contains(installed_version)
     except (importlib.metadata.PackageNotFoundError, ValueError):
         return False
-
-
-def _uv_command() -> list[str]:
-    uv = shutil.which("uv")
-    if uv:
-        return [uv]
-    if not getattr(sys, "frozen", False):
-        return [sys.executable, "-m", "uv"]
-    raise RuntimeError(
-        "App dependencies are missing and uv could not be found. Install uv and "
-        "ensure it is available on PATH."
-    )
 
 
 def _dependency_target() -> Path:
@@ -76,7 +64,7 @@ def install_requirements(requirements: Iterable[str]) -> None:
 
     target.mkdir(parents=True, exist_ok=True)
     command = [
-        *_uv_command(),
+        uv.find_uv_bin(),
         "pip",
         "install",
         "--target",
