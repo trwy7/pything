@@ -44,7 +44,7 @@ def cli() -> int | None:
 
         from pything import main as start
 
-        from .utils import dependency_target
+        from pything.utils import dependency_target
 
         sys.path.insert(0, str(dependency_target()))
 
