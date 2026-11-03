@@ -1,31 +1,26 @@
-import pip_system_certs.wrapt_requests
-
-pip_system_certs.wrapt_requests.inject_truststore()
-import os
-import sys
-import json
 import datetime
-import time
+import importlib
+import inspect
+import json
+import logging
+import os
 import pickle
 import shutil
-import inspect
-import importlib
-import logging
+import sys
 import threading
-from typing import Any, Generator
-from collections.abc import Callable
-from flask import Flask, Blueprint, make_response, request, render_template, redirect
+import time
+from collections.abc import Callable, Generator
+from typing import Any
+
+from flask import Blueprint, Flask, make_response, redirect, render_template, request
 from flask_socketio import SocketIO
 from jinja2 import ChoiceLoader, FileSystemLoader
 
 from .depends import install_app_requirements
 
-# pyinstaller
-import engineio.async_drivers.threading
-
 sys.modules["init"] = sys.modules[__name__]
 
-DEVMODE = bool(os.environ.get("DEV", False))
+DEVMODE = bool(os.environ.get("DEV", False))  # noqa: PLW1508
 logging.basicConfig(level=logging.DEBUG if DEVMODE else logging.INFO)
 logger = logging.getLogger("pything")
 if os.name == "nt":
@@ -750,7 +745,7 @@ def import_app(iappd: str):
 
 
 def main() -> None:
-    print(f"Starting PYThing as {__name__}...")
+    print("Starting PYThing...")
     global apps
     logger.debug("Init apps...")
 

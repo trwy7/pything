@@ -2,17 +2,18 @@ import importlib.metadata
 import json
 import logging
 import os
+import shutil
 import subprocess
 import sys
 from collections.abc import Iterable
 from pathlib import Path
 
-import uv
 from packaging.requirements import Requirement
 
 from .utils import dependency_target
 
 logger = logging.getLogger(__name__)
+UV_BINARY = os.environ.get("PYTHING_UV") or shutil.which("uv")
 
 
 def is_requirement_installed(req_str: str) -> bool:
@@ -57,7 +58,7 @@ def install_requirements(requirements: Iterable[str]) -> None:
         ]
     )
     command = [
-        uv.find_uv_bin(),
+        UV_BINARY or "uv",
         "pip",
         "install",
         "--target",

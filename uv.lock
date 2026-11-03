@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.12"
 
 [[package]]
@@ -242,27 +242,6 @@ wheels = [
 ]
 
 [[package]]
-name = "pip"
-version = "26.2.2"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/fa/e8/0842d757e483e895e670f655084cfe8b8c72580c6769a76b30b2789a0608/pip-26.2.2.tar.gz", hash = "sha256:3a8e5c800492787f33a4114ef54444546c340df428974ebba17e0fd47e11af2f", size = 1863336, upload-time = "2026-10-20T16:36:29.008Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/3f/06/3e4420302363fbb71be3c7f35ce042f54bfca330e3e66b3a2e3c4cca579f/pip-26.2.2-py3-none-any.whl", hash = "sha256:fd7f4dfa8190e014013b9f08f3e973f4e4c26ffd179a204895533a7254813a70", size = 1819850, upload-time = "2026-10-20T16:36:27.046Z" },
-]
-
-[[package]]
-name = "pip-system-certs"
-version = "5.3"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "pip" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/7d/6a/563b05a4f6c9ddc205c98bb413e74221368efb98b8fb9cca96b578b8930c/pip_system_certs-5.3.tar.gz", hash = "sha256:19c8bf9957bcce7d69c4dbc2d0b2ef13de1984d53f50a59012e6dbbad0af67c6", size = 6395, upload-time = "2025-10-16T06:14:55.217Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/9f/57/752b63c609affae8f26ae0f1d1103d6ea7e707ad45943f62f7422936071d/pip_system_certs-5.3-py3-none-any.whl", hash = "sha256:3fbb5de62e374a99b688b1ad06e64ee5c4aeb633ef23e3a677d32e3e84fd863c", size = 6896, upload-time = "2025-10-16T06:14:54.072Z" },
-]
-
-[[package]]
 name = "pyinstaller"
 version = "6.19.0"
 source = { registry = "https://pypi.org/simple" }
@@ -310,7 +289,6 @@ dependencies = [
     { name = "flask" },
     { name = "flask-socketio" },
     { name = "packaging" },
-    { name = "pip-system-certs" },
 ]
 
 [package.dev-dependencies]
@@ -325,7 +303,6 @@ requires-dist = [
     { name = "flask", specifier = "==3.1.2" },
     { name = "flask-socketio", specifier = "==5.5.1" },
     { name = "packaging", specifier = ">=24.0" },
-    { name = "pip-system-certs", specifier = "==5.3" },
 ]
 
 [package.metadata.requires-dev]

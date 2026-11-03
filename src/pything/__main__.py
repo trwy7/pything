@@ -11,7 +11,10 @@ if not getattr(sys, "frozen", False):
 
 def server_command() -> list[str]:
     if getattr(sys, "frozen", False):
-        return [sys.executable, *sys.argv[1:]]
+        python_target = os.environ.get("PYTHING_PYTHON")
+        if python_target is None:
+            raise RuntimeError("PYTHING_PYTHON is required for frozen restarts")
+        return [python_target, "-m", "pything", *sys.argv[1:]]
     return [sys.executable, sys.argv[0], *sys.argv[1:]]
 
 
@@ -40,6 +43,7 @@ def cli() -> int | None:
         import sys
 
         from pything import main as start
+
         from .utils import dependency_target
 
         sys.path.insert(0, str(dependency_target()))
