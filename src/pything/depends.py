@@ -1,13 +1,12 @@
 import importlib.metadata
 import json
 import logging
-import os
 import uv
 import subprocess
 import sys
-import sysconfig
 from collections.abc import Iterable
 from pathlib import Path
+from .utils import dependency_target
 
 from packaging.requirements import Requirement
 
@@ -26,29 +25,12 @@ def is_requirement_installed(req_str: str) -> bool:
         return False
 
 
-def _dependency_target() -> Path:
-    cache_root = os.environ.get("LOCALAPPDATA") if os.name == "nt" else None
-    if not cache_root:
-        cache_root = os.environ.get("XDG_CACHE_HOME") or os.path.join(
-            os.path.expanduser("~"), ".cache"
-        )
-    runtime = sys.implementation.cache_tag or (
-        f"python-{sys.version_info.major}.{sys.version_info.minor}"
-    )
-    return (
-        Path(cache_root)
-        / "pything"
-        / "dependencies"
-        / f"{runtime}-{sysconfig.get_platform()}"
-    )
-
-
 def install_requirements(requirements: Iterable[str]) -> None:
     """Install missing app requirements into a runtime-local import directory."""
-    target = _dependency_target()
-    logger.debug("Loading app dependencies from %s", target)
-    if str(target) not in sys.path:
-        sys.path.insert(0, str(target))
+    target = dependency_target()
+    # logger.debug("Loading app dependencies from %s", target)
+    # if str(target) not in sys.path:
+    #    sys.path.insert(0, str(target))
 
     missing: list[str] = []
     for requirement in dict.fromkeys(requirements):

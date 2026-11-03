@@ -215,9 +215,9 @@ def lock_thread(stop_event: threading.Event) -> None:
     if sys.platform == "linux":
         try:
             asyncio.run(linux_lock_loop(stop_event))
-        except ModuleNotFoundError:
+        except ModuleNotFoundError as exc:
             app.logger.warning(
-                "Screen lock tracking requires the dbus-next package on Linux"
+                "Screen lock tracking requires the dbus-next package on Linux: %s", exc
             )
         except (OSError, RuntimeError):
             app.logger.debug("Failed to subscribe to screen lock state", exc_info=True)
