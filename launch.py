@@ -100,7 +100,15 @@ def launch_pything() -> None:
             os.environ.get("PYTHONPATH", ""),
         ]
     ).rstrip(os.pathsep)
-    run(command, check=True, cwd=Path(__file__).resolve().parent, env=environment)
+    code = 65
+    while code == 65:
+        result = run(
+            command,
+            check=False,
+            cwd=Path(__file__).resolve().parent,
+            env=environment,
+        )
+        code = result.returncode
 
 
 if __name__ == "__main__":
