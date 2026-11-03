@@ -1,18 +1,18 @@
 import os
-import threading
-import subprocess
-import time
-import platform
 import pathlib
-import tempfile
+import platform
 import shutil
-import zipfile
+import subprocess
+import tempfile
+import threading
+import time
 import urllib.request
-from init import App, BooleanSetting
+import zipfile
+
+from init import App, BooleanSetting, CACHE_ROOT
 
 app = App(
     [
-        BooleanSetting("adb", "Ask to download ADB", True),
         BooleanSetting(
             "lockdisplay",
             "Turn off the display when the screen is locked (requires the Extras app and display hiding)",
@@ -44,56 +44,49 @@ def check_adb():
 def ensure_adb(r=False):
     if check_adb():
         return True
-    if os.path.isdir(
-        os.path.abspath(os.path.join(pathlib.Path().home(), "platform-tools"))
-    ):
-        os.environ["PATH"] = (
-            os.path.abspath(os.path.join(pathlib.Path().home(), "platform-tools"))
-            + os.pathsep
-            + os.environ.get("PATH", "")
-        )
-        if check_adb():
-            return True
-        app.logger.warning(
-            "%s exists and does not contain a valid ADB install. Car thing integration will not work until you rename or remove it.",
-            os.path.abspath(os.path.join(pathlib.Path().home(), "platform-tools")),
-        )
-        return False
+    platform_tools_dirs = [
+        os.path.abspath(os.path.join(pathlib.Path().home(), "platform-tools")),
+        os.path.abspath(os.path.join(CACHE_ROOT, "pything", "platform-tools")),
+    ]
+    for platform_tools_dir in platform_tools_dirs:
+        if os.path.isdir(platform_tools_dir):
+            os.environ["PATH"] = (
+                platform_tools_dir
+                + os.pathsep
+                + os.environ.get("PATH", "")
+            )
+            if check_adb():
+                return True
+            app.logger.warning(
+                "%s exists and does not contain a valid ADB install. Car thing integration will not work until you rename or remove it.",
+                platform_tools_dir,
+            )
     if r:
         return False
-    if not app.settings["adb"].get_value():
+    system = platform.system().lower()
+    urls = {
+        "windows": "https://dl.google.com/android/repository/platform-tools-latest-windows.zip",
+        "darwin": "https://dl.google.com/android/repository/platform-tools-latest-darwin.zip",
+        "linux": "https://dl.google.com/android/repository/platform-tools-latest-linux.zip",
+    }
+    if system not in urls:
+        app.logger.error("System not supported, continuing without ADB")
         return False
-    res = input(
-        "Could not find ADB in your path. ADB is required for Car Thing connection, but is not required otherwise. Would you like to download it automatically [y/N]?"
+    with tempfile.TemporaryDirectory() as tempdir:
+        zpath = os.path.join(tempdir, "t.zip")
+        urllib.request.urlretrieve(urls[system], zpath)
+        with zipfile.ZipFile(zpath, "r") as zip:
+            zip.extractall(tempdir)
+        os.remove(zpath)
+        shutil.move(os.path.join(tempdir, "platform-tools"), pathlib.Path(CACHE_ROOT) / "pything" / "platform-tools")
+    if system != "windows":
+        adb_path = pathlib.Path(CACHE_ROOT) / "pything" / "platform-tools" / "adb"
+        adb_path.chmod(adb_path.stat().st_mode | 0o111)
+    app.logger.info(
+        "ADB has been downloaded to %s",
+        os.path.abspath(os.path.join(CACHE_ROOT, "pything", "platform-tools")),
     )
-    if res.lower() == "y":
-        system = platform.system().lower()
-        urls = {
-            "windows": "https://dl.google.com/android/repository/platform-tools-latest-windows.zip",
-            "darwin": "https://dl.google.com/android/repository/platform-tools-latest-darwin.zip",
-            "linux": "https://dl.google.com/android/repository/platform-tools-latest-linux.zip",
-        }
-        if system not in urls:
-            app.logger.error("System not supported, continuing without ADB")
-            return False
-        with tempfile.TemporaryDirectory() as tempdir:
-            zpath = os.path.join(tempdir, "t.zip")
-            urllib.request.urlretrieve(urls[system], zpath)
-            with zipfile.ZipFile(zpath, "r") as zip:
-                zip.extractall(tempdir)
-            os.remove(zpath)
-            shutil.move(os.path.join(tempdir, "platform-tools"), pathlib.Path.home())
-        if system != "windows":
-            adb_path = pathlib.Path.home() / "platform-tools" / "adb"
-            adb_path.chmod(adb_path.stat().st_mode | 0o111)
-        app.logger.info(
-            "ADB has been downloaded to %s",
-            os.path.abspath(os.path.join(pathlib.Path().home(), "platform-tools")),
-        )
-        return ensure_adb(r=True)
-    elif res.lower() == "n":
-        app.settings["adb"].set_value(False)
-    return False
+    return ensure_adb(r=True)
 
 
 def run_adb_cmd(serial: str, command: list[str]):

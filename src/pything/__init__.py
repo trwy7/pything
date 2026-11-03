@@ -17,6 +17,7 @@ from flask_socketio import SocketIO
 from jinja2 import ChoiceLoader, FileSystemLoader
 
 from .depends import install_app_requirements
+from .utils import CACHE_ROOT  # noqa: F401 # imported for other apps
 
 sys.modules["init"] = sys.modules[__name__]
 
