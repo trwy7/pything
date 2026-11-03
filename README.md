@@ -180,7 +180,8 @@ To make more complex apps, look around at the built in apps to see what you can 
       <h2>🏗️ Building</h2>
    </summary>
 
-Building pything with your modifications can be done by either running `build.sh` (linux, from within your virtual environment) or `build.bat` (windows). Each build creates one combined launcher and server executable in `dist`. Keep in mind that apps must be in `/src/apps` to be included in the build.
+Building pything with your modifications can be done by either running `build.sh` (linux/macos) or `build.bat` (windows).
+
 </details>
 
 <details>
