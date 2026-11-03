@@ -1,14 +1,16 @@
 import importlib.metadata
 import json
 import logging
-import uv
+import os
 import subprocess
 import sys
 from collections.abc import Iterable
 from pathlib import Path
-from .utils import dependency_target
 
+import uv
 from packaging.requirements import Requirement
+
+from .utils import dependency_target
 
 logger = logging.getLogger(__name__)
 
@@ -45,14 +47,22 @@ def install_requirements(requirements: Iterable[str]) -> None:
         return
 
     target.mkdir(parents=True, exist_ok=True)
+    python_target = os.environ.get("PYTHING_PYTHON")
+    python_option = (
+        ["--python", python_target]
+        if python_target
+        else [
+            "--python-version",
+            f"{sys.version_info.major}.{sys.version_info.minor}",
+        ]
+    )
     command = [
         uv.find_uv_bin(),
         "pip",
         "install",
         "--target",
         str(target),
-        "--python-version",
-        f"{sys.version_info.major}.{sys.version_info.minor}",
+        *python_option,
         *missing,
     ]
     logger.info("Installing app dependencies: %s", ", ".join(missing))
