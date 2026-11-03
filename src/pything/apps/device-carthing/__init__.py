@@ -25,18 +25,21 @@ adb = False
 
 # Save time so we dont check for the superbird webapp directory every adb pass
 serial_cache = {}
-ADB = "adb"
+adb_path = "adb"
 
 
 def check_adb():
-    if shutil.which(ADB) is None:
+    shadb = shutil.which("adb")
+    if shadb is None:
+        app.logger.debug("ADB not found in PATH")
         return False
     try:
         res = subprocess.run(
-            [ADB, "devices"], capture_output=True, timeout=2, check=False
+            [shadb, "devices"], capture_output=True, timeout=2, check=False
         )
         return res.returncode == 0
     except (FileNotFoundError, subprocess.TimeoutExpired):
+        app.logger.debug("ADB not found or timed out")
         return False
 
 
@@ -45,8 +48,8 @@ def ensure_adb(r=False):
     if check_adb():
         return True
     platform_tools_dirs = [
-        os.path.abspath(os.path.join(pathlib.Path().home(), "platform-tools")),
         os.path.abspath(os.path.join(CACHE_ROOT, "pything", "platform-tools")),
+        os.path.abspath(os.path.join(pathlib.Path().home(), "platform-tools")),
     ]
     for platform_tools_dir in platform_tools_dirs:
         if os.path.isdir(platform_tools_dir):
@@ -58,10 +61,10 @@ def ensure_adb(r=False):
             if check_adb():
                 return True
             app.logger.warning(
-                "%s exists and does not contain a valid ADB install. Car thing integration will not work until you rename or remove it.",
+                "%s exists, but does not contain a valid ADB install.",
                 platform_tools_dir,
             )
-    if r:
+    if r or os.path.exists(os.path.join(CACHE_ROOT, "pything", "platform-tools")):
         return False
     system = platform.system().lower()
     urls = {
@@ -80,6 +83,7 @@ def ensure_adb(r=False):
         os.remove(zpath)
         shutil.move(os.path.join(tempdir, "platform-tools"), pathlib.Path(CACHE_ROOT) / "pything" / "platform-tools")
     if system != "windows":
+        global adb_path
         adb_path = pathlib.Path(CACHE_ROOT) / "pything" / "platform-tools" / "adb"
         adb_path.chmod(adb_path.stat().st_mode | 0o111)
     app.logger.info(
@@ -90,10 +94,11 @@ def ensure_adb(r=False):
 
 
 def run_adb_cmd(serial: str, command: list[str]):
-    if not adb:
+    global adb_path
+    if not adb_path:
         app.logger.warning("An adb command was ran, but adb has not been validated")
         return
-    cmd = [ADB, "-s", serial]
+    cmd = [adb_path, "-s", serial]
     cmd.extend(command)
     app.logger.debug("[%s] + %s", serial, " ".join(cmd))
     cmd_proc = subprocess.Popen(
@@ -108,7 +113,7 @@ def run_adb_cmd(serial: str, command: list[str]):
 def run_adb_query(serial: str, command: list[str], timeout: float = 3) -> str:
     try:
         result = subprocess.run(
-            [ADB, "-s", serial, *command],
+            [adb_path, "-s", serial, *command],
             capture_output=True,
             text=True,
             timeout=timeout,
@@ -146,7 +151,7 @@ def is_carthing_serial(serial: str) -> bool:
 def get_carthings():
     try:
         result = subprocess.run(
-            [ADB, "devices"], capture_output=True, text=True, timeout=2, check=False
+            [adb_path, "devices"], capture_output=True, text=True, timeout=2, check=False
         )
     except (FileNotFoundError, subprocess.TimeoutExpired):
         return []
