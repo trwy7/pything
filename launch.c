@@ -30,6 +30,7 @@
 
 #define PATH_CAPACITY 32768
 #define FOOTER_SIZE 16
+#define RESTART_EXIT_CODE 65
 
 static const unsigned char header_magic[8] = {'P', 'Y', 'T', 'H', 'I', 'N', 'G', '1'};
 static const unsigned char footer_magic[8] = {'P', 'Y', 'T', 'H', 'E', 'N', 'D', '1'};
@@ -936,7 +937,14 @@ static int run_package(void) {
     {
         const char *arguments[] = {uv_path, "run", "--no-project", "--python", python_path,
                                    "-m", "pything", NULL};
-        result = run_process(arguments);
+        do {
+            result = run_process(arguments);
+        }
+    #ifdef _WIN32
+        while (result == RESTART_EXIT_CODE);
+    #else
+        while (result == RESTART_EXIT_CODE && !interrupted);
+    #endif
         if (result < 0) {
             fprintf(stderr, "Could not start PYThing with uv.\n");
             result = 1;
