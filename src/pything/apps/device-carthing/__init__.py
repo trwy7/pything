@@ -1,18 +1,18 @@
 import os
-import threading
-import subprocess
-import time
-import platform
 import pathlib
-import tempfile
+import platform
 import shutil
-import zipfile
+import subprocess
+import tempfile
+import threading
+import time
 import urllib.request
-from init import App, BooleanSetting
+import zipfile
+
+from init import App, BooleanSetting, CACHE_ROOT
 
 app = App(
     [
-        BooleanSetting("adb", "Ask to download ADB", True),
         BooleanSetting(
             "lockdisplay",
             "Turn off the display when the screen is locked (requires the Extras app and display hiding)",
@@ -25,18 +25,28 @@ adb = False
 
 # Save time so we dont check for the superbird webapp directory every adb pass
 serial_cache = {}
-ADB = "adb"
+adb_path = "adb"
 
 
 def check_adb():
-    if shutil.which(ADB) is None:
+    shadb = shutil.which("adb")
+    if shadb is None:
+        app.logger.debug("ADB not found in PATH")
         return False
     try:
+        app.logger.debug("Checking ADB at PATH: %s", shadb)
         res = subprocess.run(
-            [ADB, "devices"], capture_output=True, timeout=2, check=False
+            [shadb, "devices"], capture_output=True, timeout=10, check=False
         )
-        return res.returncode == 0
-    except (FileNotFoundError, subprocess.TimeoutExpired):
+        if res.returncode == 0:
+            app.logger.debug("ADB found in PATH")
+            global adb_path
+            adb_path = shadb
+            return True
+        app.logger.debug("ADB found in PATH, but returned non-zero exit code: %s", res.returncode)
+        return False
+    except (FileNotFoundError, subprocess.TimeoutExpired) as e:
+        app.logger.debug("ADB not found or timed out: %s", str(e))
         return False
 
 
@@ -44,63 +54,58 @@ def check_adb():
 def ensure_adb(r=False):
     if check_adb():
         return True
-    if os.path.isdir(
-        os.path.abspath(os.path.join(pathlib.Path().home(), "platform-tools"))
-    ):
-        os.environ["PATH"] = (
-            os.path.abspath(os.path.join(pathlib.Path().home(), "platform-tools"))
-            + os.pathsep
-            + os.environ.get("PATH", "")
-        )
-        if check_adb():
-            return True
-        app.logger.warning(
-            "%s exists and does not contain a valid ADB install. Car thing integration will not work until you rename or remove it.",
-            os.path.abspath(os.path.join(pathlib.Path().home(), "platform-tools")),
-        )
+    platform_tools_dirs = [
+        os.path.abspath(os.path.join(CACHE_ROOT, "pything", "platform-tools")),
+        os.path.abspath(os.path.join(pathlib.Path().home(), "platform-tools")),
+    ]
+    for platform_tools_dir in platform_tools_dirs:
+        if os.path.isdir(platform_tools_dir):
+            os.environ["PATH"] = (
+                platform_tools_dir
+                + os.pathsep
+                + os.environ.get("PATH", "")
+            )
+            if check_adb():
+                return True
+            app.logger.warning(
+                "%s exists, but does not contain a valid ADB install.",
+                platform_tools_dir,
+            )
+    if r or os.path.exists(os.path.join(CACHE_ROOT, "pything", "platform-tools")):
         return False
-    if r:
+    system = platform.system().lower()
+    urls = {
+        "windows": "https://dl.google.com/android/repository/platform-tools-latest-windows.zip",
+        "darwin": "https://dl.google.com/android/repository/platform-tools-latest-darwin.zip",
+        "linux": "https://dl.google.com/android/repository/platform-tools-latest-linux.zip",
+    }
+    if system not in urls:
+        app.logger.error("System not supported, continuing without ADB")
         return False
-    if not app.settings["adb"].get_value():
-        return False
-    res = input(
-        "Could not find ADB in your path. ADB is required for Car Thing connection, but is not required otherwise. Would you like to download it automatically [y/N]?"
+    with tempfile.TemporaryDirectory() as tempdir:
+        zpath = os.path.join(tempdir, "t.zip")
+        urllib.request.urlretrieve(urls[system], zpath)
+        with zipfile.ZipFile(zpath, "r") as zip:
+            zip.extractall(tempdir)
+        os.remove(zpath)
+        shutil.move(os.path.join(tempdir, "platform-tools"), pathlib.Path(CACHE_ROOT) / "pything" / "platform-tools")
+    if system != "windows":
+        global adb_path
+        adb_path = pathlib.Path(CACHE_ROOT) / "pything" / "platform-tools" / "adb"
+        adb_path.chmod(adb_path.stat().st_mode | 0o111)
+    app.logger.info(
+        "ADB has been downloaded to %s",
+        os.path.abspath(os.path.join(CACHE_ROOT, "pything", "platform-tools")),
     )
-    if res.lower() == "y":
-        system = platform.system().lower()
-        urls = {
-            "windows": "https://dl.google.com/android/repository/platform-tools-latest-windows.zip",
-            "darwin": "https://dl.google.com/android/repository/platform-tools-latest-darwin.zip",
-            "linux": "https://dl.google.com/android/repository/platform-tools-latest-linux.zip",
-        }
-        if system not in urls:
-            app.logger.error("System not supported, continuing without ADB")
-            return False
-        with tempfile.TemporaryDirectory() as tempdir:
-            zpath = os.path.join(tempdir, "t.zip")
-            urllib.request.urlretrieve(urls[system], zpath)
-            with zipfile.ZipFile(zpath, "r") as zip:
-                zip.extractall(tempdir)
-            os.remove(zpath)
-            shutil.move(os.path.join(tempdir, "platform-tools"), pathlib.Path.home())
-        if system != "windows":
-            adb_path = pathlib.Path.home() / "platform-tools" / "adb"
-            adb_path.chmod(adb_path.stat().st_mode | 0o111)
-        app.logger.info(
-            "ADB has been downloaded to %s",
-            os.path.abspath(os.path.join(pathlib.Path().home(), "platform-tools")),
-        )
-        return ensure_adb(r=True)
-    elif res.lower() == "n":
-        app.settings["adb"].set_value(False)
-    return False
+    return ensure_adb(r=True)
 
 
 def run_adb_cmd(serial: str, command: list[str]):
-    if not adb:
+    global adb_path
+    if not adb_path:
         app.logger.warning("An adb command was ran, but adb has not been validated")
         return
-    cmd = [ADB, "-s", serial]
+    cmd = [adb_path, "-s", serial]
     cmd.extend(command)
     app.logger.debug("[%s] + %s", serial, " ".join(cmd))
     cmd_proc = subprocess.Popen(
@@ -115,7 +120,7 @@ def run_adb_cmd(serial: str, command: list[str]):
 def run_adb_query(serial: str, command: list[str], timeout: float = 3) -> str:
     try:
         result = subprocess.run(
-            [ADB, "-s", serial, *command],
+            [adb_path, "-s", serial, *command],
             capture_output=True,
             text=True,
             timeout=timeout,
@@ -153,7 +158,7 @@ def is_carthing_serial(serial: str) -> bool:
 def get_carthings():
     try:
         result = subprocess.run(
-            [ADB, "devices"], capture_output=True, text=True, timeout=2, check=False
+            [adb_path, "devices"], capture_output=True, text=True, timeout=10, check=False
         )
     except (FileNotFoundError, subprocess.TimeoutExpired):
         return []

@@ -5,13 +5,15 @@ import os
 import shutil
 import subprocess
 import sys
-import sysconfig
 from collections.abc import Iterable
 from pathlib import Path
 
 from packaging.requirements import Requirement
 
+from .utils import dependency_target
+
 logger = logging.getLogger(__name__)
+UV_BINARY = os.environ.get("PYTHING_UV") or shutil.which("uv")
 
 
 def is_requirement_installed(req_str: str) -> bool:
@@ -26,41 +28,12 @@ def is_requirement_installed(req_str: str) -> bool:
         return False
 
 
-def _uv_command() -> list[str]:
-    uv = shutil.which("uv")
-    if uv:
-        return [uv]
-    if not getattr(sys, "frozen", False):
-        return [sys.executable, "-m", "uv"]
-    raise RuntimeError(
-        "App dependencies are missing and uv could not be found. Install uv and "
-        "ensure it is available on PATH, then restart PYThing."
-    )
-
-
-def _dependency_target() -> Path:
-    cache_root = os.environ.get("LOCALAPPDATA") if os.name == "nt" else None
-    if not cache_root:
-        cache_root = os.environ.get("XDG_CACHE_HOME") or os.path.join(
-            os.path.expanduser("~"), ".cache"
-        )
-    runtime = sys.implementation.cache_tag or (
-        f"python-{sys.version_info.major}.{sys.version_info.minor}"
-    )
-    return (
-        Path(cache_root)
-        / "pything"
-        / "dependencies"
-        / f"{runtime}-{sysconfig.get_platform()}"
-    )
-
-
 def install_requirements(requirements: Iterable[str]) -> None:
     """Install missing app requirements into a runtime-local import directory."""
-    target = _dependency_target()
-    logger.debug("Loading app dependencies from %s", target)
-    if str(target) not in sys.path:
-        sys.path.insert(0, str(target))
+    target = dependency_target()
+    # logger.debug("Loading app dependencies from %s", target)
+    # if str(target) not in sys.path:
+    #    sys.path.insert(0, str(target))
 
     missing: list[str] = []
     for requirement in dict.fromkeys(requirements):
@@ -75,14 +48,22 @@ def install_requirements(requirements: Iterable[str]) -> None:
         return
 
     target.mkdir(parents=True, exist_ok=True)
+    python_target = os.environ.get("PYTHING_PYTHON")
+    python_option = (
+        ["--python", python_target]
+        if python_target
+        else [
+            "--python-version",
+            f"{sys.version_info.major}.{sys.version_info.minor}",
+        ]
+    )
     command = [
-        *_uv_command(),
+        UV_BINARY or "uv",
         "pip",
         "install",
         "--target",
         str(target),
-        "--python-version",
-        f"{sys.version_info.major}.{sys.version_info.minor}",
+        *python_option,
         *missing,
     ]
     logger.info("Installing app dependencies: %s", ", ".join(missing))

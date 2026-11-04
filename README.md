@@ -22,7 +22,7 @@ You must know the basics of python development and have [uv](https://docs.astral
 
 Clone this repo
 
-Run `uv run pything`
+Run `uv run -m pything` on linux/macos and `uv run --python 3.12 -m pything` on windows
 
 ## Usage
 
@@ -180,7 +180,11 @@ To make more complex apps, look around at the built in apps to see what you can 
       <h2>🏗️ Building</h2>
    </summary>
 
-Building pything with your modifications can be done by either running `build.sh` (linux, from within your virtual environment) or `build.bat` (windows). Each build creates one combined launcher and server executable in `dist`. Keep in mind that apps must be in `/src/apps` to be included in the build.
+Building pything with your modifications can be done by either running `build.sh` (linux/macos) or `build.bat` (windows).
+
+> [!IMPORTANT]  
+> Windows and linux require gcc to be installed, on Windows you should use [MSYS2](https://www.msys2.org/)
+
 </details>
 
 <details>

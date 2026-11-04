@@ -44,11 +44,15 @@ socket.on("connect", () => {
     console.log("Connected to server");
     document.getElementById("appframe").src = "/apps/dashboard/launch";
 });
+var reloadinterval = null
 socket.on("disconnect", () => {
     socket.disconnect();
     window.focus();
     document.getElementById("status").style.display = "block";
-    x = setInterval(
+    if (reloadinterval) {
+        return;
+    }
+    reloadinterval = setInterval(
         function() {
             fetch("http://localhost:5192/isready", { method: 'GET' })
             .then(response => {
@@ -57,7 +61,7 @@ socket.on("disconnect", () => {
                 setTimeout(() => {
                     window.location.reload();
                 }, 550)
-                clearInterval(x);
+                clearInterval(reloadinterval);
             }
             })
             .catch(error => {});

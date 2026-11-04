@@ -1,31 +1,30 @@
-import pip_system_certs.wrapt_requests
-
-pip_system_certs.wrapt_requests.inject_truststore()
-import os
-import sys
-import json
 import datetime
-import time
+import importlib
+import inspect
+import json
+import logging
+import os
 import pickle
 import shutil
-import inspect
-import importlib
-import logging
+import sys
 import threading
-from typing import Any, Generator
-from collections.abc import Callable
-from flask import Flask, Blueprint, make_response, request, render_template, redirect
+import time
+from collections.abc import Callable, Generator
+from typing import Any
+
+import truststore
+from flask import Blueprint, Flask, make_response, redirect, render_template, request
 from flask_socketio import SocketIO
 from jinja2 import ChoiceLoader, FileSystemLoader
 
 from .depends import install_app_requirements
+from .utils import CACHE_ROOT  # noqa: F401 # imported for other apps
 
-# pyinstaller
-import engineio.async_drivers.threading
+truststore.inject_into_ssl()
 
 sys.modules["init"] = sys.modules[__name__]
 
-DEVMODE = bool(os.environ.get("DEV", False))
+DEVMODE = bool(os.environ.get("DEV", False))  # noqa: PLW1508
 logging.basicConfig(level=logging.DEBUG if DEVMODE else logging.INFO)
 logger = logging.getLogger("pything")
 if os.name == "nt":
@@ -210,7 +209,6 @@ class App:
         stack = inspect.stack()
         self.dir = os.path.dirname(os.path.abspath(stack[1].filename))
         self.dirname = os.path.basename(self.dir)
-        atype = os.path.basename(os.path.dirname(self.dir))
         manifest_path = os.path.join(self.dir, "manifest.json")
         try:
             with open(manifest_path, encoding="utf-8") as manifest_file:
@@ -242,7 +240,7 @@ class App:
         self.category = manifest["category"]
         apps[self.id] = self
         self.logger = logging.getLogger("pything.app." + self.id)
-        logger.debug(f"Initializing app '{self.display_name}' with id '{self.id}'")
+        logger.debug(f"Logger initialized for '{self.display_name}' with id '{self.id}'")
         self.blueprint = Blueprint(
             self.id, __name__, static_folder=os.path.abspath(self.dir) + "/static"
         )
@@ -251,10 +249,6 @@ class App:
         def inject_app():
             return {"app": self}
 
-        if not os.path.isdir(atype + os.sep + self.id):
-            raise RuntimeError(
-                f"Failed to find app directory for '{self.display_name}'"
-            )  # sanity check
         self.settings = {s.id: s for s in settings}
         self.hidden = True  # updated on init
         self.listeners = {}
@@ -323,6 +317,7 @@ class App:
 
     def startup(self):
         for listener in self.startup_listeners:
+            self.logger.debug("Calling startup listener %s", listener.__name__)
             listener()
 
     def on_broadcast(self, event: str):
@@ -336,7 +331,7 @@ class App:
 
     def broadcast(self, event: str, *args, **kwargs):
         if event not in broadcast_listeners:
-            logger.debug(
+            self.logger.debug(
                 "A broadcast to %s was sent by %s, but that event has no listeners",
                 event,
                 self.id,
@@ -344,8 +339,10 @@ class App:
             return
         for listener in broadcast_listeners[event]:
             listener(*args, **kwargs)
+        self.logger.debug("Broadcasting event %s to %d listeners", event, len(broadcast_listeners[event]))
 
     def on_setting_update(self, func: Callable):
+        self.logger.debug("Adding setting update listener %s", func.__name__)
         self.settingupdatelisteners.append(func)
         return func
 
@@ -368,7 +365,7 @@ class Client:
         if isinstance(app, App):
             app = app.id
         if not isinstance(app, str):
-            raise ValueError("Argument app must be a string with the ID of the app")
+            raise TypeError("Argument app must be a string with the ID of the app")
         self.app = app
         socket.emit("changeframe", "/apps/" + app + "/launch", to=self.sid)
 
@@ -438,10 +435,10 @@ def app_manifest(app_dir: str) -> dict[str, Any]:
     ) as manifest_file:
         manifest = json.load(manifest_file)
     if not isinstance(manifest, dict):
-        raise RuntimeError(f"Manifest for app directory '{app_dir}' must be an object")
+        raise TypeError(f"Manifest for app directory '{app_dir}' must be an object")
     dependencies = manifest.get("dependencies", {})
     if not isinstance(dependencies, dict):
-        raise RuntimeError(
+        raise RuntimeError(  # noqa: TRY004
             f"Manifest for app directory '{app_dir}' has invalid dependencies"
         )
     for dependency_type in ("required", "optional"):
@@ -470,11 +467,11 @@ def discover_apps() -> dict[str, dict[str, Any]]:
             manifest = app_manifest(app_dir)
             app_id = manifest.get("id")
             if not isinstance(app_id, str):
-                raise RuntimeError(
+                raise TypeError(
                     f"Manifest for app directory '{app_dir}' has invalid id"
                 )
             if app_id in discovered:
-                raise RuntimeError(f"App id '{app_id}' is defined more than once")
+                raise RuntimeError(f"App id '{app_id}' is defined more than once") # TODO: disable duplicate apps when we allow custom apps
             discovered[app_id] = {
                 "id": app_id,
                 "name": manifest.get("name", app_id),
@@ -620,11 +617,11 @@ def apps_set():
     threading.Timer(0.5, restart).start()
     return (
         "<style>html { background: linear-gradient(350deg, #272727, #1f1f1f); color:"
-        " #fff; }</style><h1>PYThing is restarting...</h1><script>const params = new"
+        " #fff; }</style><h1 id='restarting'>PYThing is restarting...</h1><script>const params = new"
         " URLSearchParams(window.location.search); if (!params.has('from')) {"
         " setInterval(() => { fetch('/apps').then(response =>"
         " response.text()).then(data => { window.location.href = '/settings'; }); },"
-        " 1000); }</script>"
+        " 1000); } else { document.getElementById('restarting').style.textAlign = 'center'; document.getElementById('restarting').style.lineHeight = '99vh'; } </script>"
     )
 
 
@@ -716,7 +713,11 @@ def import_app(iappd: str):
         raise RuntimeError(
             "All apps must be directories, name your app as <name>/__init__.py"
         )
+    app.logger.debug("Importing app %s", iappd)
+    start_time = time.time()
     iapp = importlib.import_module(iappd.replace(os.sep, "."))
+    end_time = time.time()
+    app.logger.debug("Imported app %s in %.3f seconds", iappd, end_time - start_time)
     if not hasattr(iapp, "app"):
         raise RuntimeError(f"App {iappd} does not have an 'app' variable")
     # isinstance does not work for some reason, so we check for attributes
@@ -750,16 +751,14 @@ def import_app(iappd: str):
 
 
 def main() -> None:
-    print(f"Starting PYThing as {__name__}...")
+    print("Starting PYThing...")
     global apps
     logger.debug("Init apps...")
 
     # Load enabled apps
     manifests = discover_apps()
     enabled = sorted(enabled_apps(manifests))
-    install_app_requirements(
-        manifests[app_id]["directory"] for app_id in enabled
-    )
+    install_app_requirements(manifests[app_id]["directory"] for app_id in enabled)
     for app_id in enabled:
         import_app(manifests[app_id]["directory"])
 
