@@ -714,7 +714,10 @@ def import_app(iappd: str):
             "All apps must be directories, name your app as <name>/__init__.py"
         )
     app.logger.debug("Importing app %s", iappd)
+    start_time = time.time()
     iapp = importlib.import_module(iappd.replace(os.sep, "."))
+    end_time = time.time()
+    app.logger.debug("Imported app %s in %.3f seconds", iappd, end_time - start_time)
     if not hasattr(iapp, "app"):
         raise RuntimeError(f"App {iappd} does not have an 'app' variable")
     # isinstance does not work for some reason, so we check for attributes
