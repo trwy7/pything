@@ -1,5 +1,7 @@
 {
     "python.analysis.extraPaths": [
-        "./src/pything"
+        "./src/pything",
+        "${env:HOME}/.cache/pything/dependencies/cpython-314-linux-x86_64",
+        "${env:LOCALAPPDATA}/pything/dependencies/cpython-312-win-amd64"
     ]
 }
