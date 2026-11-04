@@ -162,6 +162,11 @@ def apply_playback(track: LocalTrack | None) -> None:
 
 def cancel_pending() -> None:
     global pending_active, pending_generation, pending_track
+    if pending_active:
+        app.logger.debug(
+            "Canceling pending playback provider switch to %s",
+            pending_track.provider if pending_track is not None else None,
+        )
     pending_active = False
     pending_track = None
     pending_generation += 1
@@ -173,9 +178,15 @@ def commit_pending(generation: int) -> None:
         if not pending_active or generation != pending_generation:
             return
         track = pending_track
+        provider = track.provider if track is not None else None
+        app.logger.debug(
+            "Switching playback provider from %s to %s after delay",
+            current_provider,
+            provider,
+        )
         pending_active = False
         pending_track = None
-        current_provider = track.provider if track is not None else None
+        current_provider = provider
         apply_playback(track)
 
 
@@ -188,13 +199,29 @@ def update_playback(track: LocalTrack | None) -> None:
             apply_playback(track)
             return
         if current_provider is None:
+            app.logger.debug("Applying playback provider %s", provider)
             cancel_pending()
             current_provider = provider
             apply_playback(track)
             return
         if pending_active:
+            pending_provider = (
+                pending_track.provider if pending_track is not None else None
+            )
+            if pending_provider != provider:
+                app.logger.debug(
+                    "Updating pending playback provider switch from %s to %s",
+                    pending_provider,
+                    provider,
+                )
             pending_track = track
             return
+        app.logger.debug(
+            "Playback provider changed from %s to %s; waiting %.1fs before switching",
+            current_provider,
+            provider,
+            switch_delay,
+        )
         pending_active = True
         pending_track = track
         pending_generation += 1
@@ -341,8 +368,6 @@ async def linux_track(bus) -> LocalTrack | None:
     services = [
         name for name in names.body[0] if name.startswith("org.mpris.MediaPlayer2.")
     ]
-    app.logger.debug("Found MPRIS services: %s", services)
-
     async def read_service(service: str) -> tuple[str, LocalTrack | None]:
         try:
             reply = await bus.call(
