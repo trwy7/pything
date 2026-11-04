@@ -35,6 +35,11 @@ art_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache", "art
 os.makedirs(art_dir, exist_ok=True)
 accent_cache: dict[str, int | None] = {}
 windows_position_cache: dict[str, tuple[int, int, float]] = {}
+switch_delay = 0.5
+playback_lock = threading.Lock()
+current_provider: str | None = None
+pending_active = False
+pending_generation = 0
 
 
 def write_art(path: str, data: bytes) -> None:
@@ -53,6 +58,9 @@ class LocalTrack:
     position: int
     playing: bool
     art_url: str | None
+
+
+pending_track: LocalTrack | None = None
 
 
 def denied(provider: str) -> bool:
@@ -132,7 +140,7 @@ def get_art(track: LocalTrack) -> str | None:
     return "/apps/localmusic/art/" + identifier + ".jpg"
 
 
-def update_playback(track: LocalTrack | None) -> None:
+def apply_playback(track: LocalTrack | None) -> None:
     if track is None:
         playback.reset()
         return
@@ -150,6 +158,50 @@ def update_playback(track: LocalTrack | None) -> None:
         track.playing,
         track.position,
     )
+
+
+def cancel_pending() -> None:
+    global pending_active, pending_generation, pending_track
+    pending_active = False
+    pending_track = None
+    pending_generation += 1
+
+
+def commit_pending(generation: int) -> None:
+    global current_provider, pending_active, pending_track
+    with playback_lock:
+        if not pending_active or generation != pending_generation:
+            return
+        track = pending_track
+        pending_active = False
+        pending_track = None
+        current_provider = track.provider if track is not None else None
+        apply_playback(track)
+
+
+def update_playback(track: LocalTrack | None) -> None:
+    global current_provider, pending_active, pending_generation, pending_track
+    with playback_lock:
+        provider = track.provider if track is not None else None
+        if provider == current_provider:
+            cancel_pending()
+            apply_playback(track)
+            return
+        if current_provider is None:
+            cancel_pending()
+            current_provider = provider
+            apply_playback(track)
+            return
+        if pending_active:
+            pending_track = track
+            return
+        pending_active = True
+        pending_track = track
+        pending_generation += 1
+        generation = pending_generation
+    timer = threading.Timer(switch_delay, commit_pending, args=(generation,))
+    timer.daemon = True
+    timer.start()
 
 
 async def windows_track(manager) -> LocalTrack | None:
