@@ -182,6 +182,9 @@ To make more complex apps, look around at the built in apps to see what you can 
 
 Building pything with your modifications can be done by either running `build.sh` (linux/macos) or `build.bat` (windows).
 
+> [!IMPORTANT]  
+> Windows and linux require gcc to be installed, on Windows you should use [MSYS2](https://www.msys2.org/)
+
 </details>
 
 <details>

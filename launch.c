@@ -801,7 +801,8 @@ static int install_runtime_dependencies(const char *uv_path, const char *python_
     }
     const char *arguments[] = {uv_path, "pip", "install", "--python", python_path,
                                "--target", target, "flask==3.1.2",
-                               "flask-socketio==5.5.1", "packaging>=24.0", NULL};
+                               "flask-socketio==5.5.1", "packaging>=24.0",
+                               "truststore>=0.10.4", NULL};
     return run_process(arguments) == 0;
 }
 

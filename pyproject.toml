@@ -8,6 +8,7 @@ dependencies = [
     "flask==3.1.2",
     "flask-socketio==5.5.1",
     "packaging>=24.0",
+    "truststore>=0.10.4",
 ]
 authors = [
   { name = "trey", email = "trey@trey7658.com" }

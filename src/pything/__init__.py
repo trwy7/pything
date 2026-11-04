@@ -12,12 +12,15 @@ import time
 from collections.abc import Callable, Generator
 from typing import Any
 
+import truststore
 from flask import Blueprint, Flask, make_response, redirect, render_template, request
 from flask_socketio import SocketIO
 from jinja2 import ChoiceLoader, FileSystemLoader
 
 from .depends import install_app_requirements
 from .utils import CACHE_ROOT  # noqa: F401 # imported for other apps
+
+truststore.inject_into_ssl()
 
 sys.modules["init"] = sys.modules[__name__]
 
