@@ -209,7 +209,6 @@ class App:
         stack = inspect.stack()
         self.dir = os.path.dirname(os.path.abspath(stack[1].filename))
         self.dirname = os.path.basename(self.dir)
-        atype = os.path.basename(os.path.dirname(self.dir))
         manifest_path = os.path.join(self.dir, "manifest.json")
         try:
             with open(manifest_path, encoding="utf-8") as manifest_file:
@@ -241,7 +240,7 @@ class App:
         self.category = manifest["category"]
         apps[self.id] = self
         self.logger = logging.getLogger("pything.app." + self.id)
-        logger.debug(f"Initializing app '{self.display_name}' with id '{self.id}'")
+        logger.debug(f"Logger initialized for '{self.display_name}' with id '{self.id}'")
         self.blueprint = Blueprint(
             self.id, __name__, static_folder=os.path.abspath(self.dir) + "/static"
         )
@@ -250,10 +249,6 @@ class App:
         def inject_app():
             return {"app": self}
 
-        if not os.path.isdir(atype + os.sep + self.id):
-            raise RuntimeError(
-                f"Failed to find app directory for '{self.display_name}'"
-            )  # sanity check
         self.settings = {s.id: s for s in settings}
         self.hidden = True  # updated on init
         self.listeners = {}
@@ -322,6 +317,7 @@ class App:
 
     def startup(self):
         for listener in self.startup_listeners:
+            self.logger.debug("Calling startup listener %s", listener.__name__)
             listener()
 
     def on_broadcast(self, event: str):
@@ -335,7 +331,7 @@ class App:
 
     def broadcast(self, event: str, *args, **kwargs):
         if event not in broadcast_listeners:
-            logger.debug(
+            self.logger.debug(
                 "A broadcast to %s was sent by %s, but that event has no listeners",
                 event,
                 self.id,
@@ -343,8 +339,10 @@ class App:
             return
         for listener in broadcast_listeners[event]:
             listener(*args, **kwargs)
+        self.logger.debug("Broadcasting event %s to %d listeners", event, len(broadcast_listeners[event]))
 
     def on_setting_update(self, func: Callable):
+        self.logger.debug("Adding setting update listener %s", func.__name__)
         self.settingupdatelisteners.append(func)
         return func
 
@@ -367,7 +365,7 @@ class Client:
         if isinstance(app, App):
             app = app.id
         if not isinstance(app, str):
-            raise ValueError("Argument app must be a string with the ID of the app")
+            raise TypeError("Argument app must be a string with the ID of the app")
         self.app = app
         socket.emit("changeframe", "/apps/" + app + "/launch", to=self.sid)
 
@@ -437,10 +435,10 @@ def app_manifest(app_dir: str) -> dict[str, Any]:
     ) as manifest_file:
         manifest = json.load(manifest_file)
     if not isinstance(manifest, dict):
-        raise RuntimeError(f"Manifest for app directory '{app_dir}' must be an object")
+        raise TypeError(f"Manifest for app directory '{app_dir}' must be an object")
     dependencies = manifest.get("dependencies", {})
     if not isinstance(dependencies, dict):
-        raise RuntimeError(
+        raise RuntimeError(  # noqa: TRY004
             f"Manifest for app directory '{app_dir}' has invalid dependencies"
         )
     for dependency_type in ("required", "optional"):
@@ -469,11 +467,11 @@ def discover_apps() -> dict[str, dict[str, Any]]:
             manifest = app_manifest(app_dir)
             app_id = manifest.get("id")
             if not isinstance(app_id, str):
-                raise RuntimeError(
+                raise TypeError(
                     f"Manifest for app directory '{app_dir}' has invalid id"
                 )
             if app_id in discovered:
-                raise RuntimeError(f"App id '{app_id}' is defined more than once")
+                raise RuntimeError(f"App id '{app_id}' is defined more than once") # TODO: disable duplicate apps when we allow custom apps
             discovered[app_id] = {
                 "id": app_id,
                 "name": manifest.get("name", app_id),
@@ -715,6 +713,7 @@ def import_app(iappd: str):
         raise RuntimeError(
             "All apps must be directories, name your app as <name>/__init__.py"
         )
+    app.logger.debug("Importing app %s", iappd)
     iapp = importlib.import_module(iappd.replace(os.sep, "."))
     if not hasattr(iapp, "app"):
         raise RuntimeError(f"App {iappd} does not have an 'app' variable")
