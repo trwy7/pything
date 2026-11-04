@@ -152,15 +152,13 @@ def update_playback(track: LocalTrack | None) -> None:
     )
 
 
-async def windows_track() -> LocalTrack | None:
+async def windows_track(manager) -> LocalTrack | None:
     from winsdk.windows.media.control import (  # type: ignore[import-not-found]
-        GlobalSystemMediaTransportControlsSessionManager,
         GlobalSystemMediaTransportControlsSessionPlaybackStatus,
     )
     from winsdk.windows.storage.streams import DataReader  # type: ignore[import-not-found]
 
-    manager = await GlobalSystemMediaTransportControlsSessionManager.request_async()
-    sessions = manager.get_sessions()
+    sessions = manager.get_sessions() or []
     candidates = []
     playing_providers = []
     for session in sessions:
@@ -344,11 +342,65 @@ async def linux_track(bus) -> LocalTrack | None:
     )
 
 
+async def windows_loop() -> None:
+    from winsdk.windows.media.control import (  # type: ignore[import-not-found]
+        GlobalSystemMediaTransportControlsSessionManager,
+    )
+
+    manager = await GlobalSystemMediaTransportControlsSessionManager.request_async()
+    loop = asyncio.get_running_loop()
+    refresh = asyncio.Event()
+
+    def request_refresh(*_) -> None:
+        loop.call_soon_threadsafe(refresh.set)
+
+    manager.add_current_session_changed(request_refresh)
+    manager.add_sessions_changed(request_refresh)
+
+    subscriptions = []
+    while True:
+        refresh.clear()
+        for session, removers in subscriptions:
+            for remove, token in removers:
+                try:
+                    remove(token)
+                except Exception:
+                    app.logger.debug(
+                        "Could not unsubscribe from Windows media session events",
+                        exc_info=True,
+                    )
+        subscriptions.clear()
+        try:
+            for session in manager.get_sessions() or []:
+                removers = []
+                for add, remove in (
+                    (
+                        session.add_media_properties_changed,
+                        session.remove_media_properties_changed,
+                    ),
+                    (
+                        session.add_playback_info_changed,
+                        session.remove_playback_info_changed,
+                    ),
+                    (
+                        session.add_timeline_properties_changed,
+                        session.remove_timeline_properties_changed,
+                    ),
+                ):
+                    removers.append((remove, add(request_refresh)))
+                subscriptions.append((session, removers))
+            update_playback(await windows_track(manager))
+        except (OSError, RuntimeError, TypeError, ValueError):
+            app.logger.debug("Could not read Windows media session", exc_info=True)
+        await refresh.wait()
+
+
 def music_thread() -> None:
     if sys.platform == "win32":
         while True:
             try:
-                update_playback(asyncio.run(windows_track()))
+                asyncio.run(windows_loop())
+                return
             except ModuleNotFoundError:
                 app.logger.warning("Local Music requires the winsdk package on Windows")
                 time.sleep(1)
@@ -364,6 +416,7 @@ def music_thread() -> None:
 
 
 async def linux_loop() -> None:
+    from dbus_next import Message, MessageType
     from dbus_next.aio import MessageBus
 
     try:
@@ -371,12 +424,64 @@ async def linux_loop() -> None:
     except (OSError, RuntimeError):
         app.logger.warning("Local Music requires a running Linux D-Bus session")
         return
+
+    refresh = asyncio.Event()
+
+    def on_message(message: Message) -> None:
+        if message.message_type != MessageType.SIGNAL:
+            return
+        if (
+            (
+                message.interface == "org.freedesktop.DBus.Properties"
+                and message.member == "PropertiesChanged"
+                and message.path == "/org/mpris/MediaPlayer2"
+                and message.body
+                and message.body[0] == "org.mpris.MediaPlayer2.Player"
+            )
+            or (
+                message.interface == "org.mpris.MediaPlayer2.Player"
+                and message.member == "Seeked"
+            )
+            or (
+                message.interface == "org.freedesktop.DBus"
+                and message.member == "NameOwnerChanged"
+                and message.body
+                and str(message.body[0]).startswith("org.mpris.MediaPlayer2.")
+            )
+        ):
+            refresh.set()
+
+    bus.add_message_handler(on_message)
+    for rule in (
+        (
+            "type='signal',interface='org.freedesktop.DBus.Properties',"
+            "member='PropertiesChanged',path='/org/mpris/MediaPlayer2',"
+            "arg0='org.mpris.MediaPlayer2.Player'"
+        ),
+        "type='signal',interface='org.mpris.MediaPlayer2.Player',member='Seeked'",
+        (
+            "type='signal',interface='org.freedesktop.DBus',"
+            "member='NameOwnerChanged',arg0namespace='org.mpris.MediaPlayer2'"
+        ),
+    ):
+        await bus.call(
+            Message(
+                destination="org.freedesktop.DBus",
+                path="/org/freedesktop/DBus",
+                interface="org.freedesktop.DBus",
+                member="AddMatch",
+                signature="s",
+                body=[rule],
+            )
+        )
+
     while True:
+        refresh.clear()
         try:
             update_playback(await linux_track(bus))
         except Exception:
             app.logger.debug("Could not read MPRIS media session", exc_info=True)
-        await asyncio.sleep(1)
+        await refresh.wait()
 
 
 @app.blueprint.route("/art/<string:filename>")
