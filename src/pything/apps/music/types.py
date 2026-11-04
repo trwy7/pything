@@ -1,3 +1,4 @@
+import time
 from collections.abc import Callable  # why cant this be in typing :(
 
 
@@ -68,19 +69,30 @@ class Playback:
         self.song: Song | None = None
         self.playing: bool | None = None
         self.position: int | None = None
+        self._position_updated_at = time.monotonic()
         self.listeners: list[Callable] = []
 
     def update(self, song: Song, playing: bool | None, position: int | None):
         self.song = song
         self.playing = playing
         self.position = position
+        self._position_updated_at = time.monotonic()
         for listener in self.listeners:
             listener()
+
+    def estimate_position(self):
+        """Advance the reported position between provider updates."""
+        now = time.monotonic()
+        if self.song and self.playing and self.position is not None:
+            elapsed_ms = int((now - self._position_updated_at) * 1000)
+            self.position = min(self.position + elapsed_ms, self.song.duration)
+        self._position_updated_at = now
 
     def reset(self):
         self.song = None
         self.playing = None
         self.position = None
+        self._position_updated_at = time.monotonic()
         for listener in self.listeners:
             listener()
 

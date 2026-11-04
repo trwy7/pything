@@ -1,8 +1,14 @@
 """Provider for all music related things, an example of an advanced app"""
 
+import threading
+import time
+
 from flask import render_template
-from init import App, socket, BooleanSetting, SelectSetting
+from init import App, BooleanSetting, SelectSetting, socket
+
 from .types import playback
+
+_last_broadcast_accent: object = object()
 
 app = App(
     [
@@ -21,6 +27,8 @@ app = App(
 def send_playbar_style(changed: dict[str, object]):
     if "playbar_style" in changed:
         socket.emit("music_playbar_style", changed["playbar_style"])
+    if changed.get("accent") and app.settings["accent"].get_value():
+        send_playback_accent()
 
 
 @app.on("get")
@@ -39,6 +47,32 @@ def send_song(_=None):
     )
 
 
+def send_playback_accent():
+    global _last_broadcast_accent
+    if not playback.song or not app.settings["accent"].get_value():
+        return
+    accent = playback.song.album.accent
+    if accent != _last_broadcast_accent:
+        app.broadcast("set_accent", accent)
+        _last_broadcast_accent = accent
+
+
+def send_playback_state():
+    socket.emit(
+        "music",
+        [
+            ((playback.position / playback.song.duration) * 100)
+            if (
+                playback.song
+                and playback.position is not None
+                and playback.song.duration > 0
+            )
+            else None,
+            playback.playing,
+        ],
+    )
+
+
 @playback.on_update
 def playback_listener():
     if playback.song:
@@ -51,17 +85,21 @@ def playback_listener():
         )
     else:
         app.logger.debug("Got playback update: None")
-    socket.emit(
-        "music",
-        [
-            ((playback.position / playback.song.duration) * 100)
-            if playback.song and playback.position and playback.song.duration > 0
-            else None,
-            playback.playing,
-        ],
-    )
-    if playback.song and app.settings["accent"].get_value():
-        app.broadcast("set_accent", playback.song.album.accent)
+    send_playback_state()
+    send_playback_accent()
+
+
+def playback_estimation_thread():
+    while True:
+        time.sleep(1)
+        playback.estimate_position()
+        if playback.song:
+            send_playback_state()
+
+
+@app.on_startup
+def start_playback_estimation_thread():
+    threading.Thread(target=playback_estimation_thread, daemon=True).start()
 
 
 @app.blueprint.route("/launch")
