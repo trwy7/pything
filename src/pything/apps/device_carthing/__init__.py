@@ -101,7 +101,6 @@ def ensure_adb(r=False):
 
 
 def run_adb_cmd(serial: str, command: list[str]):
-    global adb_path
     if not adb_path:
         app.logger.warning("An adb command was ran, but adb has not been validated")
         return
@@ -179,8 +178,7 @@ def inject_thread():
         connected = get_carthings()
         # Remove disconnected devices
         for serial in list(serial_cache.keys()):
-            if serial not in connected:
-                if serial_cache[serial][0]:
+            if serial not in connected and serial_cache[serial][0]:
                     app.logger.info(f"{serial} disconnected")
                     del serial_cache[serial]
         # Initialize newly connected devices

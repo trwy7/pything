@@ -205,7 +205,6 @@ class App:
         self,
         settings: list[Setting | ElementSetting],
     ):
-        global apps
         stack = inspect.stack()
         self.dir = os.path.dirname(os.path.abspath(stack[1].filename))
         self.dirname = os.path.basename(self.dir)
@@ -268,7 +267,7 @@ class App:
             if not setting.id in config[self.id]:
                 schange = True
                 logger.debug(
-                    f"Setting {setting.id} for {self.id} to default of {str(setting.default)}"
+                    f"Setting {setting.id} for {self.id} to default of {setting.default!s}"
                 )
                 config[self.id][setting.id] = setting.default
         if schange:
@@ -634,7 +633,7 @@ def settings_set():
         for setting in app.settings.values():
             if f"{app.id}-{setting.id}" in request.form:
                 nd = request.form[f"{app.id}-{setting.id}"]
-                logger.debug(f"Setting '{app.id}' > '{setting.id}' to {str(nd)}")
+                logger.debug(f"Setting '{app.id}' > '{setting.id}' to {nd!s}")
                 match setting.type:
                     case "bool":
                         nd = nd == "on"
@@ -726,13 +725,13 @@ def import_app(iappd: str):
         and hasattr(iapp.app, "blueprint")
         and hasattr(iapp.app, "display_name")
     ):
-        raise RuntimeError(
-            f"App {iappd} variable 'app' does not appear to be a valid App instance ({str(type(iapp.app))})"
+        raise TypeError(
+            f"App {iappd} variable 'app' does not appear to be a valid App instance ({type(iapp.app)!s})"
         )
     # Make sure the blueprint is valid
     if not isinstance(iapp.app.blueprint, Blueprint):
-        raise RuntimeError(
-            f"App {iappd} variable 'app' has invalid blueprint ({str(type(iapp.app.blueprint))})"
+        raise TypeError(
+            f"App {iappd} variable 'app' has invalid blueprint ({type(iapp.app.blueprint)!s})"
         )
     app.register_blueprint(iapp.app.blueprint, url_prefix="/apps/" + iapp.app.id)
     if os.path.exists(os.path.join(iappd, "clientmod.html")):

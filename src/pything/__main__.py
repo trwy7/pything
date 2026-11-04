@@ -43,7 +43,6 @@ def cli() -> int | None:
         import sys
 
         from pything import main as start
-
         from pything.utils import dependency_target
 
         sys.path.insert(0, str(dependency_target()))

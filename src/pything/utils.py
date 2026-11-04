@@ -1,8 +1,7 @@
 import os
 import sys
-from pathlib import Path
 import sysconfig
-
+from pathlib import Path
 
 if sys.platform == "win32":
     CACHE_ROOT = os.environ.get("LOCALAPPDATA")

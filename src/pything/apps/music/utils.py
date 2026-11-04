@@ -1,7 +1,8 @@
+import colorsys
+
 import numpy as np
 from PIL import Image
 from sklearn.cluster import KMeans
-import colorsys
 
 
 def get_accent(path: str) -> int | None:

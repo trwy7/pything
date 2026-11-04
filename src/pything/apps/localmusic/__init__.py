@@ -11,7 +11,7 @@ import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from functools import lru_cache
 from pathlib import Path
 from urllib.parse import unquote, unquote_to_bytes, urlparse
@@ -232,9 +232,9 @@ async def windows_track() -> LocalTrack | None:
         if status == GlobalSystemMediaTransportControlsSessionPlaybackStatus.PLAYING:
             last_updated = timeline.last_updated_time
             if last_updated.tzinfo is None:
-                last_updated = last_updated.replace(tzinfo=timezone.utc)
+                last_updated = last_updated.replace(tzinfo=UTC)
             elapsed = max(
-                0, (datetime.now(timezone.utc) - last_updated).total_seconds()
+                0, (datetime.now(UTC) - last_updated).total_seconds()
             )
             position += int(elapsed * playback_rate * 1000)
         position = min(position, duration) if duration else position

@@ -77,7 +77,7 @@ def request_new_token():
             "expiry": datetime.now() + timedelta(seconds=data["expires_in"] - 5),
         }
     )
-    if "refresh_token" in data and data["refresh_token"]:
+    if data.get("refresh_token"):
         app.settings["refresh_token"].set_value(data["refresh_token"])
 
     return True
@@ -213,7 +213,7 @@ def music_thread():
             continue
         try:
             rdata = get_endpoint("/v1/me/player")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             app.logger.error("Error fetching data: %s", str(e))
             continue
         if rdata in (None, False):
