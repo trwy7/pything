@@ -1,4 +1,4 @@
-from init import App, IntegerSetting, socket
+from pything import App, IntegerSetting, socket
 
 app = App(
     [

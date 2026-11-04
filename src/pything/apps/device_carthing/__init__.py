@@ -9,7 +9,7 @@ import time
 import urllib.request
 import zipfile
 
-from init import App, BooleanSetting, CACHE_ROOT
+from pything import CACHE_ROOT, App, BooleanSetting
 
 app = App(
     [

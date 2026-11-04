@@ -1,9 +1,11 @@
 import re
 from threading import Lock
+
 import requests
-from flask import render_template, request
-from init import App, StringSetting
 from apps.music.types import playback
+from flask import render_template, request
+
+from pything import App, StringSetting
 
 app = App([StringSetting("base_url", "LRCLIB base URL", "https://lrclib.net")])
 USER_AGENT = "PYThing Lyrics (https://github.com/trwy7/pything)"

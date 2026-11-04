@@ -22,7 +22,7 @@ from .utils import CACHE_ROOT  # noqa: F401 # imported for other apps
 
 truststore.inject_into_ssl()
 
-sys.modules["init"] = sys.modules[__name__]
+sys.modules["pything"] = sys.modules[__name__]
 
 DEVMODE = bool(os.environ.get("DEV", False))  # noqa: PLW1508
 logging.basicConfig(level=logging.DEBUG if DEVMODE else logging.INFO)

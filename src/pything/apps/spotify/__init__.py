@@ -1,20 +1,21 @@
-from datetime import datetime, timedelta
+import os
 import threading
 import time
-import os
 import urllib.request
+from datetime import datetime, timedelta
+
 import requests
 import requests.auth
-from flask import request, redirect, send_file, abort
-from apps.music.types import playback, Song, Album, Artist
+from apps.music.types import Album, Artist, Song, playback
 from apps.music.utils import get_accent
-from init import (
+from flask import abort, redirect, request, send_file
+
+from pything import (
     App,
-    StringSetting,
-    LinkSetting,
-    BooleanSetting,
     DataSetting,
     LabelSetting,
+    LinkSetting,
+    StringSetting,
 )
 
 app = App(

@@ -106,7 +106,7 @@ All apps can store data in the form of settings, you can access any visible sett
 To create a custom app, you must be using the source build. Apps have a defined structure, but not all files are needed. Apps can either be in `/src/apps` or `/src/customapps`. `/src/customapps` are excluded from git, but `/src/apps` is not., they are both loaded the same way, but a custom app cannot take the same id as a built in app. All apps are loaded as a python module, so your init script should be in `/src/apps/<id>/__init__.py`. The app needs to expose an `app` variable, of the `App` class. This is a basic example of an app that has a few settings.
 ```python
 from flask import render_template, redirect
-from init import (
+from pything import (
     App,
     StringSetting,
     FloatSetting,

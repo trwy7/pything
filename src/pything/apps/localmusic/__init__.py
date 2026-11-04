@@ -1,8 +1,6 @@
 import asyncio
 import base64
 import binascii
-from datetime import datetime, timezone
-from functools import lru_cache
 import hashlib
 import os
 import re
@@ -13,14 +11,16 @@ import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
+from datetime import datetime, timezone
+from functools import lru_cache
 from pathlib import Path
 from urllib.parse import unquote, unquote_to_bytes, urlparse
 
-from flask import abort, send_file
-
 from apps.music.types import Album, Artist, Song, playback
 from apps.music.utils import get_accent
-from init import App, BooleanSetting, LabelSetting, StringSetting, clients
+from flask import abort, send_file
+
+from pything import App, LabelSetting, StringSetting
 
 app = App(
     [

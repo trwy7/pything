@@ -1,9 +1,11 @@
 import threading
-import psutil
 import time
+
 import humanize
+import psutil
 from flask import render_template
-from init import App, BooleanSetting
+
+from pything import App, BooleanSetting
 
 app = App([BooleanSetting("gib", "Values in GiB", False)])
 

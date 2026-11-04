@@ -3,7 +3,7 @@ import os
 import sys
 import threading
 
-from init import App, BooleanSetting, socket
+from pything import App, BooleanSetting, socket
 
 app = App(
     [BooleanSetting("lockstate", "Hide the display when the screen is locked", True)],

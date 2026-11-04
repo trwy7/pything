@@ -1,6 +1,8 @@
-from flask import render_template, request, redirect
-from init import App, get_apps, BooleanSetting
 import webbrowser
+
+from flask import redirect, render_template
+
+from pything import App, BooleanSetting, get_apps
 
 app = App([BooleanSetting("warn", "Show settings hint (turn me off)", True)])
 
