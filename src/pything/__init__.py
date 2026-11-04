@@ -619,11 +619,11 @@ def apps_set():
     threading.Timer(0.5, restart).start()
     return (
         "<style>html { background: linear-gradient(350deg, #272727, #1f1f1f); color:"
-        " #fff; }</style><h1>PYThing is restarting...</h1><script>const params = new"
+        " #fff; }</style><h1 id='restarting'>PYThing is restarting...</h1><script>const params = new"
         " URLSearchParams(window.location.search); if (!params.has('from')) {"
         " setInterval(() => { fetch('/apps').then(response =>"
         " response.text()).then(data => { window.location.href = '/settings'; }); },"
-        " 1000); }</script>"
+        " 1000); } else { document.getElementById('restarting').style.textAlign = 'center'; document.getElementById('restarting').style.lineHeight = '99vh'; } </script>"
     )
 
 
