@@ -34,12 +34,19 @@ def check_adb():
         app.logger.debug("ADB not found in PATH")
         return False
     try:
+        app.logger.debug("Checking ADB at PATH: %s", shadb)
         res = subprocess.run(
-            [shadb, "devices"], capture_output=True, timeout=2, check=False
+            [shadb, "devices"], capture_output=True, timeout=10, check=False
         )
-        return res.returncode == 0
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        app.logger.debug("ADB not found or timed out")
+        if res.returncode == 0:
+            app.logger.debug("ADB found in PATH")
+            global adb_path
+            adb_path = shadb
+            return True
+        app.logger.debug("ADB found in PATH, but returned non-zero exit code: %s", res.returncode)
+        return False
+    except (FileNotFoundError, subprocess.TimeoutExpired) as e:
+        app.logger.debug("ADB not found or timed out: %s", str(e))
         return False
 
 
@@ -151,7 +158,7 @@ def is_carthing_serial(serial: str) -> bool:
 def get_carthings():
     try:
         result = subprocess.run(
-            [adb_path, "devices"], capture_output=True, text=True, timeout=2, check=False
+            [adb_path, "devices"], capture_output=True, text=True, timeout=10, check=False
         )
     except (FileNotFoundError, subprocess.TimeoutExpired):
         return []
