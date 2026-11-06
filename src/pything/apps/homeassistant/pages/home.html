@@ -1,0 +1,216 @@
+{% extends "templates/app.html" %}
+{% block head %}
+<style>
+    /* Register --pct so it can be transitioned (animated) when it changes */
+    @property --pct {
+        syntax: "<number>";
+        inherits: true;
+        initial-value: 0;
+    }
+
+    body {
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    #auto-time {
+        width: 100%;
+        height: 15px;
+        text-align: center;
+        top: 0;
+        margin-top: 5px;
+        font-weight: bold;
+    }
+
+    #home {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr 1fr;
+        flex-grow: 1;
+        gap: 10px;
+        height: 100%;
+        padding-bottom: 15px;
+    }
+
+    #home > div {
+        --pct: 0;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: center;
+        border: solid 2px hsl(var(--custom-hue, 151), 20%, 99%);
+        /* Dim, disabled fill (always present underneath) */
+        background: hsla(0, 0%, 40%, 0.2);
+        border-radius: 20px;
+        text-align: center;
+        padding: 10px 0;
+        /* Animate --pct so the fill height glides on percentage changes,
+           and border-color so enabling/disabling fades smoothly */
+        transition: --pct 0.6s ease, border-color 0.5s ease;
+    }
+
+    /* Fade style: the normal "on" background (::after, below) is shown at
+       a transparency driven by --fade (set from the percentage in JS);
+       the card itself stays fully opaque, and there is no fill overlay.
+       Off: no fill either (handled via --pct: 0 and the .zero solid
+       background, exactly like a device with no percentage). */
+    #home.pct-fade > div::before,
+    #home.pct-off > div::before {
+        display: none;
+    }
+
+    #home.pct-fade > div.enabled::after {
+        opacity: var(--fade, 1);
+    }
+
+    /* Colored fill, rising from the bottom to calc(var(--pct) * 1%) of the card.
+       Height is transitioned (via --pct) and opacity is transitioned
+       (faded in/out with .enabled), so both animations are smooth.
+       Gradients themselves can't be transitioned, hence this overlay. */
+    #home > div::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: calc(var(--pct) * 1%);
+        background: linear-gradient(
+            to top,
+            hsla(var(--custom-hue, 151), 80%, 45%, 0.65),
+            hsla(var(--custom-hue, 151), 80%, 40%, 0.35)
+        );
+        opacity: 0;
+        transition: opacity 0.5s ease;
+        pointer-events: none;
+    }
+
+    /* Keep text above the fill overlay */
+    #home > div > * {
+        position: relative;
+        z-index: 1;
+    }
+
+    #home > div.enabled {
+        border-color: hsl(var(--custom-hue, 151), 100%, 60%);
+    }
+
+    #home > div.enabled::before {
+        opacity: 1;
+    }
+
+    #home > div::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: hsla(var(--custom-hue, 151), 70%, 45%, 0.65);
+        opacity: 0;
+        transition: opacity 0.5s ease;
+        pointer-events: none;
+    }
+
+    #home > div.enabled.zero::after {
+        opacity: 1;
+    }
+
+    #home > div.toggleable {
+        cursor: pointer;
+    }
+
+    #home > div .label,
+    #home > div .main,
+    #home > div .secondary {
+        transition: color 0.5s ease;
+    }
+
+    #home > div > .label {
+        font-size: 1.2em;
+        color: hsl(var(--custom-hue, 151), 100%, 92%);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 90%;
+    }
+
+    #home > div > .main {
+        font-size: 3em;
+        font-weight: bold;
+    }
+
+    #home > div > .secondary {
+        font-size: 1.5em;
+        min-height: 1.2em;
+    }
+
+</style>
+{% endblock %}
+
+{% block content %}
+<p id="auto-time"></p>
+<div id="home" class="pct-{{ percentstyle }}">
+    {% for card in initial_cards %}
+    <div id="device{{ card.i + 1 }}" data-entity="{{ card.entity_id }}" class="{{ 'enabled' if card.enabled else '' }}{{ ' toggleable' if card.toggleable else '' }}{{ ' zero' if percentstyle != 'fade' and not card.percentage else '' }}" style="--pct: {{ card.percentage if percentstyle == 'fill' and card.percentage else 0 }}; --fade: {{ (card.percentage / 100) if percentstyle == 'fade' and card.percentage is not none else 1 }};">
+        <span class="label">{{ card.label }}</span>
+        <span class="main">{{ card.state }}</span>
+        <span class="secondary">{{ card.secondary }}</span>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+    // Transparency of the "on" background: 0% -> 0, 100% -> 1. No percentage -> 1 (normal on background).
+    const fadeOpacity = (pct) => pct == null ? 1 : Math.max(0, Math.min(100, pct)) / 100;
+
+    function renderCards(cards) {
+        for (const card of cards || []) {
+            const el = document.getElementById("device" + (card.i + 1));
+            if (!el) {
+                continue;
+            }
+            const style = ["off", "fill", "fade"].includes(card.percentstyle) ? card.percentstyle : "fill";
+            document.getElementById("home").className = "pct-" + style;
+
+            if (card.entity_id) el.dataset.entity = card.entity_id;
+            el.classList.toggle("toggleable", !!card.toggleable);
+            el.classList.toggle("enabled", !!card.enabled);
+            if (style === "fade") {
+                // Normal "on" background (::after) at percentage-driven transparency;
+                // no fill. .zero is not needed: .enabled::after applies in fade mode.
+                el.classList.remove("zero");
+                el.style.setProperty("--pct", 0);
+                el.style.setProperty("--fade", fadeOpacity(card.percentage));
+            } else if (style === "off") {
+                // Act as if no percentage was set: no fill, solid background when on.
+                el.classList.add("zero");
+                el.style.setProperty("--pct", 0);
+                el.style.setProperty("--fade", 1);
+            } else {
+                // Fill: percentage fills the card; no percentage or 0% while on: solid background
+                el.classList.toggle("zero", !card.percentage);
+                el.style.setProperty("--pct", card.percentage ?? 0);
+                el.style.setProperty("--fade", 1);
+            }
+            el.querySelector(".label").innerText = card.label || "";
+            el.querySelector(".main").innerText = card.state || "";
+            el.querySelector(".secondary").innerText = card.secondary || "";
+        }
+    }
+
+    // Click a toggleable tile to turn its device on/off (optimistic UI;
+    // the server's state_changed update will confirm/correct it).
+    document.getElementById("home").addEventListener("click", (event) => {
+        const tile = event.target.closest("div.toggleable");
+        if (!tile || !tile.dataset.entity) return;
+        tile.classList.toggle("enabled");
+        send("toggle", tile.dataset.entity);
+    });
+
+    on("upd", (payload) => renderCards(payload.cards));
+    renderCards({{ initial_cards | tojson }});
+</script>
+{% endblock %}
