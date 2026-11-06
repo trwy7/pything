@@ -1,0 +1,8 @@
+{
+  "id": "homeassistant",
+  "name": "Home",
+  "description": "Control Home Assistant",
+  "codeowners": ["@trwy7"],
+  "requirements": ["websocket-client==1.9.2"],
+  "category": "uncategorized"
+}

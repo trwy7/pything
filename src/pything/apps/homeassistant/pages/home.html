@@ -1,0 +1,115 @@
+{% extends "templates/app.html" %}
+{% block head %}
+<style>
+    body {
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    #auto-time {
+        width: 100%;
+        height: 15px;
+        text-align: center;
+        top: 0;
+        margin-top: 5px;
+        font-weight: bold;
+    }
+
+    #home {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr 1fr;
+        flex-grow: 1;
+        gap: 10px;
+        height: 100%;
+        padding-bottom: 15px;
+    }
+
+    #home > div {
+        --pct: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: center;
+        border: solid 2px hsl(var(--custom-hue, 151), 100%, 90%);
+        /* Fill background from bottom to top based on --pct (0-100) */
+        background: linear-gradient(
+            to top,
+            hsla(var(--custom-hue, 151), 80%, 35%, 0.55) calc(var(--pct) * 1%),
+            hsla(var(--custom-hue, 151), 80%, 20%, 0.2) calc(var(--pct) * 1%)
+        );
+        background-attachment: local;
+        border-radius: 20px;
+        text-align: center;
+        padding: 10px 0;
+        transition: border-color 0.3s, background 0.3s;
+    }
+
+    #home > div.enabled {
+        border-color: hsl(var(--custom-hue, 151), 100%, 60%);
+        background: linear-gradient(
+            to top,
+            hsla(var(--custom-hue, 151), 80%, 45%, 0.65) calc(var(--pct) * 1%),
+            hsla(var(--custom-hue, 151), 80%, 40%, 0.35) calc(var(--pct) * 1%)
+        );
+    }
+
+    #home > div > .label {
+        font-size: 1.2em;
+        color: hsl(var(--custom-hue, 151), 100%, 92%);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 90%;
+    }
+
+    #home > div > .main {
+        font-size: 3em;
+        font-weight: bold;
+    }
+
+    #home > div > .secondary {
+        font-size: 1.5em;
+        min-height: 1.2em;
+    }
+
+</style>
+{% endblock %}
+
+{% block content %}
+<p id="auto-time"></p>
+<div id="home">
+    {% for card in initial_cards %}
+    <div id="device{{ card.i + 1 }}" class="{{ 'enabled' if card.enabled else '' }}" style="--pct: {{ card.percentage or 0 }};">
+        <span class="label">{{ card.label }}</span>
+        <span class="main">{{ card.state }}</span>
+        <span class="secondary">{{ card.secondary }}</span>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+    function renderCards(cards) {
+        for (const card of cards || []) {
+            const el = document.getElementById("device" + (card.i + 1));
+            if (!el) {
+                continue;
+            }
+
+            el.classList.toggle("enabled", !!card.enabled);
+            el.querySelector(".label").innerText = card.label || "";
+            el.querySelector(".main").innerText = card.state || "";
+            el.querySelector(".secondary").innerText = card.secondary || "";
+
+            el.style.setProperty("--pct", card.percentage ?? 0);
+        }
+    }
+
+    on("upd", (payload) => renderCards(payload.cards));
+    renderCards({{ initial_cards | tojson }});
+</script>
+{% endblock %}
