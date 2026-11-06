@@ -333,7 +333,7 @@ class App:
     def broadcast(self, event: str, *args, **kwargs):
         if event not in broadcast_listeners:
             self.logger.debug(
-                "A broadcast to %s was sent by %s, but that event has no listeners",
+                "A broadcast to %s was sent by %s, but that event has no listeners, you can probably ignore this",
                 event,
                 self.id,
             )
