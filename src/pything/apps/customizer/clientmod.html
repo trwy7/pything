@@ -1,16 +1,16 @@
 <style>
     body {
         background: linear-gradient(
-            170deg,
-            hsl(
-                var(--custom-hue, 151),
-                var(--custom-bg-sat-top, 35%),
-                var(--custom-bg-light-top, 40%)
-            ),
+            350deg,
             hsl(
                 var(--custom-hue, 151),
                 var(--custom-bg-sat-bottom, 8%),
                 var(--custom-bg-light-bottom, 57%)
+            ),
+            hsl(
+                var(--custom-hue, 151),
+                var(--custom-bg-sat-top, 35%),
+                var(--custom-bg-light-top, 40%)
             )
         );
     }
@@ -18,9 +18,10 @@
 <script>
     let customizer_current = {
         hue: 151,
+        background_rotation: 350,
         background_light_top: 40,
         background_sat_top: 35,
-        background_light_bottom: 40,
+        background_light_bottom: 57,
         background_sat_bottom: 8,
     };
 
@@ -30,12 +31,17 @@
 
     function setAccent(
         hue,
+        background_rotation,
         background_light_top,
         background_sat_top,
         background_light_bottom,
         background_sat_bottom
     ) {
         document.documentElement.style.setProperty("--custom-hue", hue);
+        document.documentElement.style.setProperty(
+            "--custom-bg-rotation",
+            `${background_rotation}deg`
+        );
         document.documentElement.style.setProperty(
             "--custom-bg-light-top",
             `${background_light_top}%`
@@ -55,6 +61,7 @@
 
         customizer_current = {
             hue,
+            background_rotation,
             background_light_top,
             background_sat_top,
             background_light_bottom,
@@ -65,7 +72,7 @@
 
     socket.on("customizer", (h) => {
         console.log("Customizer (clientmod): Got colors: ", h);
-        setAccent(h[0], h[1], h[2], h[3], h[4]);
+        setAccent(h[0], h[1], h[2], h[3], h[4], h[5]);
     });
 
     socket.emit("customizer+get", 0);

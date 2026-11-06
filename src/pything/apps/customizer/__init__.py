@@ -3,6 +3,7 @@ from pything import App, IntegerSetting, socket
 app = App(
     [
         IntegerSetting("hue", "App hue", 151),
+        IntegerSetting("bgrotation", "Background rotation (degrees)", 350),
         IntegerSetting("backgroundlighttop", "Background top lightness (percent)", 40),
         IntegerSetting("backgroundsattop", "Background top saturation (percent)", 35),
         IntegerSetting("backgroundlightbottom", "Background bottom lightness (percent)", 57),
@@ -11,6 +12,7 @@ app = App(
 )
 
 temp_accent = app.settings["hue"].get_value()
+temp_bgrotation = app.settings["bgrotation"].get_value()
 temp_background_light_top = app.settings["backgroundlighttop"].get_value()
 temp_background_sat_top = app.settings["backgroundsattop"].get_value()
 temp_background_light_bottom = app.settings["backgroundlightbottom"].get_value()
@@ -20,9 +22,11 @@ temp_background_sat_bottom = app.settings["backgroundsatbottom"].get_value()
 
 @app.on_setting_update
 def send_accent(changed: dict[str, object]):
-    global temp_accent, temp_background_light_top, temp_background_sat_top, temp_background_light_bottom, temp_background_sat_bottom
+    global temp_accent, temp_background_light_top, temp_background_sat_top, temp_background_light_bottom, temp_background_sat_bottom, temp_bgrotation
     if "hue" in changed:
         temp_accent = changed["hue"]
+    if "bgrotation" in changed:
+        temp_bgrotation = changed["bgrotation"]
     if "backgroundlighttop" in changed:
         temp_background_light_top = changed["backgroundlighttop"]
     if "backgroundsattop" in changed:
@@ -32,7 +36,7 @@ def send_accent(changed: dict[str, object]):
     if "backgroundsatbottom" in changed:
         temp_background_sat_bottom = changed["backgroundsatbottom"]
 
-    socket.emit("customizer", [temp_accent, temp_background_light_top, temp_background_sat_top, temp_background_light_bottom, temp_background_sat_bottom])
+    socket.emit("customizer", [temp_accent, temp_bgrotation, temp_background_light_top, temp_background_sat_top, temp_background_light_bottom, temp_background_sat_bottom])
 
 
 @socket.on("customizer+get")

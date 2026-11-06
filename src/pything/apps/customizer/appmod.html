@@ -4,7 +4,26 @@
         if (rmsg.cmd == "customizer") {
             console.log("Customizer (appmod): Got colors")
             document.documentElement.style.setProperty("--custom-hue", rmsg.data.hue)
-            document.documentElement.style.setProperty("--custom-bg", rmsg.data.background + "%")
+            document.documentElement.style.setProperty(
+                "--custom-bg-rotation",
+                `${rmsg.data.bgrotation}deg`
+            );
+            document.documentElement.style.setProperty(
+                "--custom-bg-light-top",
+                `${rmsg.data.backgroundlighttop}%`
+            );
+            document.documentElement.style.setProperty(
+                "--custom-bg-sat-top",
+                `${rmsg.data.backgroundsattop}%`
+            );
+            document.documentElement.style.setProperty(
+                "--custom-bg-light-bottom",
+                `${rmsg.data.backgroundlightbottom}%`
+            );
+            document.documentElement.style.setProperty(
+                "--custom-bg-sat-bottom",
+                `${rmsg.data.backgroundsatbottom}%`
+            );
         }
     })
 </script>
