@@ -1,23 +1,80 @@
 <style>
     body {
-        background: linear-gradient(350deg, hsl(var(--custom-hue, 151), 8%, calc(var(--custom-bg, 35%) + 17%)), hsl(var(--custom-hue, 151), 35%, var(--custom-bg, 22%)));
+        background: linear-gradient(
+            var(--custom-bg-rotation, 350deg),
+            hsl(
+                var(--custom-hue, 151),
+                var(--custom-bg-sat-bottom, 8%),
+                var(--custom-bg-light-bottom, 57%)
+            ),
+            hsl(
+                var(--custom-hue, 151),
+                var(--custom-bg-sat-top, 35%),
+                var(--custom-bg-light-top, 40%)
+            )
+        );
     }
 </style>
 <script>
-    let customizer_current = {hue: 151, background: 24}
+    let customizer_current = {
+        hue: 151,
+        background_rotation: 350,
+        background_light_top: 40,
+        background_sat_top: 35,
+        background_light_bottom: 57,
+        background_sat_bottom: 8,
+    };
+
     function sendAccent() {
         sendToApp("customizer", customizer_current);
     }
-    function setAccent(hue, background) {
+
+    function setAccent(
+        hue,
+        background_rotation,
+        background_light_top,
+        background_sat_top,
+        background_light_bottom,
+        background_sat_bottom
+    ) {
         document.documentElement.style.setProperty("--custom-hue", hue);
-        document.documentElement.style.setProperty("--custom-bg", background + "%");
-        customizer_current = {hue: hue, background: background}
+        document.documentElement.style.setProperty(
+            "--custom-bg-rotation",
+            `${background_rotation}deg`
+        );
+        document.documentElement.style.setProperty(
+            "--custom-bg-light-top",
+            `${background_light_top}%`
+        );
+        document.documentElement.style.setProperty(
+            "--custom-bg-sat-top",
+            `${background_sat_top}%`
+        );
+        document.documentElement.style.setProperty(
+            "--custom-bg-light-bottom",
+            `${background_light_bottom}%`
+        );
+        document.documentElement.style.setProperty(
+            "--custom-bg-sat-bottom",
+            `${background_sat_bottom}%`
+        );
+
+        customizer_current = {
+            hue,
+            background_rotation,
+            background_light_top,
+            background_sat_top,
+            background_light_bottom,
+            background_sat_bottom,
+        };
         sendAccent();
     }
+
     socket.on("customizer", (h) => {
-        console.log("Customizer (clientmod): Got colors");
-        setAccent(h[0], h[1]);
-    })
+        console.log("Customizer (clientmod): Got colors: ", h);
+        setAccent(h[0], h[1], h[2], h[3], h[4], h[5]);
+    });
+
     socket.emit("customizer+get", 0);
     onAppLoad(sendAccent);
 </script>
