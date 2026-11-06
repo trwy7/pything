@@ -124,14 +124,20 @@ class BooleanSetting(Setting):
 
 class FloatSetting(Setting):
     def __init__(
-        self, id: str, display_name: str, default: float, hidden: bool = False
+        self, id: str, display_name: str, default: float, hidden: bool = False, min_value: float | None = None, max_value: float | None = None, unit: str | None = None
     ):
         super().__init__(id, display_name, default, "float", hidden)
+        self.min_value = min_value
+        self.max_value = max_value
+        self.unit = unit
 
 
 class IntegerSetting(Setting):
-    def __init__(self, id: str, display_name: str, default: int, hidden: bool = False):
+    def __init__(self, id: str, display_name: str, default: int, hidden: bool = False, min_value: int | None = None, max_value: int | None = None, unit: str | None = None):
         super().__init__(id, display_name, default, "int", hidden)
+        self.min_value = min_value
+        self.max_value = max_value
+        self.unit = unit
 
 
 class SelectSetting(Setting):
@@ -647,8 +653,24 @@ def settings_set():
                         nd = nd == "on"
                     case "int":
                         nd = int(nd)
+                        if setting.min_value is not None and nd < setting.min_value:
+                            raise ValueError(
+                                f"Value for int setting '{setting.id}' is below minimum of {setting.min_value}"
+                            )
+                        if setting.max_value is not None and nd > setting.max_value:
+                            raise ValueError(
+                                f"Value for int setting '{setting.id}' is above maximum of {setting.max_value}"
+                            )
                     case "float":
                         nd = float(nd)
+                        if setting.min_value is not None and nd < setting.min_value:
+                            raise ValueError(
+                                f"Value for float setting '{setting.id}' is below minimum of {setting.min_value}"
+                            )
+                        if setting.max_value is not None and nd > setting.max_value:
+                            raise ValueError(
+                                f"Value for float setting '{setting.id}' is above maximum of {setting.max_value}"
+                            )
                     case "select":
                         if nd not in setting.options:
                             raise ValueError(

@@ -77,6 +77,19 @@
             color: white;
             font: inherit;
         }
+        .number-setting {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: min(52%, 320px);
+        }
+        .number-setting input[type="number"] {
+            width: 100%;
+        }
+        .unit {
+            white-space: nowrap;
+            color: var(--muted);
+        }
         input[type="text"]:focus,
         input[type="number"]:focus,
         select:focus {
@@ -153,10 +166,16 @@
                                     <input type="hidden" name="{{app.id}}-{{setting.id}}" value="off">
                                 {% elif setting.type == "float" %}
                                     <span class="settinglabel">{{setting.display_name}}</span>
-                                    <input type="number" name="{{app.id}}-{{setting.id}}" pattern="[0-9]*[.,]?[0-9]*" step="0.01" value="{{setting.get_value()}}">
+                                    <div class="number-setting">
+                                        <input type="number" name="{{app.id}}-{{setting.id}}" pattern="[0-9]*[.,]?[0-9]*" step="0.01"{% if setting.min_value is not none %} min="{{setting.min_value}}"{% endif %}{% if setting.max_value is not none %} max="{{setting.max_value}}"{% endif %} value="{{setting.get_value()}}">
+                                        {% if setting.unit %}<span class="unit">{{setting.unit}}</span>{% endif %}
+                                    </div>
                                 {% elif setting.type == "int" %}
                                     <span class="settinglabel">{{setting.display_name}}</span>
-                                    <input type="number" name="{{app.id}}-{{setting.id}}" pattern="[0-9]*" onkeypress="return event.charCode >= 48 && event.charCode <= 57" value="{{setting.get_value()}}">
+                                    <div class="number-setting">
+                                        <input type="number" name="{{app.id}}-{{setting.id}}" pattern="[0-9]*" onkeypress="return event.charCode >= 48 && event.charCode <= 57"{% if setting.min_value is not none %} min="{{setting.min_value}}"{% endif %}{% if setting.max_value is not none %} max="{{setting.max_value}}"{% endif %} value="{{setting.get_value()}}">
+                                        {% if setting.unit %}<span class="unit">{{setting.unit}}</span>{% endif %}
+                                    </div>
                                 {% elif setting.type == "select" %}
                                     <span class="settinglabel">{{setting.display_name}}</span>
                                     <select name="{{app.id}}-{{setting.id}}">
