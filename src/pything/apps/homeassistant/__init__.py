@@ -1,6 +1,8 @@
 import json
 import threading
 import time
+import urllib.request
+import urllib.error
 
 import websocket
 from flask import render_template
@@ -15,7 +17,6 @@ app = App(
             "Access Token (Get one from your profile page in the security tab)",
             "",
         ),
-        LabelSetting("msg", "Domains supported: switch, light, sensor"),
         StringSetting("device1", "Entity id (1)", ""),
         StringSetting("device2", "Entity id (2)", ""),
         StringSetting("device3", "Entity id (3)", ""),
@@ -111,12 +112,14 @@ def make_card(idx: int, state_obj: dict | None):
     if not state_obj:
         return {
             "i": idx,
+            "entity_id": entity_ids()[idx] if idx < len(entity_ids()) else "",
             "label": "",
             "state": "",
             "secondary": "",
             "percentage": None,
             "percentstyle": app.settings["percentstyle"].get_value(),
             "enabled": False,
+            "toggleable": False,
         }
     attrs = state_obj.get("attributes") or {}
     label = attrs.get("friendly_name") or state_obj.get("entity_id", "")
@@ -154,15 +157,66 @@ def make_card(idx: int, state_obj: dict | None):
         percentage,
         state.lower() == "on",
     )
+    entity_id = state_obj.get("entity_id", "")
     return {
         "i": idx,
+        "entity_id": entity_id,
         "label": label,
         "state": state,
         "secondary": secondary,
         "percentage": percentage,
         "percentstyle": app.settings["percentstyle"].get_value(),
         "enabled": state.lower() == "on",
+        "toggleable": entity_id.split(".", 1)[0] in TOGGLEABLE_DOMAINS
+        and state.lower() in ("on", "off"),
     }
+
+
+# Domains whose turn_on/turn_off service toggles the device on click.
+TOGGLEABLE_DOMAINS = {"switch", "light", "fan", "input_boolean"}
+
+
+def call_ha_service(domain: str, service: str, entity_id: str):
+    instance = app.settings["instance"].get_value().strip().rstrip("/")
+    token = app.settings["token"].get_value().strip()
+    if not instance or not token:
+        app.logger.warning("Cannot toggle %s: missing instance/token", entity_id)
+        return False
+    req = urllib.request.Request(
+        f"{instance}/api/services/{domain}/{service}",
+        data=json.dumps({"entity_id": entity_id}).encode(),
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            resp.read()
+        app.logger.info("Toggled %s via %s.%s", entity_id, domain, service)
+        return True
+    except (urllib.error.URLError, OSError) as e:
+        app.logger.warning("Failed to toggle %s: %s", entity_id, e)
+        return False
+
+
+@app.on("toggle")
+def toggle_device(entity_id):
+    """Client clicked a tile: flip the device on/off based on cached state."""
+    if not isinstance(entity_id, str) or entity_id not in entity_ids():
+        app.logger.warning("Ignoring toggle for unknown entity %r", entity_id)
+        return
+    domain = entity_id.split(".", 1)[0]
+    if domain not in TOGGLEABLE_DOMAINS:
+        app.logger.warning("Ignoring toggle for non-toggleable %s", entity_id)
+        return
+    with _cache_lock:
+        state = (_cache.get(entity_id) or {}).get("state", "")
+    service = "turn_off" if str(state).lower() == "on" else "turn_on"
+    threading.Thread(
+        target=call_ha_service, args=(domain, service, entity_id), daemon=True
+    ).start()
 
 
 def send_cards(state_map: dict):

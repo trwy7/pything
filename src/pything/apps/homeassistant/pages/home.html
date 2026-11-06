@@ -116,6 +116,10 @@
         opacity: 1;
     }
 
+    #home > div.toggleable {
+        cursor: pointer;
+    }
+
     #home > div .label,
     #home > div .main,
     #home > div .secondary {
@@ -148,7 +152,7 @@
 <p id="auto-time"></p>
 <div id="home" class="pct-{{ percentstyle }}">
     {% for card in initial_cards %}
-    <div id="device{{ card.i + 1 }}" class="{{ 'enabled' if card.enabled else '' }}{{ ' zero' if percentstyle != 'fade' and not card.percentage else '' }}" style="--pct: {{ card.percentage if percentstyle == 'fill' and card.percentage else 0 }}; --fade: {{ (card.percentage / 100) if percentstyle == 'fade' and card.percentage is not none else 1 }};">
+    <div id="device{{ card.i + 1 }}" data-entity="{{ card.entity_id }}" class="{{ 'enabled' if card.enabled else '' }}{{ ' toggleable' if card.toggleable else '' }}{{ ' zero' if percentstyle != 'fade' and not card.percentage else '' }}" style="--pct: {{ card.percentage if percentstyle == 'fill' and card.percentage else 0 }}; --fade: {{ (card.percentage / 100) if percentstyle == 'fade' and card.percentage is not none else 1 }};">
         <span class="label">{{ card.label }}</span>
         <span class="main">{{ card.state }}</span>
         <span class="secondary">{{ card.secondary }}</span>
@@ -171,6 +175,8 @@
             const style = ["off", "fill", "fade"].includes(card.percentstyle) ? card.percentstyle : "fill";
             document.getElementById("home").className = "pct-" + style;
 
+            if (card.entity_id) el.dataset.entity = card.entity_id;
+            el.classList.toggle("toggleable", !!card.toggleable);
             el.classList.toggle("enabled", !!card.enabled);
             if (style === "fade") {
                 // Normal "on" background (::after) at percentage-driven transparency;
@@ -194,6 +200,15 @@
             el.querySelector(".secondary").innerText = card.secondary || "";
         }
     }
+
+    // Click a toggleable tile to turn its device on/off (optimistic UI;
+    // the server's state_changed update will confirm/correct it).
+    document.getElementById("home").addEventListener("click", (event) => {
+        const tile = event.target.closest("div.toggleable");
+        if (!tile || !tile.dataset.entity) return;
+        tile.classList.toggle("enabled");
+        send("toggle", tile.dataset.entity);
+    });
 
     on("upd", (payload) => renderCards(payload.cards));
     renderCards({{ initial_cards | tojson }});
