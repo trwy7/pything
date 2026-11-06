@@ -5,7 +5,7 @@ app = App(
         IntegerSetting("hue", "App hue", 151),
         IntegerSetting("backgroundlighttop", "Background top lightness (percent)", 40),
         IntegerSetting("backgroundsattop", "Background top saturation (percent)", 35),
-        IntegerSetting("backgroundlightbottom", "Background bottom lightness (percent)", 40),
+        IntegerSetting("backgroundlightbottom", "Background bottom lightness (percent)", 57),
         IntegerSetting("backgroundsatbottom", "Background bottom saturation (percent)", 8),
     ],
 )
