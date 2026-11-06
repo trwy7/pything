@@ -3,11 +3,11 @@ from pything import App, IntegerSetting, socket
 app = App(
     [
         IntegerSetting("hue", "App hue", 151, min_value=0, max_value=360, unit="°"),
-        IntegerSetting("bgrotation", "Background rotation", 350, unit="°"),
-        IntegerSetting("backgroundlighttop", "Background top lightness", 40, unit="%"),
-        IntegerSetting("backgroundsattop", "Background top saturation", 35, unit="%"),
-        IntegerSetting("backgroundlightbottom", "Background bottom lightness", 57, unit="%"),
-        IntegerSetting("backgroundsatbottom", "Background bottom saturation", 8, unit="%"),
+        IntegerSetting("bgrotation", "Background rotation", 350, min_value=0, max_value=360, unit="°"),
+        IntegerSetting("backgroundlighttop", "Background top lightness", 40, min_value=0, max_value=100, unit="%"),
+        IntegerSetting("backgroundsattop", "Background top saturation", 35, min_value=0, max_value=100, unit="%"),
+        IntegerSetting("backgroundlightbottom", "Background bottom lightness", 57, min_value=0, max_value=100, unit="%"),
+        IntegerSetting("backgroundsatbottom", "Background bottom saturation", 8, min_value=0, max_value=100, unit="%"),
     ],
 )
 
