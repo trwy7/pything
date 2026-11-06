@@ -5,7 +5,7 @@ import time
 import websocket
 from flask import render_template
 
-from pything import App, LabelSetting, StringSetting
+from pything import App, LabelSetting, StringSetting, SelectSetting
 
 app = App(
     [
@@ -16,6 +16,7 @@ app = App(
         StringSetting("device2", "Entity id (2)", ""),
         StringSetting("device3", "Entity id (3)", ""),
         StringSetting("device4", "Entity id (4)", ""),
+        SelectSetting("percentstyle", "Percentage style", "fill", {"off": "Off", "fill": "Fill", "fade": "Fade"})
     ]
 )
 
