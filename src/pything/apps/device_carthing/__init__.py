@@ -43,7 +43,9 @@ def check_adb():
             global adb_path
             adb_path = shadb
             return True
-        app.logger.debug("ADB found in PATH, but returned non-zero exit code: %s", res.returncode)
+        app.logger.debug(
+            "ADB found in PATH, but returned non-zero exit code: %s", res.returncode
+        )
         return False
     except (FileNotFoundError, subprocess.TimeoutExpired) as e:
         app.logger.debug("ADB not found or timed out: %s", str(e))
@@ -61,9 +63,7 @@ def ensure_adb(r=False):
     for platform_tools_dir in platform_tools_dirs:
         if os.path.isdir(platform_tools_dir):
             os.environ["PATH"] = (
-                platform_tools_dir
-                + os.pathsep
-                + os.environ.get("PATH", "")
+                platform_tools_dir + os.pathsep + os.environ.get("PATH", "")
             )
             if check_adb():
                 return True
@@ -88,7 +88,10 @@ def ensure_adb(r=False):
         with zipfile.ZipFile(zpath, "r") as zip:
             zip.extractall(tempdir)
         os.remove(zpath)
-        shutil.move(os.path.join(tempdir, "platform-tools"), pathlib.Path(CACHE_ROOT) / "pything" / "platform-tools")
+        shutil.move(
+            os.path.join(tempdir, "platform-tools"),
+            pathlib.Path(CACHE_ROOT) / "pything" / "platform-tools",
+        )
     if system != "windows":
         global adb_path
         adb_path = pathlib.Path(CACHE_ROOT) / "pything" / "platform-tools" / "adb"
@@ -157,7 +160,11 @@ def is_carthing_serial(serial: str) -> bool:
 def get_carthings():
     try:
         result = subprocess.run(
-            [adb_path, "devices"], capture_output=True, text=True, timeout=10, check=False
+            [adb_path, "devices"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
         )
     except (FileNotFoundError, subprocess.TimeoutExpired):
         return []
@@ -179,8 +186,8 @@ def inject_thread():
         # Remove disconnected devices
         for serial in list(serial_cache.keys()):
             if serial not in connected and serial_cache[serial][0]:
-                    app.logger.info(f"{serial} disconnected")
-                    del serial_cache[serial]
+                app.logger.info(f"{serial} disconnected")
+                del serial_cache[serial]
         # Initialize newly connected devices
         for serial in connected:
             if serial_cache[serial][1]:

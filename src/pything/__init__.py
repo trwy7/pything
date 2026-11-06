@@ -239,7 +239,9 @@ class App:
         self.category = manifest["category"]
         apps[self.id] = self
         self.logger = logging.getLogger("pything.app." + self.id)
-        logger.debug(f"Logger initialized for '{self.display_name}' with id '{self.id}'")
+        logger.debug(
+            f"Logger initialized for '{self.display_name}' with id '{self.id}'"
+        )
         self.blueprint = Blueprint(
             self.id, __name__, static_folder=os.path.abspath(self.dir) + "/static"
         )
@@ -338,7 +340,11 @@ class App:
             return
         for listener in broadcast_listeners[event]:
             listener(*args, **kwargs)
-        self.logger.debug("Broadcasting event %s to %d listeners", event, len(broadcast_listeners[event]))
+        self.logger.debug(
+            "Broadcasting event %s to %d listeners",
+            event,
+            len(broadcast_listeners[event]),
+        )
 
     def on_setting_update(self, func: Callable):
         self.logger.debug("Adding setting update listener %s", func.__name__)
@@ -470,7 +476,9 @@ def discover_apps() -> dict[str, dict[str, Any]]:
                     f"Manifest for app directory '{app_dir}' has invalid id"
                 )
             if app_id in discovered:
-                raise RuntimeError(f"App id '{app_id}' is defined more than once") # TODO: disable duplicate apps when we allow custom apps
+                raise RuntimeError(
+                    f"App id '{app_id}' is defined more than once"
+                )  # TODO: disable duplicate apps when we allow custom apps
             discovered[app_id] = {
                 "id": app_id,
                 "name": manifest.get("name", app_id),

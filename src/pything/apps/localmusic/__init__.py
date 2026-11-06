@@ -310,9 +310,7 @@ async def windows_track(manager) -> LocalTrack | None:
             last_updated = timeline.last_updated_time
             if last_updated.tzinfo is None:
                 last_updated = last_updated.replace(tzinfo=UTC)
-            elapsed = max(
-                0, (datetime.now(UTC) - last_updated).total_seconds()
-            )
+            elapsed = max(0, (datetime.now(UTC) - last_updated).total_seconds())
             position += int(elapsed * playback_rate * 1000)
         position = min(position, duration) if duration else position
     reported_position = position
@@ -368,6 +366,7 @@ async def linux_track(bus) -> LocalTrack | None:
     services = [
         name for name in names.body[0] if name.startswith("org.mpris.MediaPlayer2.")
     ]
+
     async def read_service(service: str) -> tuple[str, LocalTrack | None]:
         try:
             reply = await bus.call(
