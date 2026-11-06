@@ -124,7 +124,14 @@ class BooleanSetting(Setting):
 
 class FloatSetting(Setting):
     def __init__(
-        self, id: str, display_name: str, default: float, hidden: bool = False, min_value: float | None = None, max_value: float | None = None, unit: str | None = None
+        self,
+        id: str,
+        display_name: str,
+        default: float,
+        hidden: bool = False,
+        min_value: float | None = None,
+        max_value: float | None = None,
+        unit: str | None = None,
     ):
         super().__init__(id, display_name, default, "float", hidden)
         self.min_value = min_value
@@ -133,7 +140,16 @@ class FloatSetting(Setting):
 
 
 class IntegerSetting(Setting):
-    def __init__(self, id: str, display_name: str, default: int, hidden: bool = False, min_value: int | None = None, max_value: int | None = None, unit: str | None = None):
+    def __init__(
+        self,
+        id: str,
+        display_name: str,
+        default: int,
+        hidden: bool = False,
+        min_value: int | None = None,
+        max_value: int | None = None,
+        unit: str | None = None,
+    ):
         super().__init__(id, display_name, default, "int", hidden)
         self.min_value = min_value
         self.max_value = max_value

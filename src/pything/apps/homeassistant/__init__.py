@@ -7,7 +7,7 @@ import urllib.error
 import websocket
 from flask import render_template
 
-from pything import App, LabelSetting, StringSetting, SelectSetting
+from pything import App, StringSetting, SelectSetting
 
 app = App(
     [
@@ -41,23 +41,10 @@ def launch():
     with _cache_lock:
         cards = [make_card(i, _cache.get(eid)) for i, eid in enumerate(entity_ids())]
     app.logger.debug("Rendering launch with %d cached cards: %s", len(cards), cards)
-    # Kick a refresh so fresh data is pushed even if cache is stale/empty
-    threading.Thread(target=_refresh_and_send, daemon=True).start()
     return render_template(
         f"{app.dirname}/pages/home.html",
         initial_cards=cards,
-        percentstyle=app.settings["percentstyle"].get_value(),
     )
-
-
-def _refresh_and_send():
-    app.logger.debug("Triggered refresh after launch")
-    time.sleep(0.3)
-    with _cache_lock:
-        cached = dict(_cache)
-    app.logger.debug("Sending cached cards after launch: %s", list(cached))
-    if cached:
-        send_cards(cached)
 
 
 # Attributes with a meaningful 0-100 percentage (fan speed, light brightness, etc.)
@@ -107,6 +94,31 @@ def entity_ids() -> list[str]:
     ]
 
 
+def fill_values(percentage: int | None, enabled: bool) -> tuple[int, float]:
+    """Precompute the card fill's height (%) and opacity for the percentstyle.
+
+    off:  solid fill when on. fade: solid fill at percentage opacity.
+    fill: fill rises to the percentage; no/0% while on falls back to solid.
+    No percentage at all: solid fill (the caller marks such cards as
+    `fade`, so the overlay fades in/out via opacity instead of rising
+    like a fill, even when the global style is "fill").
+    Not-enabled cards get no fill at all, so they stay grey. That covers
+    devices that are off as well as entities that can never be enabled
+    (e.g. sensors, whose state is never "on"). The template/JS just
+    apply pct/opac.
+    """
+    if not enabled:
+        return 0, 0
+    if percentage is None:
+        return 100, 1
+    style = app.settings["percentstyle"].get_value()
+    if style == "fade":
+        return 100, percentage / 100
+    if style == "fill" and percentage:
+        return percentage, 1
+    return 100, 1
+
+
 def make_card(idx: int, state_obj: dict | None):
     app.logger.debug("Building card %d from state: %s", idx, state_obj)
     if not state_obj:
@@ -117,7 +129,9 @@ def make_card(idx: int, state_obj: dict | None):
             "state": "",
             "secondary": "",
             "percentage": None,
-            "percentstyle": app.settings["percentstyle"].get_value(),
+            "pct": 0,
+            "opac": 0,
+            "fade": False,
             "enabled": False,
             "toggleable": False,
         }
@@ -158,6 +172,15 @@ def make_card(idx: int, state_obj: dict | None):
         state.lower() == "on",
     )
     entity_id = state_obj.get("entity_id", "")
+    enabled = state.lower() == "on"
+    # Cards with no percentage have nothing to fill to, so when enabled
+    # they are a flat solid that fades in/out via opacity (the "fade"
+    # class), regardless of the global percentstyle. The class is kept
+    # even while disabled so the transition type is stable across
+    # toggles; disabled cards still stay grey because fill_values
+    # returns no fill for them (opac 0, no highlighted border).
+    fade = percentage is None
+    pct, opac = fill_values(percentage, enabled)
     return {
         "i": idx,
         "entity_id": entity_id,
@@ -165,8 +188,10 @@ def make_card(idx: int, state_obj: dict | None):
         "state": state,
         "secondary": secondary,
         "percentage": percentage,
-        "percentstyle": app.settings["percentstyle"].get_value(),
-        "enabled": state.lower() == "on",
+        "pct": pct,
+        "opac": opac,
+        "fade": fade,
+        "enabled": enabled,
         "toggleable": entity_id.split(".", 1)[0] in TOGGLEABLE_DOMAINS
         and state.lower() in ("on", "off"),
     }
@@ -217,6 +242,16 @@ def toggle_device(entity_id):
     threading.Thread(
         target=call_ha_service, args=(domain, service, entity_id), daemon=True
     ).start()
+
+
+@app.on("refresh")
+def refresh(_):
+    app.logger.debug("Refresh requested by client")
+    with _cache_lock:
+        cached = dict(_cache)
+    app.logger.debug("Sending cached cards on refresh: %s", list(cached))
+    if cached:
+        send_cards(cached)
 
 
 def send_cards(state_map: dict):
@@ -339,6 +374,11 @@ def ha_thread():
         except Exception as e:
             app.logger.warning(f"Home Assistant connection lost: {e}")
             time.sleep(3)
+
+
+@app.on_setting_update
+def setting_upd(_):
+    app.send("reload", "")
 
 
 @app.on_startup
