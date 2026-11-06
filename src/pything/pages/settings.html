@@ -64,10 +64,49 @@
         .settinglabel {
             color: var(--muted);
         }
+        .setting-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: min(52%, 320px);
+        }
+        .reset-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 auto;
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.22);
+            color: var(--muted);
+            cursor: pointer;
+            font: inherit;
+            font-size: 1.1rem;
+            line-height: 1;
+        }
+        .reset-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        .reset-btn[hidden] {
+            display: none;
+        }
+        .setting-control input[type="checkbox"] {
+            margin-left: auto;
+        }
+        .setting-control input[type="text"],
+        .setting-control input[type="number"],
+        .setting-control select {
+            flex: 1;
+            min-width: 0;
+            width: 100%;
+        }
         input[type="text"],
         input[type="number"],
         select {
-            width: min(52%, 320px);
             min-height: 36px;
             padding: 7px 10px;
             border: 1px solid var(--border);
@@ -81,7 +120,8 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            width: min(52%, 320px);
+            flex: 1;
+            min-width: 0;
         }
         .number-setting input[type="number"] {
             width: 100%;
@@ -135,6 +175,9 @@
                 flex-direction: column;
                 gap: 8px;
             }
+            .setting-control {
+                width: 100%;
+            }
             input[type="text"],
             input[type="number"],
             select {
@@ -144,6 +187,9 @@
     </style>
 </head>
 <body>
+    {% macro reset_button(setting) %}
+    <button type="button" class="reset-btn" title="Reset to default ({{ setting.default }})" aria-label="Reset {{ setting.display_name }} to default" data-default="{% if setting.type == 'bool' %}{{ 'true' if setting.default else 'false' }}{% else %}{{ setting.default }}{% endif %}"{% if setting.get_value() == setting.default %} hidden{% endif %}>&#10227;</button>
+    {% endmacro %}
     <h1><center>PYThing Settings</center></h1>
     <a href="/apps"><center>Enable/Disable Apps</center></a>
     <form id="apps" method="POST">
@@ -159,30 +205,44 @@
                             <div id="setting-{{app.id}}-{{setting.id}}" class="setting">
                                 {% if setting.type == "string" %}
                                     <span class="settinglabel">{{setting.display_name}}</span>
-                                    <input type="text" name="{{app.id}}-{{setting.id}}" value="{{setting.get_value()}}">
+                                    <div class="setting-control">
+                                        {{ reset_button(setting) }}
+                                        <input type="text" name="{{app.id}}-{{setting.id}}" value="{{setting.get_value()}}">
+                                    </div>
                                 {% elif setting.type == "bool" %}
                                     <span class="settinglabel">{{setting.display_name}}</span>
-                                    <input type="checkbox" name="{{app.id}}-{{setting.id}}"{% if setting.get_value() %} checked{% endif %}>
-                                    <input type="hidden" name="{{app.id}}-{{setting.id}}" value="off">
+                                    <div class="setting-control">
+                                        <input type="checkbox" name="{{app.id}}-{{setting.id}}"{% if setting.get_value() %} checked{% endif %}>
+                                        <input type="hidden" name="{{app.id}}-{{setting.id}}" value="off">
+                                    </div>
                                 {% elif setting.type == "float" %}
                                     <span class="settinglabel">{{setting.display_name}}</span>
-                                    <div class="number-setting">
-                                        <input type="number" name="{{app.id}}-{{setting.id}}" pattern="[0-9]*[.,]?[0-9]*" step="0.01"{% if setting.min_value is not none %} min="{{setting.min_value}}"{% endif %}{% if setting.max_value is not none %} max="{{setting.max_value}}"{% endif %} value="{{setting.get_value()}}">
-                                        {% if setting.unit %}<span class="unit">{{setting.unit}}</span>{% endif %}
+                                    <div class="setting-control">
+                                        {{ reset_button(setting) }}
+                                        <div class="number-setting">
+                                            <input type="number" name="{{app.id}}-{{setting.id}}" pattern="[0-9]*[.,]?[0-9]*" step="0.01"{% if setting.min_value is not none %} min="{{setting.min_value}}"{% endif %}{% if setting.max_value is not none %} max="{{setting.max_value}}"{% endif %} value="{{setting.get_value()}}">
+                                            {% if setting.unit %}<span class="unit">{{setting.unit}}</span>{% endif %}
+                                        </div>
                                     </div>
                                 {% elif setting.type == "int" %}
                                     <span class="settinglabel">{{setting.display_name}}</span>
-                                    <div class="number-setting">
-                                        <input type="number" name="{{app.id}}-{{setting.id}}" pattern="[0-9]*" onkeypress="return event.charCode >= 48 && event.charCode <= 57"{% if setting.min_value is not none %} min="{{setting.min_value}}"{% endif %}{% if setting.max_value is not none %} max="{{setting.max_value}}"{% endif %} value="{{setting.get_value()}}">
-                                        {% if setting.unit %}<span class="unit">{{setting.unit}}</span>{% endif %}
+                                    <div class="setting-control">
+                                        {{ reset_button(setting) }}
+                                        <div class="number-setting">
+                                            <input type="number" name="{{app.id}}-{{setting.id}}" pattern="[0-9]*" onkeypress="return event.charCode >= 48 && event.charCode <= 57"{% if setting.min_value is not none %} min="{{setting.min_value}}"{% endif %}{% if setting.max_value is not none %} max="{{setting.max_value}}"{% endif %} value="{{setting.get_value()}}">
+                                            {% if setting.unit %}<span class="unit">{{setting.unit}}</span>{% endif %}
+                                        </div>
                                     </div>
                                 {% elif setting.type == "select" %}
                                     <span class="settinglabel">{{setting.display_name}}</span>
-                                    <select name="{{app.id}}-{{setting.id}}">
-                                        {% for value, label in setting.options.items() %}
-                                        <option value="{{value}}"{% if setting.get_value() == value %} selected{% endif %}>{{label}}</option>
-                                        {% endfor %}
-                                    </select>
+                                    <div class="setting-control">
+                                        {{ reset_button(setting) }}
+                                        <select name="{{app.id}}-{{setting.id}}">
+                                            {% for value, label in setting.options.items() %}
+                                            <option value="{{value}}"{% if setting.get_value() == value %} selected{% endif %}>{{label}}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
                                 {% elif setting.type == "link" %}
                                     <a class="link" href="{{setting.link}}">{{setting.label | safe}}</a>
                                 {% elif setting.type == "label" %}
@@ -198,5 +258,31 @@
         {% endfor %}
         <input type="submit" value="Save">
     </form>
+    <script>
+        document.querySelectorAll('.setting').forEach((row) => {
+            const btn = row.querySelector('.reset-btn');
+            if (!btn) return;
+            const input = row.querySelector('input[name], select[name]');
+            if (!input) return;
+            const defaultValue = btn.dataset.default;
+            const isDefault = () => {
+                if (input.type === 'checkbox') return input.checked === (defaultValue === 'true');
+                if (input.type === 'number') return Number(input.value) === Number(defaultValue);
+                return String(input.value) === String(defaultValue);
+            };
+            const sync = () => { btn.hidden = isDefault(); };
+            input.addEventListener('input', sync);
+            input.addEventListener('change', sync);
+            btn.addEventListener('click', () => {
+                if (input.type === 'checkbox') input.checked = defaultValue === 'true';
+                else input.value = defaultValue;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+                sync();
+                input.focus();
+            });
+            sync();
+        });
+    </script>
 </body>
 </html>
