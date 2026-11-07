@@ -106,7 +106,7 @@ def rs_accent(_=None):
 
 @app.on_broadcast("set_accent")
 def set_accent(hue):
-    send_accent({"hue": hue})
+    send_accent({"hue": hue if hue is not None else app.settings["hue"].get_value()})
 
 @app.on_startup
 def on_startup():

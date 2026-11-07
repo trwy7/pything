@@ -1,5 +1,6 @@
 """Provider for all music related things, an example of an advanced app"""
 import colorsys
+import threading
 
 from openrgb import OpenRGBClient
 from openrgb.utils import OpenRGBDisconnected, RGBColor
@@ -41,18 +42,15 @@ def reconnect_openrgb():
         app.logger.error("Failed to connect to OpenRGB: %s", e)
         openrgb = None
 
-def update_color(retry=True):
+def _update_color(retry=True):
     # Set all devices to the accent hue
-    if accent is None:
-        app.logger.debug("Accent hue is None, skipping color update")
-        return
     color = RGBColor(*[int(c * 255) for c in colorsys.hsv_to_rgb(accent / 360, app.settings["saturation"].get_value() / 100, app.settings["value"].get_value() / 100)])
     app.logger.debug("Setting accent to accent=%s, color=%s", accent, color)
     if openrgb is None:
         if retry:
             app.logger.info("Attempting to reconnect to OpenRGB")
             reconnect_openrgb()
-            update_color(retry=False)
+            _update_color(retry=False)
         else:
             app.logger.error("Could not reconnect to OpenRGB")
         return
@@ -64,8 +62,11 @@ def update_color(retry=True):
         app.logger.warning("Attempting to reconnect to OpenRGB")
         if retry:
             reconnect_openrgb()
-            update_color(retry=False)
+            _update_color(retry=False)
     app.logger.debug("Set all devices to accent hue %s", accent)
+
+def update_color():
+    threading.Thread(target=_update_color, daemon=True).start()
 
 @app.on_setting_update
 def on_setting_update(changed: dict[str, object]):
