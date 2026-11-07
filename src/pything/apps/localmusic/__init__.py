@@ -2,6 +2,7 @@ import asyncio
 import base64
 import binascii
 import hashlib
+import io
 import os
 import re
 import shutil
@@ -19,6 +20,7 @@ from urllib.parse import unquote, unquote_to_bytes, urlparse
 from apps.music.types import Album, Artist, Song, playback
 from apps.music.utils import get_accent
 from flask import abort, send_file
+from PIL import Image
 
 from pything import App, LabelSetting, StringSetting
 
@@ -45,6 +47,11 @@ pending_generation = 0
 def write_art(path: str, data: bytes) -> None:
     with open(path, "wb") as art_file:
         art_file.write(data)
+
+
+def write_thumbnail(path: str, data: bytes) -> None:
+    with Image.open(io.BytesIO(data)) as image:
+        image.convert("RGB").save(path, format="JPEG")
 
 
 @dataclass
@@ -279,13 +286,9 @@ async def windows_track(manager) -> LocalTrack | None:
             data = bytes(buffer)
             reader.close()
 
-            identifier = hashlib.sha256(
-                (selected_properties.title + selected_properties.album_title).encode(
-                    "utf-8"
-                )
-            ).hexdigest()
+            identifier = hashlib.sha256(data).hexdigest()
             await asyncio.to_thread(
-                write_art,
+                write_thumbnail,
                 os.path.join(art_dir, identifier + ".jpg"),
                 data,
             )
