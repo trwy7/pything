@@ -224,6 +224,7 @@ def call_ha_service(domain: str, service: str, entity_id: str):
     if not instance or not token:
         app.logger.warning("Cannot toggle %s: missing instance/token", entity_id)
         return False
+    app.logger.debug("Toggling %s via %s.%s", entity_id, domain, service)
     req = urllib.request.Request(
         f"{instance}/api/services/{domain}/{service}",
         data=json.dumps({"entity_id": entity_id}).encode(),
