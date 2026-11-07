@@ -3,9 +3,8 @@ import time
 
 import humanize
 import psutil
-from flask import render_template
 
-from pything import App, BooleanSetting
+from pything import App, BooleanSetting, render_template
 
 app = App([BooleanSetting("gib", "Values in GiB", False)])
 

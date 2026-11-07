@@ -1,21 +1,26 @@
+import base64
 import datetime
+import hashlib
 import importlib
 import inspect
 import json
 import logging
+import mimetypes
 import os
 import pickle
+import re
 import shutil
+import struct
 import sys
 import threading
 import time
+import urllib.parse
 from collections.abc import Callable, Generator
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 
 import truststore
-from flask import Blueprint, Flask, make_response, redirect, render_template, request
-from flask_socketio import SocketIO
-from jinja2 import ChoiceLoader, FileSystemLoader
+from jinja2 import ChoiceLoader, Environment, FileSystemLoader
 
 from .depends import install_app_requirements
 from .utils import CACHE_ROOT  # noqa: F401 # imported for other apps
@@ -36,13 +41,13 @@ else:
 data_path = os.path.join(config_dir, "data.pkl")
 APP_CONFIG_ID = "_apps"
 RESTART_EXIT_CODE = 65
+HOST = "127.0.0.1"
+PORT = 5192
 
 if os.path.exists(old_data_path) and not os.path.exists(data_path):
     os.makedirs(config_dir, exist_ok=True)
     shutil.move(old_data_path, data_path)
 
-app = Flask(__name__, static_folder="static", template_folder="pages")
-socket = SocketIO(app, async_mode="threading")
 os.chdir(os.path.dirname(os.path.abspath(__file__)))  # sanity check
 
 # Let apps load templates from their own directories
@@ -51,18 +56,264 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 # directory as an import root both in source checkouts and installed wheels.
 sys.path.insert(0, base_dir)
 
-app.jinja_env.loader = ChoiceLoader(
-    [
-        FileSystemLoader(os.path.join(base_dir, "pages").replace("\\", "/")),
-        FileSystemLoader(os.path.join(base_dir, "apps").replace("\\", "/")),
-        FileSystemLoader(os.path.join(base_dir, "customapps").replace("\\", "/")),
-    ]
+jinja_env = Environment(
+    loader=ChoiceLoader(
+        [
+            FileSystemLoader(os.path.join(base_dir, "pages").replace("\\", "/")),
+            FileSystemLoader(os.path.join(base_dir, "apps").replace("\\", "/")),
+            FileSystemLoader(os.path.join(base_dir, "customapps").replace("\\", "/")),
+        ]
+    ),
+    autoescape=False,
 )
 
-# Only show request logs in debug mode
-if not logger.isEnabledFor(logging.DEBUG):
-    log = logging.getLogger("werkzeug")
-    log.setLevel(logging.WARNING)
+# Templates that include per-app mod fragments (clientmod/appmod) are rendered
+# once per owning app so each fragment sees its own ``app``. The pre-rendered
+# HTML is injected as ``mods_html`` / ``app_mods_html``.
+def _render_template(name: str, **ctx: Any) -> str:
+    ctx.setdefault("apps", apps)
+    ctx.setdefault("app_mods", app_mods)
+    if "app" not in ctx and _get_current_app() is not None:
+        ctx["app"] = _get_current_app()
+    ctx.setdefault("request", request)
+    if ctx.get("mods"):
+        ctx["mods_html"] = [
+            _render_template(mod, **{**ctx, "app": mod_app, "mods": None})
+            for mod, mod_app in ctx["mods"]
+        ]
+        del ctx["mods"]
+    if ctx.get("app_mods"):
+        ctx["app_mods_html"] = [
+            _render_template(mod, **{**ctx, "app": mod_app, "app_mods": None})
+            for mod, mod_app in ctx["app_mods"]
+        ]
+        del ctx["app_mods"]
+    return jinja_env.get_template(name).render(**ctx)
+
+
+class Abort(Exception):
+    def __init__(self, status: int):
+        self.status = status
+
+
+def abort(status: int):
+    raise Abort(status)
+
+
+class Response:
+    def __init__(
+        self,
+        body: bytes = b"",
+        status: int = 200,
+        content_type: str = "text/html; charset=utf-8",
+        headers: dict[str, str] | None = None,
+    ):
+        if isinstance(body, str):
+            body = body.encode()
+        self.body = body
+        self.status = status
+        self.content_type = content_type
+        self.headers = headers or {}
+
+
+def render_template(name: str, **ctx: Any) -> Response:
+    return Response(_render_template(name, **ctx))
+
+
+def redirect(location: str) -> Response:
+    return Response(status=303, headers={"Location": location})
+
+
+def send_file(path: str) -> Response:
+    content_type = mimetypes.guess_type(path)[0] or "application/octet-stream"
+    with open(path, "rb") as file:
+        return Response(file.read(), content_type=content_type)
+
+
+class MultiDict:
+    """Minimal dict-like wrapper over ``parse_qs`` output (values are lists)."""
+
+    def __init__(self, data: dict[str, list[str]]):
+        self._data = data
+
+    def __contains__(self, key: str) -> bool:
+        return key in self._data
+
+    def __getitem__(self, key: str) -> str:
+        return self._data[key][0]
+
+    def get(self, key: str, default: Any = None) -> Any:
+        values = self._data.get(key)
+        return values[0] if values else default
+
+    def __iter__(self):
+        return iter(self._data)
+
+    def __repr__(self):
+        return f"MultiDict({self._data!r})"
+
+
+class _Request:
+    """Request shim: args/form for HTTP routes, sid for websocket dispatches."""
+
+    def __init__(self):
+        self.args: MultiDict = MultiDict({})
+        self.form: MultiDict = MultiDict({})
+        self.sid: str | None = None
+
+
+_local = threading.local()
+
+
+def _get_request() -> _Request:
+    req = getattr(_local, "request", None)
+    if req is None:
+        req = _Request()
+        _local.request = req
+    return req
+
+
+def _get_current_app() -> "App | None":
+    return getattr(_local, "current_app", None)
+
+
+def _set_current_app(app: "App | None") -> None:
+    _local.current_app = app
+
+
+class _RequestProxy:
+    """Thread-local proxy so ``request`` always reflects the active request."""
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(_get_request(), name)
+
+
+request = _RequestProxy()
+
+
+class Blueprint:
+    """Minimal stand-in for flask.Blueprint.
+
+    ``route`` collects handlers that get registered under the app's prefix
+    (``/apps/<id>``) when the app is imported.
+    """
+
+    def __init__(self, name: str, import_name: str, static_folder: str | None = None):
+        self.name = name
+        self.static_folder = static_folder
+        self._routes: list[tuple[str, tuple[str, ...], Callable]] = []
+
+    def route(self, path: str, methods: tuple[str, ...] = ("GET",)):
+        def decorator(func: Callable) -> Callable:
+            self._routes.append((path, methods, func))
+            return func
+
+        return decorator
+
+    def context_processor(self, func: Callable) -> Callable:
+        # Templates always receive ``app`` from render_template; accepted for
+        # compatibility so existing apps keep working.
+        return func
+
+
+_converters = {
+    "string": ("[^/]+", str),
+    "int": (r"\d+", int),
+    "path": (".+", str),
+}
+
+
+def _compile_route(path: str) -> tuple["re.Pattern", dict[str, Callable]]:
+    converters: dict[str, Callable] = {}
+
+    def repl(match: "re.Match") -> str:
+        kind, name = match.group(1), match.group(2)
+        pattern, conv = _converters.get(kind, ("[^/]+", str))
+        converters[name] = conv
+        return f"(?P<{name}>{pattern})"
+
+    regex = re.sub(r"<(?:(\w+):)?(\w+)>", repl, path)
+    return re.compile("^" + regex + "$"), converters
+
+
+# (methods, regex, converters, handler, owning app id or None)
+_routes: list[tuple[set[str], "re.Pattern", dict[str, Callable], Callable, str | None]] = []
+
+
+def route(path: str, methods: tuple[str, ...] = ("GET",)):
+    def decorator(func: Callable) -> Callable:
+        regex, converters = _compile_route(path)
+        _routes.append((set(methods), regex, converters, func, None))
+        return func
+
+    return decorator
+
+
+def _register_blueprint_routes(blueprint: Blueprint, prefix: str, app_id: str) -> None:
+    for path, methods, func in blueprint._routes:
+        regex, converters = _compile_route(prefix + path)
+        _routes.append((set(methods), regex, converters, func, app_id))
+
+
+def _dispatch(method: str, path: str) -> Response | None:
+    """Match a request against registered routes. Returns None if no match."""
+    for methods, regex, converters, handler, app_id in _routes:
+        if method not in methods:
+            continue
+        match = regex.match(path)
+        if not match:
+            continue
+        kwargs = {
+            name: converters[name](value) for name, value in match.groupdict().items()
+        }
+        if app_id is not None and app_id in apps:
+            _set_current_app(apps[app_id])
+        try:
+            result = handler(**kwargs)
+        except Abort as exc:
+            return Response(f"Error {exc.status}", status=exc.status)
+        except Exception:
+            logger.exception("Unhandled error in route %s %s", method, path)
+            return Response("Internal server error", status=500)
+        if isinstance(result, Response):
+            return result
+        if isinstance(result, (str, bytes)):
+            return Response(result)
+        if result is None:
+            return Response(b"", status=200)
+        return Response(str(result))
+    return None
+
+
+_static_dir = os.path.join(base_dir, "static")
+
+
+def _serve_static(path: str) -> Response | None:
+    """Serve files from /static/<path> and /apps/<id>/static/<path>."""
+    candidates: list[tuple[str, str]] = []
+    if path.startswith("/static/"):
+        candidates.append((_static_dir, path[len("/static/") :]))
+    elif path.startswith("/apps/"):
+        rest = path[len("/apps/") :]
+        app_id, _, rest = rest.partition("/")
+        if rest.startswith("static/") and app_id in app_static_dirs:
+            candidates.append((app_static_dirs[app_id], rest[len("static/") :]))
+    for root, rel in candidates:
+        if not rel or ".." in rel.split("/"):
+            return Response("Invalid path", status=400)
+        full = os.path.normpath(os.path.join(root, rel))
+        if not full.startswith(os.path.normpath(root)):
+            return Response("Invalid path", status=400)
+        if not os.path.isfile(full):
+            return None
+        try:
+            return send_file(full)
+        except OSError:
+            return None
+    return None
+
+
+app_static_dirs: dict[str, str] = {}
 
 
 def save_config():
@@ -265,12 +516,14 @@ class App:
             f"Logger initialized for '{self.display_name}' with id '{self.id}'"
         )
         self.blueprint = Blueprint(
-            self.id, __name__, static_folder=os.path.abspath(self.dir) + "/static"
+            self.id,
+            __name__,
+            static_folder=os.path.abspath(self.dir) + "/static"
+            if os.path.isdir(os.path.join(self.dir, "static"))
+            else None,
         )
-
-        @self.blueprint.context_processor
-        def inject_app():
-            return {"app": self}
+        if self.blueprint.static_folder:
+            app_static_dirs[self.id] = self.blueprint.static_folder
 
         self.settings = {s.id: s for s in settings}
         self.hidden = True  # updated on init
@@ -382,9 +635,13 @@ def get_apps():
 
 
 # Client tracking
+clients: dict[str, "Client"] = {}
+
+
 class Client:
-    def __init__(self, sid) -> None:
+    def __init__(self, sid: str, conn: "WSConnection") -> None:
         self.sid = sid
+        self.conn = conn
         self.app = "dashboard"
         clients[sid] = self
 
@@ -397,7 +654,288 @@ class Client:
         socket.emit("changeframe", "/apps/" + app + "/launch", to=self.sid)
 
 
-clients: dict[str, Client] = {}
+# ---------------------------------------------------------------------------
+# Raw WebSocket transport (RFC 6455) — replaces flask-socketio
+# ---------------------------------------------------------------------------
+
+_WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+
+
+def _ws_accept_key(key: str) -> str:
+    return base64.b64encode(hashlib.sha1((key + _WS_GUID).encode()).digest()).decode()
+
+
+class WSConnection:
+    """A raw websocket connection; safe to send from multiple threads."""
+
+    def __init__(self, rfile, wfile):
+        self._rfile = rfile
+        self._wfile = wfile
+        self._send_lock = threading.Lock()
+        self._closed = False
+
+    def send_text(self, text: str) -> None:
+        payload = text.encode()
+        frame = self._encode_frame(payload, opcode=0x1)
+        with self._send_lock:
+            if self._closed:
+                raise ConnectionError("websocket closed")
+            self._wfile.write(frame)
+            self._wfile.flush()
+
+    def send_json(self, obj: Any) -> None:
+        self.send_text(json.dumps(obj, separators=(",", ":")))
+
+    def close(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
+        try:
+            with self._send_lock:
+                self._wfile.write(self._encode_frame(b"", opcode=0x8))
+                self._wfile.flush()
+        except OSError:
+            pass
+
+    @staticmethod
+    def _encode_frame(payload: bytes, opcode: int = 0x1) -> bytes:
+        header = bytes([0x80 | opcode])
+        n = len(payload)
+        if n < 126:
+            header += struct.pack("!B", n)
+        elif n <= 0xFFFF:
+            header += struct.pack("!B", 126) + struct.pack("!H", n)
+        else:
+            header += struct.pack("!B", 127) + struct.pack("!Q", n)
+        return header + payload
+
+    def _read_exact(self, n: int) -> bytes:
+        data = b""
+        while len(data) < n:
+            chunk = self._rfile.read(n - len(data))
+            if not chunk:
+                raise ConnectionError("websocket closed by peer")
+            data += chunk
+        return data
+
+    def recv_text(self) -> str | None:
+        """Read the next text message. Returns None once the peer closes."""
+        fragments = bytearray()
+        while True:
+            b1, b2 = self._read_exact(2)
+            fin = b1 & 0x80
+            opcode = b1 & 0x0F
+            masked = b2 & 0x80
+            length = b2 & 0x7F
+            if length == 126:
+                (length,) = struct.unpack("!H", self._read_exact(2))
+            elif length == 127:
+                (length,) = struct.unpack("!Q", self._read_exact(8))
+            mask = self._read_exact(4) if masked else None
+            payload = self._read_exact(length) if length else b""
+            if mask is not None:
+                payload = bytes(b ^ mask[i % 4] for i, b in enumerate(payload))
+            if opcode == 0x8:  # close
+                self.close()
+                return None
+            if opcode == 0x9:  # ping -> pong
+                try:
+                    with self._send_lock:
+                        self._wfile.write(self._encode_frame(payload, opcode=0xA))
+                        self._wfile.flush()
+                except OSError:
+                    return None
+                continue
+            if opcode == 0xA:  # pong
+                continue
+            if opcode in (0x1, 0x2, 0x0):  # text/binary/continuation
+                fragments.extend(payload)
+                if fin:
+                    return fragments.decode(errors="replace")
+                continue
+            return None
+
+
+class Socket:
+    """Socket.IO-like API over raw websockets.
+
+    Events are JSON messages of the form ``{"event": name, "args": [...]}``,
+    matching the call shape of the old ``socket.emit(name, *args)`` /
+    ``socket.on(name, handler)`` usage.
+    """
+
+    def __init__(self):
+        self._handlers: dict[str, Callable] = {}
+
+    def on(self, event: str):
+        def decorator(func: Callable) -> Callable:
+            self._handlers[event] = func
+            return func
+
+        return decorator
+
+    def emit(self, event: str, *args: Any, to: str | None = None) -> None:
+        if to is None:
+            targets = list(clients.values())
+        else:
+            target = clients.get(to)
+            targets = [target] if target else []
+        for client in targets:
+            try:
+                client.conn.send_json({"event": event, "args": list(args)})
+            except (OSError, ConnectionError):
+                logger.debug("Could not send %s to client %s", event, client.sid)
+
+
+socket = Socket()
+
+
+def _handle_ws_message(client: Client, event: str, args: list) -> None:
+    req = _get_request()
+    req.sid = client.sid
+    req.args = MultiDict({})
+    req.form = MultiDict({})
+    handler = socket._handlers.get(event)
+    if handler is not None:
+        logger.debug("WS %s <- %s %r", client.sid, event, args)
+        handler(*args)
+        return
+    # Built-in events (formerly @socket.on handlers in this module)
+    if event == "open_app":
+        logger.debug("%s is opening %s", client.sid, args[0])
+        client.change_app(args[0])
+    elif event == "app_com":
+        app_id, app_event, data = args
+        if app_id not in apps:
+            logger.error("A client just sent a request to non-existent app '%s'", app_id)
+            return
+        if app_event == "debug":
+            logger.debug("Client debug message to %s: %s", app_id, data)
+            return
+        if app_event not in apps[app_id].listeners:
+            logger.warning(
+                "A client just sent a message to '%s' with non-existent event '%s'",
+                app_id,
+                app_event,
+            )
+            return
+        apps[app_id].listeners[app_event](data)
+    elif event == "debug":
+        logger.debug("Client message: %s", args[0] if args else "")
+
+
+def _run_ws_connection(rfile, wfile, client: Client) -> None:
+    try:
+        while True:
+            try:
+                text = client.conn.recv_text()
+            except (OSError, ConnectionError):
+                break
+            if text is None:
+                break
+            try:
+                message = json.loads(text)
+            except json.JSONDecodeError:
+                logger.warning("Ignoring invalid websocket message from %s", client.sid)
+                continue
+            args = message.get("args", [])
+            if not isinstance(args, list):
+                args = [args]
+            _handle_ws_message(client, message.get("event", ""), args)
+    finally:
+        clients.pop(client.sid, None)
+        client.conn.close()
+        logger.debug("Client %s disconnected", client.sid)
+
+
+# ---------------------------------------------------------------------------
+# HTTP server (stdlib http.server) — replaces Flask
+# ---------------------------------------------------------------------------
+
+
+class Handler(BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"
+    server_version = "PYThing/1.0"
+
+    def log_message(self, format, *args):
+        logger.debug("%s - %s", self.address_string(), format % args)
+
+    # -- websocket upgrade ------------------------------------------------
+    def _is_websocket_upgrade(self) -> bool:
+        return (
+            self.headers.get("Upgrade", "").lower() == "websocket"
+            and self.headers.get("Connection", "").lower().find("upgrade") != -1
+        )
+
+    def _do_websocket(self) -> None:
+        key = self.headers.get("Sec-WebSocket-Key", "")
+        rfile = self.rfile
+        wfile = self.wfile
+        handshake = (
+            "HTTP/1.1 101 Switching Protocols\r\n"
+            "Upgrade: websocket\r\n"
+            "Connection: Upgrade\r\n"
+            f"Sec-WebSocket-Accept: {_ws_accept_key(key)}\r\n"
+            "\r\n"
+        )
+        wfile.write(handshake.encode())
+        wfile.flush()
+        sid = os.urandom(12).hex()
+        conn = WSConnection(rfile, wfile)
+        client = Client(sid, conn)
+        logger.debug("Client %s connected", sid)
+        # Push server time immediately, like the old connect handler did.
+        conn.send_json(
+            {"event": "dt", "args": [datetime.datetime.now().isoformat()]}
+        )
+        _run_ws_connection(rfile, wfile, client)
+
+    # -- normal HTTP --------------------------------------------------------
+    def _handle(self) -> None:
+        parsed = urllib.parse.urlparse(self.path)
+        path = urllib.parse.unquote(parsed.path)
+        req = _get_request()
+        req.args = MultiDict(urllib.parse.parse_qs(parsed.query, keep_blank_values=True))
+        req.form = MultiDict({})
+        req.sid = None
+        _set_current_app(None)
+
+        if self.command == "POST":
+            length = int(self.headers.get("Content-Length") or 0)
+            body = self.rfile.read(length) if length else b""
+            req.form = MultiDict(
+                urllib.parse.parse_qs(body.decode(errors="replace"), keep_blank_values=True)
+            )
+
+        response = _dispatch(self.command, path)
+        if response is None:
+            response = _serve_static(path)
+        if response is None:
+            response = Response("Not found", status=404)
+        self._send_response(response)
+
+    def _send_response(self, response: Response) -> None:
+        self.send_response(response.status)
+        self.send_header("Content-Type", response.content_type)
+        self.send_header("Content-Length", str(len(response.body)))
+        for key, value in response.headers.items():
+            self.send_header(key, value)
+        self.end_headers()
+        if self.command != "HEAD" and response.body:
+            self.wfile.write(response.body)
+
+    def do_GET(self):
+        if self._is_websocket_upgrade() and urllib.parse.urlparse(self.path).path == "/ws":
+            self._do_websocket()
+            return
+        self._handle()
+
+    def do_POST(self):
+        self._handle()
+
+    def do_HEAD(self):
+        self._handle()
+
 
 # Utilities
 
@@ -405,32 +943,26 @@ client_mods: list[tuple[str, App]] = []
 app_mods: list[tuple[str, App]] = []
 
 
-@app.context_processor
-def app_ctx():
-    return {"apps": apps, "app_mods": app_mods}
-
-
 # Built in routes
 
 
-@app.route("/isready")
+@route("/isready")
 def ct_isready():
-    res = make_response("OK")
-    res.headers["Access-Control-Allow-Origin"] = "*"
-    return res
+    return Response("OK", headers={"Access-Control-Allow-Origin": "*"})
 
 
-@app.route("/")
+@route("/")
 def client_redirect():
     return redirect("/client")
 
 
-@app.route("/client")
+@route("/client")
 def main_client():
+    _set_current_app(None)
     return render_template("client.html", mods=client_mods)
 
 
-@app.route("/settings")
+@route("/settings")
 def settings_editor():
     # sort and hide apps with no visible settings, beware of ai slop
     sapps: dict[str, list[App]] = {}
@@ -619,7 +1151,7 @@ def app_dependency_view(manifests: dict[str, dict[str, Any]]) -> list[dict[str, 
     return result
 
 
-@app.route("/apps", methods=["GET"])
+@route("/apps", methods=("GET",))
 def apps_editor():
     manifests = discover_apps()
     return render_template(
@@ -629,7 +1161,7 @@ def apps_editor():
     )
 
 
-@app.route("/apps", methods=["POST"])
+@route("/apps", methods=("POST",))
 def apps_set():
     manifests = discover_apps()
     selected = {app_id for app_id in manifests if f"app-{app_id}" in request.form}
@@ -654,7 +1186,7 @@ def apps_set():
     )
 
 
-@app.route("/settings", methods=["POST"])
+@route("/settings", methods=("POST",))
 def settings_set():
     logger.debug("Got new settings: %s", request.form)
     settings_changed = False
@@ -705,47 +1237,6 @@ def settings_set():
     return redirect("/settings")
 
 
-# Socket
-@socket.on("connect")
-def client_connect(*args, **kwargs):  # pylint: disable=unused-argument
-    c = Client(request.sid)  # type: ignore
-    socket.emit("dt", datetime.datetime.now().isoformat(), to=c.sid)
-
-
-@socket.on("disconnect")
-def client_disconnect():
-    del clients[request.sid]  # type: ignore
-
-
-@socket.on("open_app")
-def client_request_open_app(app):
-    logger.debug("%s is opening %s", request.sid, app)  # type: ignore
-    clients[request.sid].change_app(app)  # type: ignore
-
-
-@socket.on("app_com")
-def app_client_communications(app, event, data):
-    if app not in apps:
-        logger.error("A client just sent a request to non-existent app '%s'", app)
-        return
-    if event == "debug":
-        logger.debug("Client debug message to %s: %s", app, data)
-        return
-    if event not in apps[app].listeners:
-        logger.warning(
-            "A client just sent a message to '%s' with non-existent event '%s'",
-            app,
-            event,
-        )
-        return
-    apps[app].listeners[event](data)
-
-
-@socket.on("debug")
-def client_print(d):
-    logger.debug("Client message: %s", d)
-
-
 # Background updates
 def clock_thread():
     while True:
@@ -758,11 +1249,11 @@ def import_app(iappd: str):
         raise RuntimeError(
             "All apps must be directories, name your app as <name>/__init__.py"
         )
-    app.logger.debug("Importing app %s", iappd)
+    logger.debug("Importing app %s", iappd)
     start_time = time.time()
     iapp = importlib.import_module(iappd.replace(os.sep, "."))
     end_time = time.time()
-    app.logger.debug("Imported app %s in %.3f seconds", iappd, end_time - start_time)
+    logger.debug("Imported app %s in %.3f seconds", iappd, end_time - start_time)
     if not hasattr(iapp, "app"):
         raise RuntimeError(f"App {iappd} does not have an 'app' variable")
     # isinstance does not work for some reason, so we check for attributes
@@ -779,7 +1270,9 @@ def import_app(iappd: str):
         raise TypeError(
             f"App {iappd} variable 'app' has invalid blueprint ({type(iapp.app.blueprint)!s})"
         )
-    app.register_blueprint(iapp.app.blueprint, url_prefix="/apps/" + iapp.app.id)
+    _register_blueprint_routes(
+        iapp.app.blueprint, "/apps/" + iapp.app.id, iapp.app.id
+    )
     if os.path.exists(os.path.join(iappd, "clientmod.html")):
         client_mods.append(
             (os.path.join(iapp.app.id, "clientmod.html").replace("\\", "/"), iapp.app)
@@ -788,8 +1281,8 @@ def import_app(iappd: str):
         app_mods.append(
             (os.path.join(iapp.app.id, "appmod.html").replace("\\", "/"), iapp.app)
         )
-    for rule in app.url_map.iter_rules():
-        if rule.rule == "/apps/" + iapp.app.id + "/launch":
+    for _methods, regex, _conv, _handler, app_id in _routes:
+        if app_id == iapp.app.id and regex.pattern == "^/apps/" + iapp.app.id + "/launch$":
             logger.debug("%s has a launch route", iapp.app.id)
             iapp.app.hidden = False
             break
@@ -817,5 +1310,10 @@ def main() -> None:
     threading.Thread(target=clock_thread, daemon=True).start()
 
     # Start the server
-    logger.info("Starting on 127.0.0.1:5192")
-    socket.run(app, "127.0.0.1", 5192, allow_unsafe_werkzeug=True)
+    logger.info("Starting on %s:%s", HOST, PORT)
+    server = ThreadingHTTPServer((HOST, PORT), Handler)
+    server.daemon_threads = True
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass

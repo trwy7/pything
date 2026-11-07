@@ -5,9 +5,8 @@ import urllib.error
 import urllib.request
 
 import websocket
-from flask import render_template
 
-from pything import App, SelectSetting, StringSetting
+from pything import App, SelectSetting, StringSetting, render_template
 
 app = App(
     [

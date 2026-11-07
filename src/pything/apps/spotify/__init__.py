@@ -8,7 +8,6 @@ import requests
 import requests.auth
 from apps.music.types import Album, Artist, Song, playback
 from apps.music.utils import get_accent
-from flask import abort, redirect, request, send_file
 
 from pything import (
     App,
@@ -16,6 +15,10 @@ from pything import (
     LabelSetting,
     LinkSetting,
     StringSetting,
+    abort,
+    redirect,
+    request,
+    send_file,
 )
 
 app = App(

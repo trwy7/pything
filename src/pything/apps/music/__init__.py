@@ -3,9 +3,7 @@
 import threading
 import time
 
-from flask import render_template
-
-from pything import App, BooleanSetting, SelectSetting, socket
+from pything import App, BooleanSetting, SelectSetting, render_template, socket
 
 from .types import playback
 

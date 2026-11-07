@@ -1,6 +1,4 @@
-from flask import render_template
-
-from pything import App
+from pything import App, render_template
 
 app = App([])
 
