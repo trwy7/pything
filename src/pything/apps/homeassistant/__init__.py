@@ -172,6 +172,7 @@ def make_card(idx: int, state_obj: dict | None):
         state.lower() == "on",
     )
     entity_id = state_obj.get("entity_id", "")
+    domain = entity_id.split(".", 1)[0]
     enabled = state.lower() == "on"
     # Cards with no percentage have nothing to fill to, so when enabled
     # they are a flat solid that fades in/out via opacity (the "fade"
@@ -179,8 +180,19 @@ def make_card(idx: int, state_obj: dict | None):
     # even while disabled so the transition type is stable across
     # toggles; disabled cards still stay grey because fill_values
     # returns no fill for them (opac 0, no highlighted border).
-    fade = percentage is None
+    # `fade` must NOT depend on the current percentage alone: a light
+    # loses its brightness attribute when it turns off, so flipping
+    # `fade` on at that moment would drop the height transition and
+    # make the fill snap to 0 instead of sliding down. Percentage-
+    # capable domains (light/fan) therefore never get `fade`, whether
+    # or not they currently report a percentage.
+    fade = percentage is None and domain not in PERCENTAGE_DOMAINS
     pct, opac = fill_values(percentage, enabled)
+    if fade:
+        # Keep the overlay at full height at all times (invisible while
+        # disabled via opac 0) so toggling only ever animates opacity,
+        # never height -- a pure fade in/out, no rising/sliding fill.
+        pct = 100
     return {
         "i": idx,
         "entity_id": entity_id,
@@ -192,13 +204,18 @@ def make_card(idx: int, state_obj: dict | None):
         "opac": opac,
         "fade": fade,
         "enabled": enabled,
-        "toggleable": entity_id.split(".", 1)[0] in TOGGLEABLE_DOMAINS
+        "toggleable": domain in TOGGLEABLE_DOMAINS
         and state.lower() in ("on", "off"),
     }
 
 
 # Domains whose turn_on/turn_off service toggles the device on click.
 TOGGLEABLE_DOMAINS = {"switch", "light", "fan", "input_boolean"}
+
+# Domains that can report a percentage (brightness/percentage, see
+# compute_percentage), even when off and not currently reporting one.
+# These use the sliding fill, never the solid fade.
+PERCENTAGE_DOMAINS = {"light", "fan"}
 
 
 def call_ha_service(domain: str, service: str, entity_id: str):
