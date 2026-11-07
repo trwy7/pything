@@ -1,0 +1,11 @@
+{
+  "id": "openrgb",
+  "name": "OpenRGB sync",
+  "description": "Syncs the customizer accent color to your RGB lights",
+  "codeowners": ["@trwy7"],
+  "category": "system",
+  "requirements": ["openrgb-python==0.3.8"],
+  "dependencies": {
+    "required": ["customizer"]
+  }
+}
