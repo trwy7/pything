@@ -15,7 +15,11 @@ app = App(
     ],
 )
 accent = 151
-openrgb = OpenRGBClient(app.settings["api"].get_value(), app.settings["port"].get_value(), name="pything-openrgb")
+try:
+    openrgb = OpenRGBClient(app.settings["api"].get_value(), app.settings["port"].get_value(), name="pything-openrgb")
+except Exception as e:
+    app.logger.error("Failed to connect to OpenRGB Server: %s", e)
+    openrgb = None
 
 @app.on_broadcast("customizer")
 def on_customizer_broadcast(data: list[int]):
@@ -27,6 +31,9 @@ def update_color():
     # Set all devices to the accent hue
     color = RGBColor(*[int(c * 255) for c in colorsys.hsv_to_rgb(accent / 360, app.settings["saturation"].get_value() / 100, app.settings["value"].get_value() / 100)])
     app.logger.debug("Setting accent to accent=%s, color=%s", accent, color)
+    if openrgb is None:
+        app.logger.error("OpenRGB client is not initialized")
+        return
     for device in openrgb.devices:
         app.logger.debug("Setting device %s to color %s", device.name, color)
         device.set_color(color)
@@ -37,6 +44,11 @@ def on_setting_update(changed: dict[str, object]):
     global openrgb
     if "api" in changed or "port" in changed:
         app.logger.info("Restarting OpenRGB client due to API/port change")
-        openrgb.disconnect()
-        openrgb = OpenRGBClient(app.settings["api"].get_value(), app.settings["port"].get_value(), name="pything-openrgb")
+        if openrgb:
+            openrgb.disconnect()
+        try:
+            openrgb = OpenRGBClient(app.settings["api"].get_value(), app.settings["port"].get_value(), name="pything-openrgb")
+        except Exception as e:
+            app.logger.error("Failed to connect to OpenRGB Server: %s", e)
+            openrgb = None
     update_color()
