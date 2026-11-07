@@ -4,7 +4,7 @@
   "description": "Coordinates music providers and displays the playback bar.",
   "codeowners": ["@trwy7"],
   "category": "music",
-  "requirements": ["pillow==12.1.1", "scikit-learn==1.8.0"],
+  "requirements": ["pillow==12.1.1", "scikit-learn==1.8.0", "scikit-image==0.26.0"],
   "dependencies": {
     "optional": ["customizer"]
   }
