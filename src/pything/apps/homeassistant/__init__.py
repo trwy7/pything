@@ -204,8 +204,7 @@ def make_card(idx: int, state_obj: dict | None):
         "opac": opac,
         "fade": fade,
         "enabled": enabled,
-        "toggleable": domain in TOGGLEABLE_DOMAINS
-        and state.lower() in ("on", "off"),
+        "toggleable": domain in TOGGLEABLE_DOMAINS and state.lower() in ("on", "off"),
     }
 
 
