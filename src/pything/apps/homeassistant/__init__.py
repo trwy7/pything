@@ -1,13 +1,13 @@
 import json
 import threading
 import time
-import urllib.request
 import urllib.error
+import urllib.request
 
 import websocket
 from flask import render_template
 
-from pything import App, StringSetting, SelectSetting
+from pything import App, SelectSetting, StringSetting
 
 app = App(
     [
@@ -388,7 +388,7 @@ def ha_thread():
                 app.should_poll(),
             )
             ws.close()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             app.logger.warning(f"Home Assistant connection lost: {e}")
             time.sleep(3)
 

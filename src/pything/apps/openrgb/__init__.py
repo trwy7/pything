@@ -1,8 +1,9 @@
 """Provider for all music related things, an example of an advanced app"""
+import colorsys
+
 from openrgb import OpenRGBClient
 from openrgb.utils import OpenRGBDisconnected, RGBColor
-import colorsys
-from pything import App, StringSetting, IntegerSetting, LabelSetting
+from pything import App, IntegerSetting, LabelSetting, StringSetting
 
 app = App(
     [
@@ -17,8 +18,8 @@ app = App(
 accent = 151
 try:
     openrgb = OpenRGBClient(app.settings["api"].get_value(), app.settings["port"].get_value(), name="pything-openrgb")
-except Exception as e:
-    app.logger.error("Failed to connect to OpenRGB Server: %s", e)
+except Exception as e:  # noqa: BLE001
+    app.logger.error("Failed to connect to OpenRGB: %s", e)
     openrgb = None
 
 @app.on_broadcast("customizer")
@@ -36,8 +37,8 @@ def reconnect_openrgb():
             app.logger.warning("OpenRGB client was already disconnected")
     try:
         openrgb = OpenRGBClient(app.settings["api"].get_value(), app.settings["port"].get_value(), name="pything-openrgb")
-    except Exception as e:
-        app.logger.error("Failed to connect to OpenRGB Server: %s", e)
+    except Exception as e:  # noqa: BLE001
+        app.logger.error("Failed to connect to OpenRGB: %s", e)
         openrgb = None
 
 def update_color(retry=True):
@@ -46,18 +47,18 @@ def update_color(retry=True):
     app.logger.debug("Setting accent to accent=%s, color=%s", accent, color)
     if openrgb is None:
         if retry:
-            app.logger.info("Attempting to reconnect to OpenRGB client")
+            app.logger.info("Attempting to reconnect to OpenRGB")
             reconnect_openrgb()
             update_color(retry=False)
         else:
-            app.logger.error("OpenRGB client is not initialized")
+            app.logger.error("Could not reconnect to OpenRGB")
         return
     try:
         for device in openrgb.devices:
             app.logger.debug("Setting device %s to color %s", device.name, color)
             device.set_color(color)
     except OpenRGBDisconnected:
-        app.logger.warning("OpenRGB client is disconnected, attempting to reconnect")
+        app.logger.warning("Attempting to reconnect to OpenRGB")
         if retry:
             reconnect_openrgb()
             update_color(retry=False)
@@ -75,7 +76,7 @@ def on_setting_update(changed: dict[str, object]):
                 app.logger.warning("OpenRGB client was already disconnected")
         try:
             openrgb = OpenRGBClient(app.settings["api"].get_value(), app.settings["port"].get_value(), name="pything-openrgb")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             app.logger.error("Failed to connect to OpenRGB Server: %s", e)
             openrgb = None
     update_color()
