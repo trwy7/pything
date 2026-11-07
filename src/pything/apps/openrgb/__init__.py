@@ -4,7 +4,8 @@ import threading
 
 from openrgb import OpenRGBClient
 from openrgb.utils import OpenRGBDisconnected, RGBColor
-from pything import App, IntegerSetting, LabelSetting, StringSetting
+from pything.app import App
+from pything.settings import IntegerSetting, LabelSetting, StringSetting
 
 app = App(
     [

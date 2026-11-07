@@ -42,7 +42,7 @@ def cli() -> int | None:
     if os.environ.get(SERVER_MODE) == "1":
         import sys
 
-        from pything import main as start
+        from pything.loader import main as start
         from pything.utils import dependency_target
 
         sys.path.insert(0, str(dependency_target()))

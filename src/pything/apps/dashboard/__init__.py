@@ -1,6 +1,8 @@
 import webbrowser
 
-from pything import App, BooleanSetting, get_apps, redirect, render_template
+from pything.app import App, get_apps
+from pything.settings import BooleanSetting
+from pything.web import redirect, render_template
 
 app = App([BooleanSetting("warn", "Show settings hint (turn me off)", True)])
 

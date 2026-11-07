@@ -1,4 +1,5 @@
-from pything import App, render_template
+from pything.app import App
+from pything.web import render_template
 
 app = App([])
 

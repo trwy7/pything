@@ -4,7 +4,9 @@ import time
 import humanize
 import psutil
 
-from pything import App, BooleanSetting, render_template
+from pything.app import App
+from pything.settings import BooleanSetting
+from pything.web import render_template
 
 app = App([BooleanSetting("gib", "Values in GiB", False)])
 

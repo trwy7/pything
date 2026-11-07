@@ -6,7 +6,9 @@ import urllib.request
 
 import websocket
 
-from pything import App, SelectSetting, StringSetting, render_template
+from pything.app import App
+from pything.settings import SelectSetting, StringSetting
+from pything.web import render_template
 
 app = App(
     [

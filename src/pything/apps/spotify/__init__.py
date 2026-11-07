@@ -9,17 +9,9 @@ import requests.auth
 from apps.music.types import Album, Artist, Song, playback
 from apps.music.utils import get_accent
 
-from pything import (
-    App,
-    DataSetting,
-    LabelSetting,
-    LinkSetting,
-    StringSetting,
-    abort,
-    redirect,
-    request,
-    send_file,
-)
+from pything.app import App
+from pything.settings import DataSetting, LabelSetting, LinkSetting, StringSetting
+from pything.web import abort, redirect, request, send_file
 
 app = App(
     [
