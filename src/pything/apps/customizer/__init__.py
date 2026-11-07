@@ -75,8 +75,18 @@ def send_accent(changed: dict[str, object]):
         temp_background_light_bottom = changed["backgroundlightbottom"]
     if "backgroundsatbottom" in changed:
         temp_background_sat_bottom = changed["backgroundsatbottom"]
-
     socket.emit(
+        "customizer",
+        [
+            temp_accent,
+            temp_bgrotation,
+            temp_background_light_top,
+            temp_background_sat_top,
+            temp_background_light_bottom,
+            temp_background_sat_bottom,
+        ],
+    )
+    app.broadcast(
         "customizer",
         [
             temp_accent,
