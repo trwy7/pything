@@ -13,7 +13,7 @@ def hidewarn(changed: dict[str, object]):
         app.settings["warn"].hidden = not changed["warn"]
 
 
-hidewarn({})
+hidewarn({"warn": app.settings['warn'].get_value()})
 
 
 @app.blueprint.route("/launch")
