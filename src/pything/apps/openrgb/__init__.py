@@ -43,6 +43,9 @@ def reconnect_openrgb():
 
 def update_color(retry=True):
     # Set all devices to the accent hue
+    if accent is None:
+        app.logger.debug("Accent hue is None, skipping color update")
+        return
     color = RGBColor(*[int(c * 255) for c in colorsys.hsv_to_rgb(accent / 360, app.settings["saturation"].get_value() / 100, app.settings["value"].get_value() / 100)])
     app.logger.debug("Setting accent to accent=%s, color=%s", accent, color)
     if openrgb is None:
