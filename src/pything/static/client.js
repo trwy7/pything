@@ -97,7 +97,6 @@ socket.on("connect", () => {
 var reloadinterval = null
 socket.on("disconnect", () => {
     window.focus();
-    document.getElementById("status").style.display = "block";
     hideApp("Disconnected")
     if (reloadinterval) {
         return;
@@ -107,11 +106,7 @@ socket.on("disconnect", () => {
             fetch("http://localhost:5192/isready", { method: 'GET' })
             .then(response => {
             if (response.ok) {
-                hideApp();
-                setTimeout(() => {
-                    window.location.reload();
-                }, 550)
-                clearInterval(reloadinterval);
+                window.location.reload();
             }
             })
             .catch(error => {});
