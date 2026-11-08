@@ -65,6 +65,7 @@ def send_accent(changed: dict[str, object]):
         temp_background_light_bottom, \
         temp_background_sat_bottom, \
         temp_bgrotation
+    app.logger.debug("Customizer settings changed: %s", changed)
     if "hue" in changed:
         temp_accent = changed["hue"]
     if "bgrotation" in changed:
@@ -77,38 +78,33 @@ def send_accent(changed: dict[str, object]):
         temp_background_light_bottom = changed["backgroundlightbottom"]
     if "backgroundsatbottom" in changed:
         temp_background_sat_bottom = changed["backgroundsatbottom"]
-    socket.emit(
-        "customizer",
-        [
-            temp_accent,
-            temp_bgrotation,
-            temp_background_light_top,
-            temp_background_sat_top,
-            temp_background_light_bottom,
-            temp_background_sat_bottom,
-        ],
-    )
+    send = [
+        temp_accent,
+        temp_bgrotation,
+        temp_background_light_top,
+        temp_background_sat_top,
+        temp_background_light_bottom,
+        temp_background_sat_bottom,
+    ]
+    socket.emit("customizer", send)
     app.broadcast(
         "customizer",
-        [
-            temp_accent,
-            temp_bgrotation,
-            temp_background_light_top,
-            temp_background_sat_top,
-            temp_background_light_bottom,
-            temp_background_sat_bottom,
-        ],
+        send,
     )
+    app.logger.debug("Sent customizer settings: %s", send)
 
 
 @socket.on("customizer+get")
 def rs_accent(_=None):
+    app.logger.debug("Client requested customizer settings")
     send_accent({})
 
 
 @app.on_broadcast("set_accent")
 def set_accent(hue):
+    app.logger.debug("Received broadcast to set accent hue to %s", hue)
     send_accent({"hue": hue if hue is not None else app.settings["hue"].get_value()})
+
 
 @app.on_startup
 def on_startup():

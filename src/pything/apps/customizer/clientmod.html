@@ -75,6 +75,8 @@
         setAccent(h[0], h[1], h[2], h[3], h[4], h[5]);
     });
 
-    socket.emit("customizer+get", 0);
+    socket.on("connect", () => {
+        socket.emit("customizer+get", 0);
+    })
     onAppLoad(sendAccent);
 </script>
