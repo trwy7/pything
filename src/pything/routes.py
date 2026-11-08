@@ -1,7 +1,6 @@
 """Built-in pages: client, settings and app management routes.
 
-Importing this module registers its routes; ``pything/__init__`` imports it
-for that side effect.
+Importing this module registers its routes
 """
 
 from __future__ import annotations
