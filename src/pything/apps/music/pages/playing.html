@@ -23,20 +23,24 @@
     }
 
     #music-playbar {
-        margin-top: 10px;
         width: 100%;
         border-radius: 9999px;
         background-color: hsla(var(--custom-hue, 151), 25%, 50%, 0.8);
-        height: 15px;
-        transition: transform 1s;
+        transition: height 1s, margin-top 1s;
+        height: 0px;
         transform: translateY(5px);
+    }
+
+    #music-playbar.show {
+        height: 15px;
+        margin-top: 10px;
     }
 
     #music-playbarinner {
         border-radius: 9999px;
         transition: width 2s;
         background: hsl(var(--custom-hue, 151), 100%, 59%);
-        height: 15px;
+        height: 100%;
     }
 
     #warn {
