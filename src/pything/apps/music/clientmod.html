@@ -43,7 +43,7 @@
 <script>
     const musicPlaybar = document.getElementById("music-playbar")
     const musicPlaybarInner = document.getElementById("music-playbarinner")
-
+    var currentStyle = "{{ app.settings['playbar_style'].get_value() }}";
     function setMusicPlaybarStyle(style) {
         musicPlaybar.classList.toggle("off", style === "off")
         musicPlaybar.classList.toggle("flat", style === "flat")
@@ -52,8 +52,14 @@
         }
     }
 
-    setMusicPlaybarStyle("{{ app.settings['playbar_style'].get_value() }}")
-    socket.on("music_playbar_style", setMusicPlaybarStyle)
+    setMusicPlaybarStyle(currentStyle)
+    socket.on("music_playbar_style", (style) => {
+        currentStyle = style;
+        if (currentApp == "music") {
+            return
+        }
+        setMusicPlaybarStyle(currentStyle)
+    })
 
     socket.on("music", (d) => {
         if (d[1]) {
@@ -69,6 +75,13 @@
         } else {
             musicPlaybar.classList.remove("show")
             document.getElementById("appframe").style.height = ""
+        }
+    })
+    onAppChange((newapp) => {
+        if (newapp == "music") {
+            setMusicPlaybarStyle("off")
+        } else {
+            setMusicPlaybarStyle(currentStyle)
         }
     })
 </script>
