@@ -10,8 +10,9 @@ import urllib.request
 import zipfile
 
 from pything.app import App
-from pything.settings import BooleanSetting
+from pything.settings import BooleanSetting, LinkSetting
 from pything.utils import CACHE_ROOT
+from pything.web import redirect
 
 app = App(
     [
@@ -20,7 +21,18 @@ app = App(
             "Turn off the display when the screen is locked (requires the Extras app and display hiding)",
             True,
         ),
-    ]
+        LinkSetting(
+            "restore_webapp",
+            "Temporarily restore the original UI",
+            "/apps/device-carthing/restore",
+        ),
+        LinkSetting(
+            "replace_webapp",
+            "Fully replace the original UI with PYThing",
+            "/apps/device-carthing/replace",
+        )
+    ],
+
 )
 
 adb = False
@@ -266,8 +278,23 @@ def full_replace_carthing(serials: list | None = None):
                 "/usr/share/qt-superbird-app/webapp",
             ],
         )
-        run_adb_cmd(serial, ["shell", "supervisorctl", "restart", "chromium"])
+        run_adb_cmd(
+            serial,
+            [
+                "push",
+                f"apps/{app.dirname}/logo.dump",
+                "/tmp/logo.dump",
+            ],
+        )
+        run_adb_cmd(
+            serial,
+            [
+                "shell",
+                "dd if=/tmp/logo.dump of=/dev/logo bs=1M",
+            ],
+        )
         run_adb_cmd(serial, ["shell", "mount -o remount,ro /"])
+        run_adb_cmd(serial, ["reboot"])
 
 
 @app.on_broadcast("lockstate")
@@ -299,3 +326,13 @@ else:
     app.logger.warning(
         "ADB is not available, the carthing will not be able to connect."
     )
+
+@app.blueprint.route("/restore")
+def restore_webapp():
+    restore_ct_webapp()
+    return redirect("/settings")
+
+@app.blueprint.route("/replace")
+def replace_webapp():
+    full_replace_carthing()
+    return redirect("/settings")
