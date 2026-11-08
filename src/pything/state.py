@@ -28,9 +28,15 @@ log_handlers: list[logging.Handler] = [logging.StreamHandler()]
 if log_file is not None:
     try:
         os.makedirs(log_dir, exist_ok=True)
-        log_handlers.append(logging.FileHandler(log_file, encoding="utf-8"))
+        log_handlers.append(logging.FileHandler(log_file, encoding="utf-8", mode="w"))
     except OSError:
         log_file = None  # fall back to console-only logging
+# logger format
+log_formatter = logging.Formatter(
+    "%(asctime)s [%(levelname)s] %(name)s: %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+)
+for handler in log_handlers:
+    handler.setFormatter(log_formatter)
 logging.basicConfig(
     level=logging.DEBUG if DEVMODE else logging.INFO,
     handlers=log_handlers,
