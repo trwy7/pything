@@ -69,10 +69,26 @@ socket.on("disconnect", () => {
         1000
     );
 });
+var appChangeListeners = []
+function onAppChange(func) {
+    appChangeListeners.push(func)
+}
 socket.on("changeframe", (frame) => {
     hideApp();
     window.focus();
-    setTimeout(() => {document.getElementById("appframe").src = frame;}, 500);
+    const fsplit = frame.split("/")
+    if (fsplit.length >= 3) {
+        currentApp = fsplit[2];
+    } else {
+        currentApp = null;
+    }
+    setTimeout(() => {
+        document.getElementById("appframe").src = frame;
+        appChangeListeners.forEach((listener) => {
+            listener(currentApp); // notify listeners before changing the frame
+        });
+    }, 500);
+
 })
 socket.on("app_com", (data) => {
     sendToApp("appCom", {app: data[0], event: data[1], data: data[2]})
