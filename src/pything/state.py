@@ -1,7 +1,6 @@
 """Shared process state, configuration and registries.
 
-Every other submodule depends on this one; it depends on nothing else in the
-package, which is what keeps the import graph acyclic.
+Every other submodule depends on this one
 """
 
 from __future__ import annotations
@@ -16,10 +15,26 @@ from typing import Any
 import truststore
 from jinja2 import ChoiceLoader, Environment, FileSystemLoader
 
+from .utils import CACHE_ROOT
+
 truststore.inject_into_ssl()
 
 DEVMODE = bool(os.environ.get("DEV", False))  # noqa: PLW1508
-logging.basicConfig(level=logging.DEBUG if DEVMODE else logging.INFO)
+
+# Log to both the console and a file under CACHE_ROOT/pything/.
+log_dir = os.path.join(CACHE_ROOT, "pything") if CACHE_ROOT else None
+log_file = os.path.join(log_dir, "pything.log") if log_dir else None
+log_handlers: list[logging.Handler] = [logging.StreamHandler()]
+if log_file is not None:
+    try:
+        os.makedirs(log_dir, exist_ok=True)
+        log_handlers.append(logging.FileHandler(log_file, encoding="utf-8"))
+    except OSError:
+        log_file = None  # fall back to console-only logging
+logging.basicConfig(
+    level=logging.DEBUG if DEVMODE else logging.INFO,
+    handlers=log_handlers,
+)
 logger = logging.getLogger("pything")
 
 if os.name == "nt":

@@ -1,3 +1,7 @@
+"""
+Shared configuration and utility functions for pything.
+"""
+
 import os
 import sys
 import sysconfig
