@@ -63,6 +63,7 @@
 
     socket.on("music", (d) => {
         if (d[1]) {
+            sendToApp("music", d);
             musicPlaybar.classList.add("show")
             musicPlaybarInner.style.width = d[0] + "%"
             if (musicPlaybar.classList.contains("off")) {
