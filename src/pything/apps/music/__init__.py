@@ -51,12 +51,15 @@ def send_song(_=None):
 
 def send_playback_accent():
     global _last_broadcast_accent
-    if not playback.song or not app.settings["accent"].get_value():
+    if not app.settings["accent"].get_value():
         return
-    accent = playback.song.album.accent
+    accent = playback.song.album.accent if playback.song else None
     if accent != _last_broadcast_accent:
+        app.logger.debug("Broadcasting accent color: %s for %s", accent, playback.song.title if playback.song else "None")
         app.broadcast("set_accent", accent)
         _last_broadcast_accent = accent
+    else:
+        app.logger.debug("Not broadcasting accent color: %s for %s (unchanged)", accent, playback.song.title if playback.song else "None")
 
 
 def send_playback_state():
@@ -87,7 +90,9 @@ def playback_listener():
         )
     else:
         app.logger.debug("Got playback update: None")
+    app.logger.debug("Sending playback state")
     send_playback_state()
+    app.logger.debug("Sending playback accent")
     send_playback_accent()
 
 
