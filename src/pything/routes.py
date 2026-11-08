@@ -10,7 +10,7 @@ import threading
 from typing import Any
 
 from . import state
-from .app import App
+from .app import App, stop_server
 from .discovery import app_dependency_view, discover_apps, required_dependency_closure
 from .web import Response, redirect, render_template, request, route
 
@@ -81,7 +81,7 @@ def apps_set():
     state.save_config()
 
     def restart() -> None:
-        os._exit(state.RESTART_EXIT_CODE)
+        stop_server(exit_code=state.RESTART_EXIT_CODE)
 
     threading.Timer(0.5, restart).start()
     return (

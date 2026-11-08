@@ -51,10 +51,10 @@ const socket = {
 socket._connect();
 
 const appFrame = document.getElementById("appframe")
-function hideApp() {
+function hideApp(msg="") {
     document.getElementById("loadanim").classList.remove("load")
     document.getElementById("loadanim").classList.add("reload")
-    document.getElementById("loadanim").innerText = ""
+    document.getElementById("loadanim").innerText = msg
 }
 function unhideApp() {
     if (!socket.connected) {
@@ -98,6 +98,7 @@ var reloadinterval = null
 socket.on("disconnect", () => {
     window.focus();
     document.getElementById("status").style.display = "block";
+    hideApp("Disconnected")
     if (reloadinterval) {
         return;
     }
@@ -138,6 +139,9 @@ socket.on("changeframe", (frame) => {
         });
     }, 500);
 
+})
+socket.on("shutdown", () => {
+    hideApp("Stopping...")
 })
 socket.on("app_com", (data) => {
     sendToApp("appCom", {app: data[0], event: data[1], data: data[2]})

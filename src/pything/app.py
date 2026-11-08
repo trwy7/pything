@@ -6,6 +6,7 @@ import inspect
 import json
 import logging
 import os
+import sys
 from collections.abc import Callable, Generator
 
 from . import state
@@ -175,3 +176,12 @@ class App:
 
 def get_apps():
     return state.apps
+
+def stop_server(exit_code: int = 0):
+    state.logger.info("Stopping server")
+    event = "shutdown"
+    socket.emit("shutdown")
+    if event in state.broadcast_listeners:
+        for listener in state.broadcast_listeners[event]:
+            listener()
+    os._exit(exit_code)
