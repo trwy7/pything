@@ -75,6 +75,12 @@
         color: hsl(var(--custom-hue, 151), 100%, 85%);
     }
 
+    #subtitle {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: hsl(var(--custom-hue, 151), 85%, 85%);
+    }
+
     #album {
         font-size: 1.1rem;
         opacity: 0.8;
@@ -93,6 +99,7 @@
         <img id="art">
         <div id="details">
             <span id="title"></span>
+            <span id="subtitle"></span>
             <span id="album"></span>
             <span id="artists"></span>
         </div>
@@ -116,9 +123,24 @@
             document.getElementById("warn").style.display = "block";
             return;
         }
+        song.subtitle = ""
+        // check for suffixes
+        const suffixes = [" - ", " ("]
+        for (const suffix of suffixes) {
+            const index = song.title.lastIndexOf(suffix)
+            if (index != -1) {
+                song.subtitle = song.title.substring(index + suffix.length)
+                if (suffix == " (" && song.subtitle.endsWith(")")) {
+                    song.subtitle = song.subtitle.substring(0, song.subtitle.length - 1)
+                }
+                song.title = song.title.substring(0, index)
+                break
+            }
+        }
         document.getElementById("song").style.display = "flex";
         document.getElementById("warn").style.display = "none";
         document.getElementById("title").innerText = song.title;
+        document.getElementById("subtitle").innerText = song.subtitle;
         document.getElementById("album").innerText = song.album;
         document.getElementById("artists").innerText = song.artists;
         if (song.art) {
@@ -133,6 +155,11 @@
             document.getElementById("song").style.justifyContent = "center";
             document.getElementById("details").style.textAlign = "center";
             document.getElementById("details").style.paddingLeft = "0px";
+        }
+        if (song.title == song.album) {
+            document.getElementById("album").style.display = "none";
+        } else {
+            document.getElementById("album").style.display = "block";
         }
     })
     send("get", 0)
