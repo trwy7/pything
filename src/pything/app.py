@@ -177,6 +177,7 @@ class App:
 def get_apps():
     return state.apps
 
+
 def stop_server(exit_code: int = 0):
     state.logger.info("Stopping server")
     event = "shutdown"

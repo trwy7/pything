@@ -49,9 +49,7 @@ def import_app(iappd: str):
         raise TypeError(
             f"App {iappd} variable 'app' has invalid blueprint ({type(iapp.app.blueprint)!s})"
         )
-    _register_blueprint_routes(
-        iapp.app.blueprint, "/apps/" + iapp.app.id, iapp.app.id
-    )
+    _register_blueprint_routes(iapp.app.blueprint, "/apps/" + iapp.app.id, iapp.app.id)
     if os.path.exists(os.path.join(iappd, "clientmod.html")):
         state.client_mods.append(
             (os.path.join(iapp.app.id, "clientmod.html").replace("\\", "/"), iapp.app)
@@ -61,7 +59,10 @@ def import_app(iappd: str):
             (os.path.join(iapp.app.id, "appmod.html").replace("\\", "/"), iapp.app)
         )
     for _methods, regex, _conv, _handler, app_id in state.routes:
-        if app_id == iapp.app.id and regex.pattern == "^/apps/" + iapp.app.id + "/launch$":
+        if (
+            app_id == iapp.app.id
+            and regex.pattern == "^/apps/" + iapp.app.id + "/launch$"
+        ):
             state.logger.debug("%s has a launch route", iapp.app.id)
             iapp.app.hidden = False
             break

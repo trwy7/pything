@@ -181,7 +181,9 @@ def _handle_ws_message(client: Client, event: str, args: list) -> None:
     elif event == "app_com":
         app_id, app_event, data = args
         if app_id not in state.apps:
-            state.logger.error("A client just sent a request to non-existent app '%s'", app_id)
+            state.logger.error(
+                "A client just sent a request to non-existent app '%s'", app_id
+            )
             return
         if app_event == "debug":
             state.logger.debug("Client debug message to %s: %s", app_id, data)
@@ -210,7 +212,9 @@ def _run_ws_connection(rfile, wfile, client: Client) -> None:
             try:
                 message = json.loads(text)
             except json.JSONDecodeError:
-                state.logger.warning("Ignoring invalid websocket message from %s", client.sid)
+                state.logger.warning(
+                    "Ignoring invalid websocket message from %s", client.sid
+                )
                 continue
             args = message.get("args", [])
             if not isinstance(args, list):

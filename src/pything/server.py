@@ -51,9 +51,7 @@ class Handler(BaseHTTPRequestHandler):
         client = Client(sid, conn)
         state.logger.debug("Client %s connected", sid)
         # Push server time immediately, like the old connect handler did.
-        conn.send_json(
-            {"event": "dt", "args": [datetime.datetime.now().isoformat()]}
-        )
+        conn.send_json({"event": "dt", "args": [datetime.datetime.now().isoformat()]})
         _run_ws_connection(rfile, wfile, client)
 
     # -- normal HTTP --------------------------------------------------------
@@ -61,7 +59,9 @@ class Handler(BaseHTTPRequestHandler):
         parsed = urllib.parse.urlparse(self.path)
         path = urllib.parse.unquote(parsed.path)
         req = _get_request()
-        req.args = MultiDict(urllib.parse.parse_qs(parsed.query, keep_blank_values=True))
+        req.args = MultiDict(
+            urllib.parse.parse_qs(parsed.query, keep_blank_values=True)
+        )
         req.form = MultiDict({})
         req.sid = None
         _set_current_app(None)
@@ -70,7 +70,9 @@ class Handler(BaseHTTPRequestHandler):
             length = int(self.headers.get("Content-Length") or 0)
             body = self.rfile.read(length) if length else b""
             req.form = MultiDict(
-                urllib.parse.parse_qs(body.decode(errors="replace"), keep_blank_values=True)
+                urllib.parse.parse_qs(
+                    body.decode(errors="replace"), keep_blank_values=True
+                )
             )
 
         response = _dispatch(self.command, path)
@@ -91,7 +93,10 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(response.body)
 
     def do_GET(self):
-        if self._is_websocket_upgrade() and urllib.parse.urlparse(self.path).path == "/ws":
+        if (
+            self._is_websocket_upgrade()
+            and urllib.parse.urlparse(self.path).path == "/ws"
+        ):
             self._do_websocket()
             return
         self._handle()
