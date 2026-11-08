@@ -1,4 +1,6 @@
-from pything import App, IntegerSetting, socket
+from pything.app import App
+from pything.settings import IntegerSetting
+from pything.websocket import socket
 
 app = App(
     [

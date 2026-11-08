@@ -5,26 +5,12 @@ import sys
 RESTART_EXIT_CODE = 65
 SERVER_MODE = "PYTHING_SERVER_MODE"
 
-if not getattr(sys, "frozen", False):
-    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
-
-
-def server_command() -> list[str]:
-    if getattr(sys, "frozen", False):
-        python_target = os.environ.get("PYTHING_PYTHON")
-        if python_target is None:
-            raise RuntimeError("PYTHING_PYTHON is required for frozen restarts")
-        return [python_target, "-m", "pything", *sys.argv[1:]]
-    return [sys.executable, sys.argv[0], *sys.argv[1:]]
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
 
 
 def main() -> int:
-    command = server_command()
-    working_directory = (
-        os.path.dirname(sys.executable)
-        if getattr(sys, "frozen", False)
-        else os.path.dirname(os.path.abspath(__file__))
-    )
+    command = [sys.executable, sys.argv[0], *sys.argv[1:]]
+    working_directory = os.path.dirname(os.path.abspath(__file__))
     environment = os.environ.copy()
     environment[SERVER_MODE] = "1"
     while True:
@@ -42,7 +28,7 @@ def cli() -> int | None:
     if os.environ.get(SERVER_MODE) == "1":
         import sys
 
-        from pything import main as start
+        from pything.loader import main as start
         from pything.utils import dependency_target
 
         sys.path.insert(0, str(dependency_target()))

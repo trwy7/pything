@@ -103,75 +103,7 @@ All apps can store data in the form of settings, you can access any visible sett
       <h2>🛠️ Making an app</h2>
    </summary>
 
-To create a custom app, you must be using the source build. Apps have a defined structure, but not all files are needed. Apps can either be in `/src/apps` or `/src/customapps`. `/src/customapps` are excluded from git, but `/src/apps` is not., they are both loaded the same way, but a custom app cannot take the same id as a built in app. All apps are loaded as a python module, so your init script should be in `/src/apps/<id>/__init__.py`. The app needs to expose an `app` variable, of the `App` class. This is a basic example of an app that has a few settings.
-```python
-from flask import render_template, redirect
-from pything import (
-    App,
-    StringSetting,
-    FloatSetting,
-    IntegerSetting,
-    BooleanSetting,
-    SelectSetting,
-)
-
-app = App(
-    "Test App",
-    [
-        StringSetting(
-            "string-test", "Test string", "Test one\nType whatever you want", "Hello!"
-        ),
-        StringSetting("hidden-string-test", "", "", "default", True),
-        FloatSetting("float-test", "Test float", "Test two\nType a float", 3.14),
-        IntegerSetting(
-            "integer-test", "Test integer", "Test three\nType an integer", 42
-        ),
-        BooleanSetting("boolean-test", "Test boolean", "Test four\nToggle this", False),
-        SelectSetting(
-            "select-test",
-            "Test select",
-            "value1",
-            {"value1": "Value 1", "value2": "Value 2 (readable)"},
-        ),
-    ],
-)
-
-
-@app.blueprint.route(
-    "/settings"
-)  # Results in /apps/<app.id>/settings, which becomes /apps/demoapp/settings for this app
-def test_settings():
-    return render_template(f"{app.dirname}/pages/settings.html")
-
-
-@app.blueprint.route("/launch")
-def launch():  # Removing or commenting this route results in the app not showing on the dashboard
-    return redirect(f"/apps/{app.dirname}/settings")
-```
-If you use this code, you should have a `/apps/<id>/pages/settings.html` with some basic content, following this loose structure:
-```html
-{% extends "templates/app.html" %}
-{% block head %}
-<!-- Any styles, or really anything that should go in <head> should go here -->
-<style>
-    html, body {
-        overflow: hidden;
-    }
-</style>
-{% endblock %}
-{% block content %}
-<!-- Anything visible goes here -->
-<h1 id="auto-time"></h1> <!-- This is automatically filled in with the current time by the client, no javascript needed. -->
-<span id="appid">This is the {{app.id}} app!</span>
-{% endblock %}
-{% block script %}
-<!-- Any scripts should go here -->
-<script>
-    alert("hi!")
-</script>
-{% endblock %}
-```
-To make more complex apps, look around at the built in apps to see what you can do! While there are no docs yet, PYThing is made to be easy to extend, and part of the experience is making your own app!
+To create a custom app, you must be using the source build. Apps have a defined structure, but not all files are needed. Apps can either be in `/src/apps` or `/src/customapps`. `/src/customapps` are excluded from git, but `/src/apps` is not., they are both loaded the same way, but a custom app cannot take the same id as a built in app. All apps are loaded as a python module, so your init script should be in `/src/apps/<id>/__init__.py`. The app needs to expose an `app` variable, of the `App` class from `pything.app`. Look around at the built in apps to see what you can do! While there are no docs yet, PYThing is made to be easy to extend, and part of the experience is making your own app!
 
 </details>
 

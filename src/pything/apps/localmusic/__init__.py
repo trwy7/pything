@@ -19,10 +19,11 @@ from urllib.parse import unquote, unquote_to_bytes, urlparse
 
 from apps.music.types import Album, Artist, Song, playback
 from apps.music.utils import get_accent
-from flask import abort, send_file
 from PIL import Image
 
-from pything import App, LabelSetting, StringSetting
+from pything.app import App
+from pything.settings import LabelSetting, StringSetting
+from pything.web import abort, send_file
 
 app = App(
     [

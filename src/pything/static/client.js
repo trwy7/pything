@@ -1,5 +1,55 @@
 const isHardware = new URLSearchParams(window.location.search).has("device");
-const socket = io();
+const socket = {
+    _handlers: {},
+    _ws: null,
+    get connected() {
+        return this._ws !== null && this._ws.readyState === WebSocket.OPEN;
+    },
+    listFor(event) {
+        if (!(event in this._handlers)) {
+            this._handlers[event] = [];
+        }
+        return this._handlers[event];
+    },
+    on(event, cb) {
+        this.listFor(event).push(cb);
+    },
+    emit(event, ...args) {
+        if (this.connected) {
+            this._ws.send(JSON.stringify({event: event, args: args}));
+        }
+    },
+    _dispatch(event, args) {
+        (this._handlers[event] || []).forEach((cb) => {
+            cb(...args);
+        });
+    },
+    _connect() {
+        const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+        const ws = new WebSocket(`${proto}//${window.location.host}/ws`);
+        ws.onopen = () => {
+            socket._ws = ws;
+            socket._dispatch("connect", []);
+        };
+        ws.onmessage = (e) => {
+            try {
+                const msg = JSON.parse(e.data);
+                socket._dispatch(msg.event, msg.args || []);
+            } catch (err) {
+                console.warn("Ignoring invalid websocket message", e.data);
+            }
+        };
+        ws.onerror = () => {
+            try { ws.close(); } catch (err) {}
+        };
+        ws.onclose = () => {
+            socket._ws = null;
+            socket._dispatch("disconnect", []);
+        };
+    },
+};
+socket._connect();
+
 const appFrame = document.getElementById("appframe")
 function hideApp() {
     document.getElementById("loadanim").classList.remove("load")
@@ -46,7 +96,6 @@ socket.on("connect", () => {
 });
 var reloadinterval = null
 socket.on("disconnect", () => {
-    socket.disconnect();
     window.focus();
     document.getElementById("status").style.display = "block";
     if (reloadinterval) {
