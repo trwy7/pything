@@ -1,4 +1,4 @@
-"""Raw WebSocket transport (RFC 6455) — replaces flask-socketio."""
+"""Raw WebSocket transport."""
 
 from __future__ import annotations
 

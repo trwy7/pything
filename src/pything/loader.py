@@ -1,4 +1,4 @@
-"""Application loading and server startup (``pything.main``)."""
+"""Application loading and server startup."""
 
 from __future__ import annotations
 
