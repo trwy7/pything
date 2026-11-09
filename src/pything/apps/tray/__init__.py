@@ -13,7 +13,13 @@ from pything.app import App, stop_server
 from pything.state import log_file
 
 app = App([])
-icon = Image.open(os.path.join(os.path.dirname(__file__), "icon.png"))
+# workaround for non-square image bc im lazy
+icon = Image.open(os.path.join(os.path.dirname(__file__), "icon.png")).convert("RGBA") 
+size = max(icon.size)
+fitted = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+icon.thumbnail((size, size), Image.Resampling.LANCZOS)
+fitted.paste(icon, ((size - icon.width) // 2, (size - icon.height) // 2), icon)
+icon = fitted
 
 
 def after_click(icon, item):

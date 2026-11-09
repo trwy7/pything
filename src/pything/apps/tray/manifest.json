@@ -4,7 +4,8 @@
   "description": "Shows a tray icon.",
   "codeowners": ["@trwy7"],
   "category": "system",
-  "requirements": ["pystray==0.19.5", "pillow==12.1.1", "pygobject==3.58.1"],
+  "requirements": ["pystray==0.19.5", "pillow==12.1.1"],
+  "requirements-linux": ["pygobject==3.58.1"],
   "core": true,
   "default": true
 }
