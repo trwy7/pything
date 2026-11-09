@@ -141,17 +141,18 @@ def after_click(icon, item):
             stop_server()
 
 
-menu = pystray.Menu(
+started_tray = False
+items = [
     pystray.MenuItem("Show logs", after_click),
     pystray.MenuItem("Quit", after_click),
-)
+]
 
 
-def add_tray_option(option, func):
-    menu.insert(0, pystray.MenuItem(option, func))
-
-
-tray_icon = pystray.Icon("pything", _icons[_current_mode], "PyThing", menu)
+def add_tray_option(option: str, func):
+    app.logger.debug(f"Adding tray option: {option}")
+    if started_tray:
+        raise RuntimeError("Cannot add tray options after the tray has started")
+    items.insert(0, pystray.MenuItem(option, func))
 
 
 def _watch_theme():
@@ -169,5 +170,10 @@ def _watch_theme():
 
 @app.on_startup
 def start_tray():
+    global started_tray, tray_icon
+    started_tray = True
+    tray_icon = pystray.Icon(
+        "pything", _icons[_current_mode], "PyThing", pystray.Menu(*items)
+    )
     threading.Thread(target=tray_icon.run, daemon=True).start()
     threading.Thread(target=_watch_theme, daemon=True).start()
