@@ -293,7 +293,6 @@ def full_replace_carthing(serials: list | None = None):
                 "dd if=/tmp/logo.dump of=/dev/logo bs=1M",
             ],
         )
-        run_adb_cmd(serial, ["shell", "mount -o remount,ro /"])
         run_adb_cmd(serial, ["reboot"])
 
 
