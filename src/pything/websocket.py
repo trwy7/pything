@@ -248,9 +248,9 @@ def _handle_setting_message(message: Any) -> None:
         raise ValueError("Unknown app or setting")
     setting = app.settings[setting_id]
     value = _setting_value(setting, message["value"])
+    state.logger.debug("temporarily setting %s.%s to %r", app_id, setting_id, value)
     for listener in app.settingmodifylisteners:
         listener({setting_id: value})
-    state.logger.debug("temporarily setting %s.%s to %r", app_id, setting_id, value)
 
 
 def _run_settings_ws_connection(conn: WSConnection) -> None:
@@ -259,6 +259,7 @@ def _run_settings_ws_connection(conn: WSConnection) -> None:
     req.sid = None
     req.args = MultiDict({})
     req.form = MultiDict({})
+    changed_settings = set[tuple[str, str]]()
     try:
         while True:
             try:
@@ -268,7 +269,9 @@ def _run_settings_ws_connection(conn: WSConnection) -> None:
             if text is None:
                 break
             try:
-                _handle_setting_message(json.loads(text))
+                json_data = json.loads(text)
+                _handle_setting_message(json_data)
+                changed_settings.add((json_data["app"], json_data["setting"]))
             except (json.JSONDecodeError, TypeError, ValueError, KeyError) as exc:
                 state.logger.warning(
                     "Ignoring invalid settings websocket message: %s", exc
@@ -277,6 +280,12 @@ def _run_settings_ws_connection(conn: WSConnection) -> None:
                 state.logger.exception("Error processing settings websocket message")
     finally:
         conn.close()
+        for app_id, setting_key in changed_settings:
+            app = state.apps[app_id]
+            setting_value = app.settings[setting_key].get_value()
+
+            for listener in app.settingupdatelisteners:
+                listener({setting_key: setting_value})
 
 
 def _run_ws_connection(rfile, wfile, client: Client) -> None:
