@@ -43,9 +43,14 @@ logging.basicConfig(
 )
 logger = logging.getLogger("pything")
 
-if os.name == "nt":
+if sys.platform == "win32":
     config_dir = os.path.join(os.environ["APPDATA"], "pything")
     old_data_path = os.path.join(os.environ["APPDATA"], "pything.pkl")
+elif sys.platform == "darwin":
+    config_dir = os.path.join(
+        os.path.expanduser("~"), "Library", "Application Support", "pything"
+    )
+    old_data_path = None
 else:
     config_dir = os.path.join(os.path.expanduser("~"), ".config", "pything")
     old_data_path = os.path.join(os.path.expanduser("~"), ".config", "pything.pkl")
@@ -55,7 +60,7 @@ RESTART_EXIT_CODE = 65
 HOST = "127.0.0.1"
 PORT = 5192
 
-if os.path.exists(old_data_path) and not os.path.exists(data_path):
+if old_data_path and os.path.exists(old_data_path) and not os.path.exists(data_path):
     os.makedirs(config_dir, exist_ok=True)
     shutil.move(old_data_path, data_path)
 
