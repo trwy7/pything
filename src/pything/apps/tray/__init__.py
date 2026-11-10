@@ -171,7 +171,7 @@ def start_tray():
     global started_tray, tray_icon
     started_tray = True
     tray_icon = pystray.Icon(
-        "pything", _icons[_current_mode], "PyThing", pystray.Menu(*items)
+        "pything", _icons[_current_mode], "PYThing", pystray.Menu(*items)
     )
     threading.Thread(target=tray_icon.run, daemon=True).start()
     threading.Thread(target=_watch_theme, daemon=True).start()

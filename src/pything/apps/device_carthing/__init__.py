@@ -25,7 +25,7 @@ app = App(
         ),
         LinkSetting(
             "restore_webapp",
-            "Temporarily restore the original UI",
+            "Restore the original UI",
             "/apps/device-carthing/restore",
         ),
         LinkSetting(
@@ -246,7 +246,7 @@ def inject_thread():
         time.sleep(2)
 
 
-# Restore carthing webapp from a temporary inject
+# Restore carthing webapp
 def restore_ct_webapp(fserial: str | None = None, restart: bool = True):
     for serial in get_carthings() if fserial is None else [fserial]:
         if is_carthing_serial(serial):
@@ -258,20 +258,27 @@ def restore_ct_webapp(fserial: str | None = None, restart: bool = True):
                     "mountpoint /usr/share/qt-superbird-app/webapp/ > /dev/null && umount /usr/share/qt-superbird-app/webapp",
                 ],
             )
+            run_adb_cmd(
+                serial,
+                [
+                    "shell",
+                    "[ -d /usr/share/qt-superbird-app/webapp.bak ] && rm -rf /usr/share/qt-superbird-app/webapp && cp -r /usr/share/qt-superbird-app/webapp.bak/* /usr/share/qt-superbird-app/webapp",
+                ],
+            )
             if restart:
                 run_adb_cmd(serial, ["shell", "supervisorctl", "restart", "chromium"])
 
 
 # Fully replace the original webapp with ptclient
 def full_replace_carthing(serials: list | None = None):
-    """If used, gives faster app startup times from a restart"""
+    """Adds branding and replaces the bindmount with a full replacement of the web app."""
     if serials is None:
         serials = get_carthings()
     for serial in serials:
         restore_ct_webapp(fserial=serial, restart=False)
         app.logger.info("Replacing %s...", serial)
         run_adb_cmd(serial, ["shell", "mount -o remount,rw /"])
-        run_adb_cmd(serial, ["shell", "rm -rf /usr/share/qt-superbird-app/webapp"])
+        run_adb_cmd(serial, ["shell", "[ ! -d /usr/share/qt-superbird-app/webapp.bak ] && mv /usr/share/qt-superbird-app/webapp /usr/share/qt-superbird-app/webapp.bak"])
         run_adb_cmd(
             serial,
             [
