@@ -197,12 +197,12 @@
             <h2>{{readable_categories[category]}}</h2>
             {% for app in iapps %}
                 {% if app.settings | length > 0 %}
-                <div id="app-{{app.id}}">
+                <div id="app-{{app.id}}" data-app-id="{{app.id}}" data-setting-modify="{{ 'true' if app.settingmodifylisteners else 'false' }}">
                     <h3>{{app.display_name}}</h3>
                     <div class="settings">
                         {% for setting in app.settings.values() %}
                             {% if not setting.hidden %}
-                            <div id="setting-{{app.id}}-{{setting.id}}" class="setting">
+                            <div id="setting-{{app.id}}-{{setting.id}}" class="setting" data-setting-id="{{setting.id}}">
                                 {% if setting.type == "string" %}
                                     <span class="settinglabel">{{setting.display_name}}</span>
                                     <div class="setting-control">
@@ -259,11 +259,41 @@
         <input type="submit" value="Save">
     </form>
     <script>
+        const hasSettingModifyListeners = document.querySelector('[data-setting-modify="true"]') !== null;
+        const settingSocket = hasSettingModifyListeners
+            ? new WebSocket(`${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/settings/ws`)
+            : null;
+        const settingQueue = [];
+        const sendSetting = (appId, settingId, value) => {
+            const message = JSON.stringify({app: appId, setting: settingId, value});
+            if (settingSocket.readyState === WebSocket.OPEN) settingSocket.send(message);
+            else if (settingSocket.readyState === WebSocket.CONNECTING) settingQueue.push(message);
+        };
+        if (settingSocket) {
+            settingSocket.addEventListener('open', () => {
+                while (settingQueue.length) settingSocket.send(settingQueue.shift());
+            });
+        }
+
         document.querySelectorAll('.setting').forEach((row) => {
             const btn = row.querySelector('.reset-btn');
-            if (!btn) return;
             const input = row.querySelector('input[name], select[name]');
             if (!input) return;
+            const app = row.closest('[data-app-id]');
+            const appId = app.dataset.appId;
+            const settingId = row.dataset.settingId;
+            const sendUpdate = () => {
+                if (!settingSocket || app.dataset.settingModify !== 'true') return;
+                if (input.type !== 'checkbox' && input.value === '') return;
+                const value = input.type === 'checkbox' ? input.checked : input.value;
+                sendSetting(appId, settingId, value);
+            };
+            if (input.type === 'checkbox' || input.tagName === 'SELECT') {
+                input.addEventListener('change', sendUpdate);
+            } else {
+                input.addEventListener('input', sendUpdate);
+            }
+            if (!btn) return;
             const defaultValue = btn.dataset.default;
             const isDefault = () => {
                 if (input.type === 'checkbox') return input.checked === (defaultValue === 'true');

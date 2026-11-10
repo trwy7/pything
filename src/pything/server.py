@@ -16,7 +16,13 @@ from .web import (
     _serve_static,
     _set_current_app,
 )
-from .websocket import Client, WSConnection, _run_ws_connection, _ws_accept_key
+from .websocket import (
+    Client,
+    WSConnection,
+    _run_settings_ws_connection,
+    _run_ws_connection,
+    _ws_accept_key,
+)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -33,7 +39,7 @@ class Handler(BaseHTTPRequestHandler):
             and self.headers.get("Connection", "").lower().find("upgrade") != -1
         )
 
-    def _do_websocket(self) -> None:
+    def _do_websocket(self, settings: bool = False) -> None:
         key = self.headers.get("Sec-WebSocket-Key", "")
         rfile = self.rfile
         wfile = self.wfile
@@ -46,8 +52,11 @@ class Handler(BaseHTTPRequestHandler):
         )
         wfile.write(handshake.encode())
         wfile.flush()
-        sid = os.urandom(12).hex()
         conn = WSConnection(rfile, wfile)
+        if settings:
+            _run_settings_ws_connection(conn)
+            return
+        sid = os.urandom(12).hex()
         client = Client(sid, conn)
         state.logger.debug("Client %s connected", sid)
         # Push server time immediately, like the old connect handler did.
@@ -93,12 +102,14 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(response.body)
 
     def do_GET(self):
-        if (
-            self._is_websocket_upgrade()
-            and urllib.parse.urlparse(self.path).path == "/ws"
-        ):
-            self._do_websocket()
-            return
+        if self._is_websocket_upgrade():
+            path = urllib.parse.urlparse(self.path).path
+            if path == "/ws":
+                self._do_websocket()
+                return
+            if path == "/settings/ws":
+                self._do_websocket(settings=True)
+                return
         self._handle()
 
     def do_POST(self):

@@ -200,6 +200,94 @@ def _handle_ws_message(client: Client, event: str, args: list) -> None:
         state.logger.debug("Client message: %s", args[0] if args else "")
 
 
+def _setting_value(setting, value):
+    match setting.type:
+        case "bool":
+            if isinstance(value, bool):
+                return value
+            if value in ("on", "true", "1"):
+                return True
+            if value in ("off", "false", "0"):
+                return False
+            raise ValueError("Invalid boolean setting value")
+        case "int":
+            value = int(value)
+            if setting.min_value is not None and value < setting.min_value:
+                raise ValueError("Setting value is below its minimum")
+            if setting.max_value is not None and value > setting.max_value:
+                raise ValueError("Setting value is above its maximum")
+            return value
+        case "float":
+            value = float(value)
+            if setting.min_value is not None and value < setting.min_value:
+                raise ValueError("Setting value is below its minimum")
+            if setting.max_value is not None and value > setting.max_value:
+                raise ValueError("Setting value is above its maximum")
+            return value
+        case "select":
+            if value not in setting.options:
+                raise ValueError("Invalid select setting value")
+            return value
+        case "string" | "data":
+            return value
+        case _:
+            raise ValueError("Setting cannot be changed")
+
+
+def _handle_setting_message(message: Any) -> None:
+    if not isinstance(message, dict):
+        raise TypeError("Expected a JSON object")
+    app_id = message.get("app")
+    setting_id = message.get("setting")
+    if not isinstance(app_id, str) or not isinstance(setting_id, str):
+        raise TypeError("'app' and 'setting' must be strings")
+    if "value" not in message:
+        raise ValueError("Missing setting value")
+    app = state.apps.get(app_id)
+    if app is None or setting_id not in app.settings:
+        raise ValueError("Unknown app or setting")
+    setting = app.settings[setting_id]
+    value = _setting_value(setting, message["value"])
+    state.logger.debug("temporarily setting %s.%s to %r", app_id, setting_id, value)
+    for listener in app.settingmodifylisteners:
+        listener({setting_id: value})
+
+
+def _run_settings_ws_connection(conn: WSConnection) -> None:
+    """Receive setting updates without sending application data to the client."""
+    req = _get_request()
+    req.sid = None
+    req.args = MultiDict({})
+    req.form = MultiDict({})
+    changed_settings = set[tuple[str, str]]()
+    try:
+        while True:
+            try:
+                text = conn.recv_text()
+            except (OSError, ConnectionError):
+                break
+            if text is None:
+                break
+            try:
+                json_data = json.loads(text)
+                _handle_setting_message(json_data)
+                changed_settings.add((json_data["app"], json_data["setting"]))
+            except (json.JSONDecodeError, TypeError, ValueError, KeyError) as exc:
+                state.logger.warning(
+                    "Ignoring invalid settings websocket message: %s", exc
+                )
+            except Exception:  # noqa: BLE001
+                state.logger.exception("Error processing settings websocket message")
+    finally:
+        conn.close()
+        for app_id, setting_key in changed_settings:
+            app = state.apps[app_id]
+            setting_value = app.settings[setting_key].get_value()
+
+            for listener in app.settingupdatelisteners:
+                listener({setting_key: setting_value})
+
+
 def _run_ws_connection(rfile, wfile, client: Client) -> None:
     try:
         while True:

@@ -77,6 +77,7 @@ class App:
         self.listeners = {}
         self.startup_listeners: list[Callable] = []
         self.settingupdatelisteners: list[Callable] = []
+        self.settingmodifylisteners: list[Callable] = []
         if not self.id in state.config:
             state.config[self.id] = {}
         schange = False
@@ -171,6 +172,11 @@ class App:
     def on_setting_update(self, func: Callable):
         self.logger.debug("Adding setting update listener %s", func.__name__)
         self.settingupdatelisteners.append(func)
+        return func
+
+    def on_setting_modify(self, func: Callable):
+        self.logger.debug("Adding setting modify listener %s", func.__name__)
+        self.settingmodifylisteners.append(func)
         return func
 
 

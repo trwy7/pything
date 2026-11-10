@@ -57,6 +57,7 @@ temp_background_sat_bottom = app.settings["backgroundsatbottom"].get_value()
 
 
 @app.on_setting_update
+@app.on_setting_modify
 def send_accent(changed: dict[str, object]):
     global \
         temp_accent, \
