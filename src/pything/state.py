@@ -10,16 +10,46 @@ import os
 import pickle
 import shutil
 import sys
+import sysconfig
+from pathlib import Path
 from typing import Any
 
 import truststore
 from jinja2 import ChoiceLoader, Environment, FileSystemLoader
 
-from .utils import CACHE_ROOT
-
 truststore.inject_into_ssl()
 
-DEVMODE = bool(os.environ.get("DEV", False))  # noqa: PLW1508
+DEVMODE = bool(os.environ.get("DEV"))
+
+# OS specific paths
+if sys.platform == "win32": # Windows
+    appdata = Path(os.environ["APPDATA"])
+    CONFIG_DIR = appdata / "pything"
+    OLD_DATA_PATH = appdata / "pything.pkl"
+    localappdata = Path(os.environ["LOCALAPPDATA"])
+    CACHE_ROOT = Path(localappdata) / "Temp" / "pything"
+    DATA_ROOT = Path(localappdata) / "pything"
+    del localappdata
+elif sys.platform == "darwin": # macOS
+    CONFIG_DIR = Path.home() / "Library" / "Application Support" / "pything"
+    OLD_DATA_PATH = None
+    CACHE_ROOT = Path.home() / "Library" / "Caches"
+    DATA_ROOT = Path.home() / "Library" / "Application Support" / "pything"
+else: # generic unix (hopefully linux)
+    CONFIG_DIR = Path.home() / ".config" / "pything"
+    OLD_DATA_PATH = Path.home() / ".config" / "pything.pkl"
+    CACHE_ROOT = (
+        Path(os.environ["XDG_CACHE_HOME"])
+        if os.environ.get("XDG_CACHE_HOME")
+        else Path.home() / ".cache"
+    )
+    DATA_ROOT = Path.home() / ".local" / "share" / "pything"
+
+# Dependency directory
+runtime = sys.implementation.cache_tag or (
+    f"python-{sys.version_info.major}.{sys.version_info.minor}"
+)
+DEPENDENCY_DIR = Path(CACHE_ROOT) / "pything" / "dependencies" / f"{runtime}-{sysconfig.get_platform()}"
 
 # Log to both the console and a file under CACHE_ROOT/pything/.
 log_dir = os.path.join(CACHE_ROOT, "pything") if CACHE_ROOT else None
@@ -43,26 +73,19 @@ logging.basicConfig(
 )
 logger = logging.getLogger("pything")
 
-if sys.platform == "win32":
-    config_dir = os.path.join(os.environ["APPDATA"], "pything")
-    old_data_path = os.path.join(os.environ["APPDATA"], "pything.pkl")
-elif sys.platform == "darwin":
-    config_dir = os.path.join(
-        os.path.expanduser("~"), "Library", "Application Support", "pything"
-    )
-    old_data_path = None
-else:
-    config_dir = os.path.join(os.path.expanduser("~"), ".config", "pything")
-    old_data_path = os.path.join(os.path.expanduser("~"), ".config", "pything.pkl")
-data_path = os.path.join(config_dir, "data.pkl")
+
+data_path = os.path.join(CONFIG_DIR, "data.pkl")
 APP_CONFIG_ID = "_apps"
 RESTART_EXIT_CODE = 65
 HOST = "127.0.0.1"
 PORT = 5192
 
-if old_data_path and os.path.exists(old_data_path) and not os.path.exists(data_path):
-    os.makedirs(config_dir, exist_ok=True)
-    shutil.move(old_data_path, data_path)
+# migrate data
+if OLD_DATA_PATH and os.path.exists(OLD_DATA_PATH) and not os.path.exists(data_path):
+    os.makedirs(CONFIG_DIR, exist_ok=True)
+    shutil.move(OLD_DATA_PATH, data_path)
+
+del OLD_DATA_PATH 
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))  # sanity check
 
@@ -85,7 +108,7 @@ jinja_env = Environment(
 
 
 def save_config() -> None:
-    os.makedirs(config_dir, exist_ok=True)
+    os.makedirs(CONFIG_DIR, exist_ok=True)
     with open(data_path, "wb") as cfw:
         pickle.dump(config, cfw)
 

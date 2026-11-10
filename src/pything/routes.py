@@ -5,7 +5,6 @@ Importing this module registers its routes
 
 from __future__ import annotations
 
-import os
 import threading
 from typing import Any
 

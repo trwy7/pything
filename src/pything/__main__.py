@@ -29,9 +29,9 @@ def cli() -> int | None:
         import sys
 
         from pything.loader import main as start
-        from pything.utils import dependency_target
+        from pything.state import DEPENDENCY_DIR
 
-        sys.path.insert(0, str(dependency_target()))
+        sys.path.insert(0, str(DEPENDENCY_DIR))
 
         return start()
     return main()

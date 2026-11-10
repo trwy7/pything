@@ -10,7 +10,7 @@ from pathlib import Path
 
 from packaging.requirements import Requirement
 
-from .utils import dependency_target
+from .state import DEPENDENCY_DIR
 
 logger = logging.getLogger(__name__)
 UV_BINARY = os.environ.get("PYTHING_UV") or shutil.which("uv")
@@ -30,7 +30,6 @@ def is_requirement_installed(req_str: str) -> bool:
 
 def install_requirements(requirements: Iterable[str]) -> None:
     """Install missing app requirements into a runtime-local import directory."""
-    target = dependency_target()
     # logger.debug("Loading app dependencies from %s", target)
     # if str(target) not in sys.path:
     #    sys.path.insert(0, str(target))
@@ -47,7 +46,7 @@ def install_requirements(requirements: Iterable[str]) -> None:
     if not missing:
         return
 
-    target.mkdir(parents=True, exist_ok=True)
+    DEPENDENCY_DIR.mkdir(parents=True, exist_ok=True)
     python_target = os.environ.get("PYTHING_PYTHON")
     python_option = (
         ["--python", python_target]
@@ -62,7 +61,7 @@ def install_requirements(requirements: Iterable[str]) -> None:
         "pip",
         "install",
         "--target",
-        str(target),
+        str(DEPENDENCY_DIR),
         *python_option,
         *missing,
     ]

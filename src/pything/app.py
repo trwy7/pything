@@ -6,7 +6,6 @@ import inspect
 import json
 import logging
 import os
-import sys
 from collections.abc import Callable, Generator
 
 from . import state
@@ -25,9 +24,33 @@ class App:
         self,
         settings: list[Setting | ElementSetting],
     ):
-        stack = inspect.stack()
+        """Represents a PYThing app.
+        
+        Args:
+            settings (list[Setting | ElementSetting]): A list of settings for the app.
+        
+        Attributes:
+            id (str): The unique identifier for the app.
+            display_name (str): The display name of the app.
+            category (str): The category of the app.
+            dir (str): The directory of the app.
+            dirname (str): The name of the app's directory.
+            cache_dir (Path): The cache directory for the app.
+            data_dir (Path): The data directory for the app.
+            config_dir (Path): The configuration directory for the app. Only use for data that cannot be stored in a setting, like a database or other large files.
+            logger (Logger): The logger for the app.
+            blueprint (Blueprint): The Flask blueprint for the app.
+            settings (dict): A dictionary of settings for the app. Use this to access and modify settings.
+        """
+        stack = inspect.stack() # little janky, but works
         self.dir = os.path.dirname(os.path.abspath(stack[1].filename))
         self.dirname = os.path.basename(self.dir)
+        self.cache_dir = state.CACHE_ROOT / "apps" / self.dirname
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        self.data_dir = state.DATA_ROOT / "apps" / self.dirname
+        self.data_dir.mkdir(parents=True, exist_ok=True)
+        self.config_dir = state.CONFIG_DIR / "apps" / self.dirname
+        self.config_dir.mkdir(parents=True, exist_ok=True)
         manifest_path = os.path.join(self.dir, "manifest.json")
         try:
             with open(manifest_path, encoding="utf-8") as manifest_file:

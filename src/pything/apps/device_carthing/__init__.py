@@ -11,7 +11,9 @@ import zipfile
 
 from pything.app import App
 from pything.settings import BooleanSetting, LinkSetting
-from pything.utils import CACHE_ROOT
+from pything.state import (
+    DATA_ROOT,  # you should probably use app.data_dir instead, but other apps may need adb, so we download it to a global directory
+)
 from pything.web import redirect
 
 app = App(
@@ -71,7 +73,7 @@ def ensure_adb(r=False):
     if check_adb():
         return True
     platform_tools_dirs = [
-        os.path.abspath(os.path.join(CACHE_ROOT, "pything", "platform-tools")),
+        os.path.abspath(os.path.join(DATA_ROOT, "pything", "platform-tools")),
         os.path.abspath(os.path.join(pathlib.Path().home(), "platform-tools")),
     ]
     for platform_tools_dir in platform_tools_dirs:
@@ -85,7 +87,7 @@ def ensure_adb(r=False):
                 "%s exists, but does not contain a valid ADB install.",
                 platform_tools_dir,
             )
-    if r or os.path.exists(os.path.join(CACHE_ROOT, "pything", "platform-tools")):
+    if r or os.path.exists(os.path.join(DATA_ROOT, "pything", "platform-tools")):
         return False
     system = platform.system().lower()
     urls = {
@@ -104,15 +106,15 @@ def ensure_adb(r=False):
         os.remove(zpath)
         shutil.move(
             os.path.join(tempdir, "platform-tools"),
-            pathlib.Path(CACHE_ROOT) / "pything" / "platform-tools",
+            pathlib.Path(DATA_ROOT) / "pything" / "platform-tools",
         )
     if system != "windows":
         global adb_path
-        adb_path = pathlib.Path(CACHE_ROOT) / "pything" / "platform-tools" / "adb"
+        adb_path = pathlib.Path(DATA_ROOT) / "pything" / "platform-tools" / "adb"
         adb_path.chmod(adb_path.stat().st_mode | 0o111)
     app.logger.info(
         "ADB has been downloaded to %s",
-        os.path.abspath(os.path.join(CACHE_ROOT, "pything", "platform-tools")),
+        os.path.abspath(os.path.join(DATA_ROOT, "pything", "platform-tools")),
     )
     return ensure_adb(r=True)
 
@@ -274,7 +276,7 @@ def full_replace_carthing(serials: list | None = None):
             serial,
             [
                 "push",
-                f"apps/{app.dirname}/ctroot",
+                f"{app.dir}/ctroot",
                 "/usr/share/qt-superbird-app/webapp",
             ],
         )
@@ -282,7 +284,7 @@ def full_replace_carthing(serials: list | None = None):
             serial,
             [
                 "push",
-                f"apps/{app.dirname}/logo.dump",
+                f"{app.dir}/logo.dump",
                 "/tmp/logo.dump",
             ],
         )

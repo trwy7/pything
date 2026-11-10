@@ -158,14 +158,12 @@ def add_tray_option(option: str, func):
 def _watch_theme():
     global _current_mode
     while True:
-        time.sleep(3)
+        time.sleep(5)
+        # written by ai, may be buggy or inefficient
         mode = "dark" if is_dark_mode() else "light"
         if mode != _current_mode:
             _current_mode = mode
-            try:
-                tray_icon.icon = _icons[mode]
-            except Exception:
-                pass
+            tray_icon.icon = _icons[mode]
 
 
 @app.on_startup
