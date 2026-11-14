@@ -1,0 +1,7 @@
+{
+  "id": "discord",
+  "name": "Discord Voice",
+  "description": "A Discord-inspired voice call dashboard with quick mute, deafen, and leave controls.",
+  "codeowners": ["@trwy7"],
+  "category": "uncategorized"
+}

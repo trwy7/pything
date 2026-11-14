@@ -1,0 +1,372 @@
+{% extends "templates/app.html" %}
+{% block head %}
+<style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+        height: 100vh;
+        min-height: 0;
+        margin: 0;
+        padding: clamp(12px, 2.1vh, 24px) clamp(14px, 2.2vw, 30px);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        gap: clamp(10px, 1.7vh, 20px);
+        color: #f2f3f5;
+        background: radial-gradient(ellipse at 50% -20%, #343744 0%, #23252c 50%, #1c1d22 100%);
+        font-family: Inter, "Segoe UI", Arial, sans-serif;
+    }
+    .topbar {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        min-height: 48px;
+        flex-shrink: 0;
+    }
+    .channel-icon {
+        width: 42px;
+        height: 42px;
+        display: grid;
+        place-items: center;
+        border-radius: 13px;
+        color: #d7d9df;
+        background: rgba(255,255,255,.09);
+        font-size: 25px;
+        font-weight: 700;
+    }
+    .channel-copy { min-width: 0; flex: 1; }
+    .eyebrow {
+        color: #aeb2bc;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: .14em;
+        text-transform: uppercase;
+    }
+    .channel-name {
+        margin-top: 2px;
+        overflow: hidden;
+        color: #fff;
+        font-size: clamp(15px, 2.1vh, 19px);
+        font-weight: 750;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .connection {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #aeb2bc;
+        font-size: 11px;
+        font-weight: 650;
+        white-space: nowrap;
+    }
+    .connection-dot { width: 8px; height: 8px; border-radius: 50%; background: #f0b232; box-shadow: 0 0 10px #f0b23277; }
+    #stage {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr 1fr;
+        flex: 1;
+        min-height: 0;
+        gap: clamp(9px, 1.5vw, 18px);
+    }
+    .voice-card {
+        position: relative;
+        display: flex;
+        min-width: 0;
+        min-height: 0;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        border: 2px solid rgba(255,255,255,.92);
+        border-radius: clamp(16px, 2.3vw, 25px);
+        background: rgba(0,0,0,.43);
+        box-shadow: 0 7px 24px rgba(0,0,0,.15), inset 0 1px rgba(255,255,255,.035);
+        transition: border-color .18s ease, box-shadow .18s ease, background .18s ease, opacity .2s ease;
+    }
+    .voice-card.speaking {
+        border-color: #3ba55d;
+        box-shadow: 0 0 0 1px rgba(59,165,93,.45), 0 0 25px rgba(59,165,93,.22), inset 0 0 28px rgba(59,165,93,.08);
+    }
+    .voice-card.me { background: rgba(0,0,0,.52); }
+    .voice-card.empty { border-color: rgba(255,255,255,.42); }
+    .card-role {
+        position: absolute;
+        top: 12px;
+        left: 14px;
+        color: rgba(231,233,238,.6);
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: .14em;
+        text-transform: uppercase;
+    }
+    .voice-card.speaking .card-role { color: #7ce39c; }
+    .avatar {
+        position: relative;
+        display: grid;
+        width: clamp(58px, 10.5vh, 112px);
+        height: clamp(58px, 10.5vh, 112px);
+        flex: 0 0 auto;
+        place-items: center;
+        overflow: hidden;
+        border: 3px solid rgba(255,255,255,.09);
+        border-radius: 50%;
+        color: #f7f7fb;
+        background: linear-gradient(145deg, #626a88, #3b4055);
+        font-size: clamp(22px, 4.7vh, 43px);
+        font-weight: 750;
+        box-shadow: 0 7px 20px rgba(0,0,0,.34);
+        transition: box-shadow .18s ease, transform .18s ease;
+    }
+    .speaking .avatar { box-shadow: 0 0 0 4px rgba(59,165,93,.22), 0 0 24px rgba(59,165,93,.32); transform: scale(1.025); }
+    .avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .voice-card.empty .avatar { color: rgba(229,231,238,.38); background: rgba(255,255,255,.07); box-shadow: none; }
+    .person-name {
+        max-width: 88%;
+        margin-top: clamp(9px, 1.7vh, 16px);
+        overflow: hidden;
+        color: #f2f3f5;
+        font-size: clamp(12px, 2.2vh, 18px);
+        font-weight: 750;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .person-state { margin-top: 4px; color: #aeb2bc; font-size: clamp(9px, 1.45vh, 12px); }
+    .speaking .person-state { color: #7ce39c; font-weight: 700; }
+    .self-flags { position: absolute; right: 11px; top: 10px; display: flex; gap: 5px; }
+    .flag {
+        display: none;
+        padding: 4px 7px;
+        border-radius: 7px;
+        color: #ff8585;
+        background: rgba(237,66,69,.17);
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: .06em;
+    }
+    .flag.active { display: block; }
+    #controls {
+        display: flex;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: center;
+        gap: clamp(9px, 1.7vw, 20px);
+        min-height: 58px;
+    }
+    .control {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        min-width: clamp(104px, 17vw, 160px);
+        height: clamp(43px, 7.4vh, 58px);
+        padding: 0 16px;
+        border: 1px solid rgba(255,255,255,.13);
+        border-radius: 14px;
+        color: #e5e7eb;
+        background: rgba(20,21,25,.82);
+        box-shadow: 0 5px 16px rgba(0,0,0,.18);
+        font: inherit;
+        font-size: clamp(11px, 1.8vh, 14px);
+        font-weight: 750;
+        cursor: pointer;
+        transition: background .16s ease, border-color .16s ease, transform .12s ease;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .control:hover { background: rgba(43,45,53,.96); border-color: rgba(255,255,255,.28); }
+    .control:active { transform: translateY(1px) scale(.98); }
+    .control.on { color: #ff8585; background: rgba(237,66,69,.16); border-color: rgba(237,66,69,.45); }
+    .control.leave { color: #fff; background: #da3e42; border-color: #da3e42; }
+    .control.leave:hover { background: #c9363a; }
+    .control-icon { font-size: 17px; line-height: 1; }
+    .key {
+        display: inline-grid;
+        width: 19px;
+        height: 20px;
+        place-items: center;
+        border: 1px solid rgba(255,255,255,.2);
+        border-radius: 5px;
+        color: #aeb2bc;
+        background: rgba(255,255,255,.06);
+        font-size: 10px;
+        font-weight: 800;
+    }
+    #ended {
+        position: absolute;
+        z-index: 5;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 13px;
+        border-radius: inherit;
+        background: rgba(17,18,22,.92);
+        text-align: center;
+    }
+    #ended.visible { display: flex; }
+    #ended strong { font-size: clamp(18px, 3vh, 26px); }
+    #ended span { color: #aeb2bc; font-size: 13px; }
+    #rejoin { min-width: 120px; height: 42px; margin-top: 4px; }
+    @media (max-height: 430px) {
+        body { gap: 8px; padding-top: 8px; padding-bottom: 8px; }
+        .topbar { min-height: 36px; }
+        .channel-icon { width: 34px; height: 34px; }
+        .voice-card { border-radius: 14px; }
+        .card-role { top: 7px; left: 9px; }
+        .self-flags { top: 6px; right: 7px; }
+        #controls { min-height: 42px; }
+        .control { height: 38px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="topbar">
+    <div class="channel-icon" aria-hidden="true">#</div>
+    <div class="channel-copy">
+        <div class="eyebrow">Voice channel</div>
+        <div class="channel-name" id="channel-name">{{ channel or "General" }}</div>
+    </div>
+    <div class="connection"><span class="connection-dot" id="connection-dot"></span><span id="connection-label">Waiting for voice data</span></div>
+</header>
+
+<main id="stage" aria-label="Voice participants">
+    <section class="voice-card me" id="card-self" aria-label="You">
+        <span class="card-role">You</span>
+        <div class="self-flags"><span class="flag" id="muted-flag">MUTED</span><span class="flag" id="deafened-flag">DEAFENED</span></div>
+        <div class="avatar" id="self-avatar"></div>
+        <div class="person-name" id="self-name">{{ username or "You" }}</div>
+        <div class="person-state" id="self-state">In voice</div>
+    </section>
+    <section class="voice-card empty" id="card-1" aria-label="Recent speaker 1">
+        <span class="card-role">Recent speaker</span>
+        <div class="avatar" id="avatar-1" aria-hidden="true">＋</div>
+        <div class="person-name" id="name-1">No recent speaker</div>
+        <div class="person-state" id="state-1">Waiting for voice activity</div>
+    </section>
+    <section class="voice-card empty" id="card-2" aria-label="Recent speaker 2">
+        <span class="card-role">Recent speaker</span>
+        <div class="avatar" id="avatar-2" aria-hidden="true">＋</div>
+        <div class="person-name" id="name-2">No recent speaker</div>
+        <div class="person-state" id="state-2">Waiting for voice activity</div>
+    </section>
+    <section class="voice-card empty" id="card-3" aria-label="Recent speaker 3">
+        <span class="card-role">Recent speaker</span>
+        <div class="avatar" id="avatar-3" aria-hidden="true">＋</div>
+        <div class="person-name" id="name-3">No recent speaker</div>
+        <div class="person-state" id="state-3">Waiting for voice activity</div>
+    </section>
+</main>
+
+<footer id="controls" aria-label="Call controls">
+    <button class="control" id="mute-button" type="button" aria-pressed="false"><span class="control-icon">🎙</span><span id="mute-label">Mute</span><kbd class="key">1</kbd></button>
+    <button class="control" id="deafen-button" type="button" aria-pressed="false"><span class="control-icon">🎧</span><span id="deafen-label">Deafen</span><kbd class="key">2</kbd></button>
+    <button class="control leave" id="leave-button" type="button"><span class="control-icon">☎</span><span>Leave</span><kbd class="key">4</kbd></button>
+</footer>
+<div id="ended" role="status" aria-live="polite">
+    <strong>Call ended</strong>
+    <span>You left the voice channel.</span>
+    <button class="control" id="rejoin" type="button">Rejoin call</button>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+    var callState = { muted: false, deafened: false, inCall: false };
+    var defaultName = {{ (username or "You")|tojson }};
+    var defaultAvatar = {{ (avatar or "")|tojson }};
+    var recentSpeakers = [];
+
+    function initials(name) {
+        var parts = (name || "?").trim().split(/\s+/);
+        return (parts.length > 1 ? parts[0].charAt(0) + parts[parts.length - 1].charAt(0) : parts[0].slice(0, 2)).toUpperCase();
+    }
+
+    function setAvatar(node, name, url, placeholder) {
+        node.textContent = "";
+        if (url) {
+            var image = document.createElement("img");
+            image.src = url;
+            image.alt = "";
+            image.onerror = function () { node.textContent = initials(name); };
+            node.appendChild(image);
+        } else {
+            node.textContent = placeholder || initials(name);
+        }
+    }
+
+    function renderSelf() {
+        document.getElementById("self-name").textContent = defaultName;
+        setAvatar(document.getElementById("self-avatar"), defaultName, defaultAvatar, "");
+        document.getElementById("card-self").classList.toggle("speaking", !!callState.speaking && !callState.muted && callState.inCall);
+        document.getElementById("card-self").classList.toggle("empty", !callState.inCall);
+        document.getElementById("self-state").textContent = !callState.inCall ? "Not in voice" : callState.muted ? "Muted" : callState.speaking ? "Speaking" : "In voice";
+        document.getElementById("muted-flag").classList.toggle("active", callState.muted);
+        document.getElementById("deafened-flag").classList.toggle("active", callState.deafened);
+        document.getElementById("mute-button").classList.toggle("on", callState.muted);
+        document.getElementById("deafen-button").classList.toggle("on", callState.deafened);
+        document.getElementById("mute-button").setAttribute("aria-pressed", callState.muted);
+        document.getElementById("deafen-button").setAttribute("aria-pressed", callState.deafened);
+        document.getElementById("mute-label").textContent = callState.muted ? "Unmute" : "Mute";
+        document.getElementById("deafen-label").textContent = callState.deafened ? "Undeafen" : "Deafen";
+        document.getElementById("ended").classList.toggle("visible", !callState.inCall);
+        document.getElementById("controls").style.visibility = callState.inCall ? "visible" : "hidden";
+    }
+
+    function renderSpeakers(speakers) {
+        recentSpeakers = (speakers || []).slice(0, 3);
+        for (var i = 0; i < 3; i++) {
+            var card = document.getElementById("card-" + (i + 1));
+            var speaker = recentSpeakers[i];
+            var avatar = document.getElementById("avatar-" + (i + 1));
+            card.classList.toggle("empty", !speaker);
+            card.classList.toggle("speaking", !!speaker && !!speaker.speaking);
+            document.getElementById("name-" + (i + 1)).textContent = speaker ? (speaker.name || "Discord user") : "No recent speaker";
+            document.getElementById("state-" + (i + 1)).textContent = speaker ? (speaker.speaking ? "Speaking now" : "In voice") : "Waiting for voice activity";
+            setAvatar(avatar, speaker ? speaker.name : "", speaker ? speaker.avatar : "", speaker ? initials(speaker.name) : "＋");
+        }
+    }
+
+    function command(action) {
+        var desired = { action: action };
+        if (action === "mute") desired.muted = !callState.muted;
+        if (action === "deafen") desired.deafened = !callState.deafened;
+        send("command", desired);
+    }
+
+    document.getElementById("mute-button").addEventListener("click", function () { command("mute"); });
+    document.getElementById("deafen-button").addEventListener("click", function () { command("deafen"); });
+    document.getElementById("leave-button").addEventListener("click", function () { command("leave"); });
+    document.getElementById("rejoin").addEventListener("click", function () { command("rejoin"); });
+
+    document.addEventListener("keydown", function (event) {
+        if (event.repeat || event.altKey || event.ctrlKey || event.metaKey) return;
+        if (event.key === "1") { event.preventDefault(); command("mute"); }
+        else if (event.key === "2") { event.preventDefault(); command("deafen"); }
+        else if (event.key === "4") { event.preventDefault(); command("leave"); }
+    });
+
+    on("voice_state", function (state) {
+        if (!state || typeof state !== "object") return;
+        var connected = state.connected === true;
+        document.getElementById("connection-label").textContent = connected ? (state.in_call ? "Discord voice connected" : "Discord connected · not in voice") : (state.error || "Discord unavailable");
+        document.getElementById("connection-dot").style.background = connected ? "#3ba55d" : "#ed4245";
+        document.getElementById("connection-dot").style.boxShadow = connected ? "0 0 10px #3ba55d77" : "0 0 10px #ed424577";
+        if (state.self) {
+            if (typeof state.self.name === "string") defaultName = state.self.name;
+            if (typeof state.self.avatar === "string") defaultAvatar = state.self.avatar;
+            if (typeof state.self.muted === "boolean") callState.muted = state.self.muted;
+            if (typeof state.self.deafened === "boolean") callState.deafened = state.self.deafened;
+            if (typeof state.self.speaking === "boolean") callState.speaking = state.self.speaking;
+        }
+        if (typeof state.in_call === "boolean") callState.inCall = state.in_call;
+        if (typeof state.channel === "string") document.getElementById("channel-name").textContent = state.channel;
+        if (Array.isArray(state.speakers)) renderSpeakers(state.speakers);
+        renderSelf();
+    });
+    renderSelf();
+    renderSpeakers([]);
+    send("refresh");
+</script>
+{% endblock %}
