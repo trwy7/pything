@@ -45,6 +45,7 @@ class Song:
         album: Album,
         artists: list[Artist],
         duration: int,
+        isrc: str | None = None,
     ):
         """Represents a song
 
@@ -55,6 +56,7 @@ class Song:
             album (Album): The Album that represents the song
             artists (list[Artist]): A list of artists for the song
             duration (int): The duration of the song in milliseconds
+            isrc (str | None): The ISRC code for the song, if available
         """
         self.platform = platform
         self.id = id
@@ -62,6 +64,7 @@ class Song:
         self.album = album
         self.artists = artists
         self.duration = duration
+        self.isrc = isrc
 
 
 class Playback:
