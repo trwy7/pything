@@ -21,10 +21,21 @@
         left: 50%;
         transform: translate(-50%, -50%);
     }
+    #attribution {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        width: 100%;
+        text-align: left;
+        color: #888;
+        font-size: 0.9em;
+        padding: 6px 0;
+        z-index: 2;
+    }
     #unsynced-notice {
         display: none;
         position: fixed;
-        top: 0;
+        top: 28px;
         left: 0;
         width: 100%;
         background-color: hsla(var(--custom-hue, 151), 40%, 20%, 0.9);
@@ -69,6 +80,7 @@
 </style>
 {% endblock %}
 {% block content %}
+{% if show_attribution %}<div id="attribution"></div>{% endif %}
 <div id="status"></div>
 <div id="unsynced-notice">Unsynced</div>
 <div id="lyrics"></div>
@@ -87,6 +99,13 @@
 
     const lyricsInner = document.getElementById("lyrics");
     const statusDiv = document.getElementById("status");
+    const attributionDiv = document.getElementById("attribution");
+
+    on("attribution", (source) => {
+        if (attributionDiv) {
+            attributionDiv.textContent = source ? `Lyrics from ${source}` : "";
+        }
+    });
 
     function normalizeLine(line) {
         return line === "" ? "♬" : line;
