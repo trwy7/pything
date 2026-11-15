@@ -204,8 +204,6 @@ def callback():
 def music_thread():
     while True:
         time.sleep(2)
-        if not app.should_poll():
-            continue
         try:
             rdata = get_endpoint("/v1/me/player")
         except Exception as e:  # noqa: BLE001
@@ -244,6 +242,7 @@ def music_thread():
             ),
             [Artist("spotify", a["id"], a["name"]) for a in data["item"]["artists"]],
             data["item"]["duration_ms"],
+            isrc=data["item"]["external_ids"].get("isrc")
         )
         playback.update(song, data["is_playing"], data["progress_ms"])
 

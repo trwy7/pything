@@ -82,6 +82,8 @@ class App:
         self.category = manifest["category"]
         state.apps[self.id] = self
         self.logger = logging.getLogger("pything.app." + self.id)
+        if self.id in state.DEVAPPS:
+            self.logger.setLevel(logging.DEBUG)
         state.logger.debug(
             f"Logger initialized for '{self.display_name}' with id '{self.id}'"
         )
