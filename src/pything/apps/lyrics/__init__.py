@@ -16,7 +16,7 @@ app = App(
         BooleanSetting("showattribution", "Show attribution for lyrics", True),
     ]
 )
-USER_AGENT = "PYThing Lyrics (https://github.com/trwy7/pything pything@trey7658.com)"
+USER_AGENT = "PYThingLyrics/1.0 ( https://github.com/trwy7/pything )"
 current_lrc: (
     tuple[str, list[tuple[int, str]]]
     | tuple[str, list[str]]
@@ -147,22 +147,50 @@ def _fetch_lrcred(cpbs) -> list[dict] | None:
     )
     try:
         if not isrc:
-            query = f"{cpbs.title} {cpbs.album.title} {cpbs.artists[0].name}"
-            app.logger.debug("Searching lrc.red for ISRC with query '%s'", query)
-            search = requests.get(
-                "https://lrc.red/search.json",
-                params={"q": query},
+            # Search musicbrainz for the ISRC if not available from the provider
+            app.logger.debug("Searching MusicBrainz for ISRC of '%s'", cpbs.title)
+            title = re.sub(
+                r"\s*(?:\([^)]*\)|\[[^]]*\]|(?:feat\.?|ft\.?|featuring)\s+.*)$", # very ai regex to hopefully detect patterns that musicbrainz misses
+                "",
+                cpbs.title,
+                flags=re.IGNORECASE,
+            ).strip()
+            query = [
+                f'recording:"{title}"',
+                f'release:"{cpbs.album.title}"',
+                f'artist:"{cpbs.artists[0].name}"',
+                "NOT comment:instrumental",
+                "NOT disambiguation:instrumental",
+                "NOT secondarytype:karaoke",
+                f"dur:[{cpbs.duration - 5000} TO {cpbs.duration + 5000}]",
+            ]
+            mb_query = " AND ".join(query)
+            app.logger.debug("MusicBrainz query: %s", mb_query)
+            mb_response = requests.get(
+                "https://musicbrainz.org/ws/2/recording",
+                params={"query": mb_query, "fmt": "json"},
                 headers=headers,
                 timeout=10,
             )
-            app.logger.debug("lrc.red ISRC search returned HTTP %s", search.status_code)
-            if search.status_code != 200:
-                return None
-            hits = search.json().get("hits", [])
-            app.logger.debug("lrc.red ISRC search returned %d hits", len(hits))
-            isrc = next((hit.get("isrc") for hit in hits if hit.get("isrc")), None)
+            if mb_response.status_code == 200:
+                mb_data = mb_response.json()
+                for rec in mb_data.get("recordings", []):
+                    isrcs = rec.get("isrcs")
+                    if isrcs:
+                        isrc = isrcs[0]
+                        app.logger.debug(
+                            "Found ISRC '%s' for '%s' on MusicBrainz", isrc, rec.get("title", "<unknown>")
+                        )
+                        break
+            else:
+                app.logger.warning(
+                    "MusicBrainz request failed for '%s': %s %s",
+                    cpbs.title,
+                    mb_response.status_code,
+                    mb_response.text,
+                )
         if not isrc:
-            app.logger.debug("No ISRC found on lrc.red for '%s'", cpbs.title)
+            app.logger.debug("No ISRC found on musicbrainz for '%s': %s", cpbs.title, mb_response.text)
             return None
 
         app.logger.debug("Fetching lrc.red TTML for ISRC %s", isrc)
@@ -194,12 +222,27 @@ def _send_lyrics(lyrics, source: str | None = None, to=None):
 
 
 def get_current_lrc() -> list[tuple[int, str]] | list[str] | list[dict] | str:
+    global current_lrc, current_source, attempt_again
     cpbs = playback.song  # should avoid race conditions
     if not cpbs:
+        app.logger.debug("No song is currently playing; returning empty lyrics")
         return "Nothing is playing right now"
     if not cpbs.artists:
-        return "This song has no artists"
-    global current_lrc, current_source, attempt_again
+        app.logger.debug("Song '%s' has no artists; skipping lyrics search", cpbs.title)
+        message = "This song has no artists"
+        if playback.song and cpbs.id == playback.song.id:
+            current_lrc = (cpbs.id, message)
+            current_source = None
+            _send_lyrics(message)
+        return message
+    if not cpbs.album or not cpbs.album.title: # assume misc media that isnt a song
+        app.logger.debug("Skipping lyrics search for '%s' (no album title)", cpbs.title)
+        message = "Skipped search for '" + cpbs.title + "'"
+        if playback.song and cpbs.id == playback.song.id:
+            current_lrc = (cpbs.id, message)
+            current_source = None
+            _send_lyrics(message)
+        return message
     if not attempt_again and current_lrc and cpbs.id == current_lrc[0]:
         app.logger.debug("Using cached lyrics for song '%s'", cpbs.title)
         return current_lrc[1]
@@ -298,12 +341,14 @@ def get_current_lrc() -> list[tuple[int, str]] | list[str] | list[dict] | str:
 @playback.on_update
 def on_pb_change():
     if app.should_poll():
+        app.logger.debug("Playback changed; sending updated lyrics and music info")
         get_current_lrc()
         app.send("music", [playback.position, playback.playing])
 
 
 @app.on("open")
 def send_lrc(_):
+    app.logger.debug("Client connected; sending current lyrics and music info")
     lyrics = get_current_lrc()
     app.send("lyrics", lyrics, to=request.sid)
     app.send(

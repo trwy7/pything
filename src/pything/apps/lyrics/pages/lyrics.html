@@ -66,7 +66,7 @@
         width: 100%;
         box-sizing: border-box;
         padding: 0 8px 18px;
-        transition: opacity 350ms, transform 350ms;
+        transition: opacity 350ms;
         opacity: 0.55;
     }
     .lyric-row.opposite {
@@ -129,6 +129,8 @@
     let timedLyrics = [];
     let currentIndex = -1;
     let lyricsFrame = null;
+    let timedBoundaries = [];
+    let lastAppliedPosition = null;
 
     let basePos = 0;              // last reported position from "music"
     let playing = false;
@@ -153,16 +155,30 @@
     }
 
     function setCurrentIndex(nextIndex, position) {
-        for (const line of timedLyrics) {
-            const active = line.time <= position && position <= line.end;
-            line.row.classList.toggle("current", active);
-            line.el.classList.toggle("current", active);
-            for (const background of line.backgrounds) {
-                background.el.classList.toggle(
-                    "current",
-                    background.time <= position && position <= background.end
-                );
+        let refreshActivity = lastAppliedPosition === null || position < lastAppliedPosition;
+        if (!refreshActivity) {
+            let lo = 0;
+            let hi = timedBoundaries.length;
+            while (lo < hi) {
+                const mid = (lo + hi) >> 1;
+                if (timedBoundaries[mid] <= lastAppliedPosition) lo = mid + 1;
+                else hi = mid;
             }
+            refreshActivity = lo < timedBoundaries.length && timedBoundaries[lo] <= position;
+        }
+        if (refreshActivity) {
+            for (const line of timedLyrics) {
+                const active = line.time <= position && position <= line.end;
+                line.row.classList.toggle("current", active);
+                line.el.classList.toggle("current", active);
+                for (const background of line.backgrounds) {
+                    background.el.classList.toggle(
+                        "current",
+                        background.time <= position && position <= background.end
+                    );
+                }
+            }
+            lastAppliedPosition = position;
         }
 
         if (nextIndex === currentIndex) return;
@@ -175,7 +191,7 @@
         }
     }
 
-    function appendTimedLine(data) {
+    function appendTimedLine(data, container) {
         const row = document.createElement("div");
         row.className = "lyric-row";
         if (data.opposite) row.classList.add("opposite");
@@ -198,7 +214,7 @@
                 el: background,
             });
         }
-        lyricsInner.appendChild(row);
+        container.appendChild(row);
         timedLyrics.push({
             time: data.time,
             end: data.end != null ? data.end : Infinity,
@@ -228,11 +244,13 @@
 
     on("lyrics", (lyr) => {
         if (lyricsFrame !== null) {
-            cancelAnimationFrame(lyricsFrame);
+            clearTimeout(lyricsFrame);
             lyricsFrame = null;
         }
         lyricsInner.innerHTML = "";
         timedLyrics = [];
+        timedBoundaries = [];
+        lastAppliedPosition = null;
         automove = true;
         currentIndex = -1;
         document.body.classList.remove("unsynced");
@@ -246,6 +264,7 @@
         }
         statusDiv.style.display = "none";
         lyricsInner.style.display = "flex";
+        const fragment = document.createDocumentFragment();
 
         for (const rd of lyr) {
             if (typeof rd === "string") {
@@ -253,24 +272,33 @@
                 const span = document.createElement("span");
                 span.className = "lyric";
                 span.textContent = normalizeLine(rd);
-                lyricsInner.appendChild(span);
+                fragment.appendChild(span);
                 continue;
             }
 
             if (Array.isArray(rd)) {
                 const [time, text] = rd;
-                appendTimedLine({ time, text });
+                appendTimedLine({ time, text }, fragment);
             } else {
-                appendTimedLine(rd);
+                appendTimedLine(rd, fragment);
             }
         }
+        lyricsInner.appendChild(fragment);
 
         timedLyrics.sort((a, b) => a.time - b.time);
         for (let i = 0; i < timedLyrics.length; i++) {
             if (timedLyrics[i].end === Infinity && i + 1 < timedLyrics.length) {
                 timedLyrics[i].end = timedLyrics[i + 1].time;
             }
+            const line = timedLyrics[i];
+            timedBoundaries.push(line.time);
+            if (Number.isFinite(line.end)) timedBoundaries.push(line.end + 1);
+            for (const background of line.backgrounds) {
+                timedBoundaries.push(background.time);
+                if (Number.isFinite(background.end)) timedBoundaries.push(background.end + 1);
+            }
         }
+        timedBoundaries.sort((a, b) => a - b);
 
         if (!automove) {
             document.body.classList.add("unsynced");
@@ -295,8 +323,23 @@
     });
 
     function scheduleLyricsTick() {
-        if (lyricsFrame === null && automove && timedLyrics.length && playing) {
-            lyricsFrame = requestAnimationFrame(tick);
+        if (lyricsFrame !== null) {
+            clearTimeout(lyricsFrame);
+            lyricsFrame = null;
+        }
+        if (!automove || !timedLyrics.length || !playing) return;
+
+        const now = performance.now();
+        const effectivePos = basePos + (now - lastSyncTs);
+        let lo = 0;
+        let hi = timedBoundaries.length;
+        while (lo < hi) {
+            const mid = (lo + hi) >> 1;
+            if (timedBoundaries[mid] <= effectivePos) lo = mid + 1;
+            else hi = mid;
+        }
+        if (lo < timedBoundaries.length) {
+            lyricsFrame = setTimeout(tick, Math.max(0, timedBoundaries[lo] - effectivePos));
         }
     }
 
