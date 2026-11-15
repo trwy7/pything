@@ -19,7 +19,8 @@ from jinja2 import ChoiceLoader, Environment, FileSystemLoader
 
 truststore.inject_into_ssl()
 
-DEVMODE = bool(os.environ.get("DEV"))
+DEVMODE = os.environ.get("DEV") == "true"
+DEVAPPS = os.environ.get("DEV", "").split(",") if not DEVMODE else []
 
 # OS specific paths
 if sys.platform == "win32": # Windows
