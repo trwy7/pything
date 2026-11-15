@@ -6,7 +6,7 @@ import requests
 from apps.music.types import playback
 
 from pything.app import App
-from pything.settings import StringSetting, BooleanSetting
+from pything.settings import BooleanSetting, StringSetting
 from pything.web import render_template, request
 
 app = App(
@@ -18,7 +18,10 @@ app = App(
 )
 USER_AGENT = "PYThing Lyrics (https://github.com/trwy7/pything pything@trey7658.com)"
 current_lrc: (
-    tuple[str, list[tuple[int, str]]] | tuple[str, list[str]] | tuple[str, str]
+    tuple[str, list[tuple[int, str]]]
+    | tuple[str, list[str]]
+    | tuple[str, list[dict]]
+    | tuple[str, str]
 ) = ("", "")
 current_source: str | None = None
 attempt_again = False
@@ -49,7 +52,91 @@ def _ttml_time(value: str) -> int:
     return round(seconds * 1000)
 
 
-def _fetch_lrcred(cpbs) -> list[tuple[int, str]] | None:
+def _xml_attr(element, name: str) -> str | None:
+    return next(
+        (value for key, value in element.attrib.items() if key.rsplit("}", 1)[-1] == name),
+        None,
+    )
+
+
+def _is_background(element) -> bool:
+    return _xml_attr(element, "role") == "x-bg"
+
+
+def _element_text(element, skip_background: bool = False) -> str:
+    parts = [element.text or ""]
+    for child in element:
+        if not (skip_background and _is_background(child)):
+            parts.append(_element_text(child, skip_background))
+        parts.append(child.tail or "")
+    return "".join(parts).strip()
+
+
+def _element_times(element) -> tuple[int | None, int | None]:
+    starts, ends = [], []
+    for node in element.iter():
+        begin, end = _xml_attr(node, "begin"), _xml_attr(node, "end")
+        try:
+            if begin is not None:
+                starts.append(_ttml_time(begin))
+            if end is not None:
+                ends.append(_ttml_time(end))
+        except ValueError:
+            continue
+    return min(starts, default=None), max(ends, default=None)
+
+
+def _parse_lrcred_ttml(content: bytes) -> list[dict]:
+    """Parse timed TTML lines, retaining speaker and concurrent background vocals."""
+    root = ET.fromstring(content)
+    body = next((node for node in root.iter() if node.tag.rsplit("}", 1)[-1] == "body"), root)
+    body_agent = _xml_attr(body, "agent")
+    rows = []
+
+    for div in (node for node in body.iter() if node.tag.rsplit("}", 1)[-1] == "div"):
+        if _xml_attr(div, "songPart") == "Instrumental":
+            continue
+        div_agent = _xml_attr(div, "agent") or body_agent
+        for paragraph in (node for node in div if node.tag.rsplit("}", 1)[-1] == "p"):
+            line_start, line_end = _element_times(paragraph)
+            line_start = _ttml_time(_xml_attr(paragraph, "begin")) if _xml_attr(paragraph, "begin") else line_start
+            line_end = _ttml_time(_xml_attr(paragraph, "end")) if _xml_attr(paragraph, "end") else line_end
+            text = _element_text(paragraph, skip_background=True)
+            agent = _xml_attr(paragraph, "agent") or div_agent
+            backgrounds = []
+
+            def collect_backgrounds(parent):
+                for child in parent:
+                    if _is_background(child):
+                        bg_text = _element_text(child)
+                        if bg_text:
+                            bg_start, bg_end = _element_times(child)
+                            backgrounds.append({
+                                "time": bg_start if bg_start is not None else line_start,
+                                "end": bg_end if bg_end is not None else line_end,
+                                "text": bg_text,
+                            })
+                    else:
+                        collect_backgrounds(child)
+
+            collect_backgrounds(paragraph)
+            if not text and not backgrounds:
+                continue
+            if line_start is None:
+                line_start = min((bg["time"] for bg in backgrounds if bg["time"] is not None), default=0)
+            rows.append({
+                "time": line_start,
+                "end": line_end,
+                "text": text,
+                "speaker": agent,
+                "opposite": agent in {"v2", "v2000"},
+                "background": backgrounds,
+            })
+
+    return sorted(rows, key=lambda row: row["time"])
+
+
+def _fetch_lrcred(cpbs) -> list[dict] | None:
     """Fetch and parse lrc.red TTML lyrics, returning None if unavailable."""
     headers = {"User-Agent": USER_AGENT}
     isrc = cpbs.isrc
@@ -88,22 +175,12 @@ def _fetch_lrcred(cpbs) -> list[tuple[int, str]] | None:
         app.logger.debug(
             "Parsing lrc.red TTML response (%d bytes)", len(response.content)
         )
-        root = ET.fromstring(response.content)
-        lyrics = []
-        paragraphs = 0
-        for paragraph in root.iter():
-            if paragraph.tag.rsplit("}", 1)[-1] != "p":
-                continue
-            paragraphs += 1
-            start = paragraph.attrib.get("begin")
-            text = "".join(paragraph.itertext()).strip()
-            if start is not None and text:
-                lyrics.append((_ttml_time(start), text))
+        lyrics = _parse_lrcred_ttml(response.content)
         app.logger.debug(
-            "Parsed %d lyric lines from %d TTML paragraphs for '%s'",
+            "Parsed %d TTML lyric lines for '%s' (%d with background vocals)",
             len(lyrics),
-            paragraphs,
             cpbs.title,
+            sum(bool(line["background"]) for line in lyrics),
         )
         return lyrics or None
     except (requests.RequestException, ValueError, ET.ParseError, TypeError):
@@ -116,7 +193,7 @@ def _send_lyrics(lyrics, source: str | None = None, to=None):
     app.send("attribution", source, to=to)
 
 
-def get_current_lrc() -> list[tuple[int, str]] | list[str] | str:
+def get_current_lrc() -> list[tuple[int, str]] | list[str] | list[dict] | str:
     cpbs = playback.song  # should avoid race conditions
     if not cpbs:
         return "Nothing is playing right now"
