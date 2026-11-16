@@ -14,7 +14,7 @@ import pystray
 from PIL import Image
 
 from pything.app import App, stop_server
-from pything.state import log_file
+from pything.state import log_file, RESTART_EXIT_CODE
 
 app = App([])
 
@@ -136,6 +136,9 @@ def after_click(icon, item):
         case "Show logs":
             if log_file is not None:
                 webbrowser.open(log_file)
+        case "Restart":
+            icon.stop()
+            stop_server(exit_code=RESTART_EXIT_CODE)
         case "Quit":
             icon.stop()
             stop_server()
@@ -144,6 +147,7 @@ def after_click(icon, item):
 started_tray = False
 items = [
     pystray.MenuItem("Show logs", after_click),
+    pystray.MenuItem("Restart", after_click),
     pystray.MenuItem("Quit", after_click),
 ]
 
