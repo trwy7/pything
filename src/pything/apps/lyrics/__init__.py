@@ -359,7 +359,7 @@ def send_lrc(_):
     app.send("music", [playback.position, playback.playing])
 
 
-def parse_lrc(lrc: list[str]) -> list[tuple[int, str]]:
+def parse_lrc(lrc: list[str]) -> list[tuple[int, str]] | list[str]:
     nlrc = []
     for line in lrc:
         if line.strip() == "":
@@ -373,4 +373,6 @@ def parse_lrc(lrc: list[str]) -> list[tuple[int, str]]:
             tms
         ) * (10 if len(tms) == 2 else 1)
         nlrc.append((ms, res.group("line").strip()))
+    if nlrc and all(timestamp == 0 for timestamp, _ in nlrc):
+        return [line for _, line in nlrc]
     return nlrc
