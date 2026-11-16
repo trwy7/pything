@@ -21,17 +21,21 @@ app = App(
             "rounded",
             {"rounded": "Rounded", "flat": "Flat", "off": "Off"},
         ),
+        BooleanSetting("playbar_animate", "Animate playbar color", True),
     ],
 )
 
 
 @app.on_setting_update
+@app.on_setting_modify
 def send_playbar_style(changed: dict[str, object]):
     if "playbar_style" in changed:
         socket.emit("music_playbar_style", changed["playbar_style"])
+    if "playbar_animate" in changed:
+        socket.emit("music_playbar_animate", changed["playbar_animate"]) # in the future
+        app.send("music_playbar_animate", changed["playbar_animate"])
     if changed.get("accent") and app.settings["accent"].get_value():
         send_playback_accent()
-
 
 @app.on("get")
 @playback.on_update
@@ -47,6 +51,7 @@ def send_song(_=None):
         if playback.song
         else None,
     )
+    app.send("music_playbar_animate", app.settings["playbar_animate"].get_value())
 
 
 def send_playback_accent():
