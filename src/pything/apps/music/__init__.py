@@ -32,7 +32,7 @@ def send_playbar_style(changed: dict[str, object]):
     if "playbar_style" in changed:
         socket.emit("music_playbar_style", changed["playbar_style"])
     if "playbar_animate" in changed:
-        socket.emit("music_playbar_animate", changed["playbar_animate"]) # in the future
+        socket.emit("music+playbar_animate", changed["playbar_animate"]) # in the future
         app.send("music_playbar_animate", changed["playbar_animate"])
     if changed.get("accent") and app.settings["accent"].get_value():
         send_playback_accent()
@@ -53,6 +53,10 @@ def send_song(_=None):
     )
     app.send("music_playbar_animate", app.settings["playbar_animate"].get_value())
 
+@socket.on("music+get")
+def rs_song():
+    socket.emit("music+playbar_animate", app.settings["playbar_animate"].get_value())
+    send_playback_state()
 
 def send_playback_accent():
     global _last_broadcast_accent

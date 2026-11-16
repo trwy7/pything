@@ -27,6 +27,31 @@
     #music-playbar.show {
         transform: translateY(0px);
     }
+
+    #music-playbar.animate #music-playbarinner {
+        background: linear-gradient( /* could probably be a bit more subtle, but i like it */
+            90deg,
+            hsl(var(--custom-hue, 151), 95%, 60%),
+            hsl(var(--custom-hue, 151), 100%, 65%),
+            hsl(var(--custom-hue, 151), 95%, 60%)
+        );
+        background-size: 200% 100%;
+        animation: music-playbar-gradient 2s linear infinite reverse;
+        animation-play-state: paused;
+    }
+
+    @keyframes music-playbar-gradient {
+        from {
+            background-position: 0% 50%;
+        }
+        to {
+            background-position: 200% 50%;
+        }
+    }
+
+    #music-playbar.show.animate #music-playbarinner {
+        animation-play-state: running;
+    }
     #music-playbarinner {
         border-radius: 9999px;
         transition: width 2s;
@@ -77,6 +102,13 @@
             musicPlaybar.classList.remove("show")
             document.getElementById("appframe").style.height = ""
         }
+    })
+    socket.on("music+playbar_animate", (animate) => {
+        console.log("music+playbar_animate", animate)
+        musicPlaybar.classList.toggle("animate", animate)
+    })
+    socket.on("connect", () => {
+        socket.emit("music+get")
     })
     onAppChange((newapp) => {
         if (newapp == "music") {
