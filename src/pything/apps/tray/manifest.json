@@ -5,7 +5,9 @@
   "codeowners": ["@trwy7"],
   "category": "system",
   "requirements": ["pystray==0.19.5", "pillow==12.1.1"],
-  "requirements-linux": ["pygobject==3.58.1"],
+  "requirements-linux": ["pygobject==3.58.1", "darkdetect==0.8.0"],
+  "requirements-windows": ["darkdetect==0.8.0"],
+  "requirements-darwin": ["darkdetect[macos-listener]==0.8.0"],
   "core": true,
   "default": true
 }
