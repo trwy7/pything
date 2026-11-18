@@ -20,7 +20,6 @@ if TYPE_CHECKING:
 
 
 class App:
-    # TODO: docstring these functions to make it easier to build apps
     """
     Represents a pything app, use this class to create your app, and specify settings
     """
@@ -141,11 +140,19 @@ class App:
         return False
 
     def get_open_clients(self) -> Iterator[Client]:
+        """
+        Returns an iterator of all clients that have the App open
+        """
         for client in state.clients.values():
             if client.app == self.id:
                 yield client
 
     def on(self, event: str) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+        """
+        Registers a listener for an event sent from the client app to the server app.
+        The listener will be called with the data sent from the client app.
+        You can send an event from the client app with the `send("event", data)` function in your apps javascript.
+        """
         def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             self.listeners[event] = func
             return func
@@ -153,6 +160,10 @@ class App:
         return decorator
 
     def send(self, event: str, data: Any, to: set[str] | str | None = None) -> None:
+        """
+        Sends an event to the client app. If `to` is None, the event will be sent to all clients that have the App open. If `to` is a set of client IDs, the event will be sent to those clients. If `to` is a single client ID, the event will be sent to that client.
+        You can recieve this event with the `on("event", (data) => {})` function in your apps javascript.
+        """
         state.logger.debug("serverapp>clientapp: %s > %s", self.id, event)
         if isinstance(to, set):
             for c in self.get_open_clients():
@@ -168,10 +179,16 @@ class App:
             socket.emit("app_com", [self.id, event, data], to=c.sid)
 
     def on_startup(self, func: Callable[..., Any]) -> Callable[..., Any]:
+        """
+        Registers a listener for when the server starts up. This is called after all apps have been initialized, but before the server starts listening for connections. This is a good place to start background tasks
+        """
         self.startup_listeners.append(func)
         return func
 
     def startup(self) -> None:
+        """
+        Calls all startup listeners. Do not call this directly, it is called by the server when it starts up.
+        """
         for listener in self.startup_listeners:
             self.logger.debug("Calling startup listener %s", listener.__name__)
             listener()
@@ -179,6 +196,11 @@ class App:
     def on_broadcast(
         self, event: str
     ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+        """
+        Listen for an event from another app. Your listener should run short, as it will block other apps from recieving the message until your listener returns. If you need to do something long, use a background thread.
+        Broadcast names should be unique, like "music-set-playback-state" or "customizer-new-color". If you are broadcasting an event, make sure to document it in your app's README so other apps can listen for it.
+        """
+        # TODO: follow my own advice and standardize broadcast names, maybe even make a registry of them (probably not though)
         def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             if event not in state.broadcast_listeners:
                 state.broadcast_listeners[event] = []
@@ -188,6 +210,10 @@ class App:
         return decorator
 
     def broadcast(self, event: str, *args: Any, **kwargs: Any) -> None:
+        """
+        Broadcast an event to all apps that are listening for it. This is a way for apps to communicate with each other. The event will be sent to all apps that have registered a listener for it with `on_broadcast`.
+        """
+        # TODO: app-to-app communication by specifying the app id, instead of a broadcast
         if event not in state.broadcast_listeners:
             self.logger.debug(
                 "A broadcast to %s was sent by %s, but that event has no listeners, you can probably ignore this",

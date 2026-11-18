@@ -14,7 +14,6 @@ import urllib.request
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from functools import lru_cache
-from pathlib import Path
 from urllib.parse import unquote, unquote_to_bytes, urlparse
 
 from apps.music.types import Album, Artist, Song, playback

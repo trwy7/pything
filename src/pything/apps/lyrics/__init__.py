@@ -105,15 +105,20 @@ def _parse_lrcred_ttml(content: bytes) -> list[dict]:
             agent = _xml_attr(paragraph, "agent") or div_agent
             backgrounds = []
 
-            def collect_backgrounds(parent):
+            def collect_backgrounds(
+                parent,
+                backgrounds=backgrounds, # lint things
+                default_start=line_start, # lint things
+                default_end=line_end, # lint things
+            ):
                 for child in parent:
                     if _is_background(child):
                         bg_text = _element_text(child)
                         if bg_text:
                             bg_start, bg_end = _element_times(child)
                             backgrounds.append({
-                                "time": bg_start if bg_start is not None else line_start,
-                                "end": bg_end if bg_end is not None else line_end,
+                                "time": bg_start if bg_start is not None else default_start,
+                                "end": bg_end if bg_end is not None else default_end,
                                 "text": bg_text,
                             })
                     else:

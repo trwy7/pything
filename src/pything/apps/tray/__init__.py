@@ -14,7 +14,7 @@ import pystray
 from PIL import Image
 
 from pything.app import App, stop_server
-from pything.state import log_file, RESTART_EXIT_CODE
+from pything.state import RESTART_EXIT_CODE, log_file
 
 app = App([])
 
