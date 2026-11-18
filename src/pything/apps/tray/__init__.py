@@ -30,7 +30,8 @@ def _is_system_dark() -> bool:
     """Check if the system tray/taskbar area is using dark mode."""
     if sys.platform.startswith("win"):
         try:
-            import winreg # jank to detect dark mode on windows, since darkdetect only tracks AppsUseLightTheme, not SystemUsesLightTheme
+            import winreg  # jank to detect dark mode on windows, since darkdetect only tracks AppsUseLightTheme, not SystemUsesLightTheme
+
             # ai area, I don't understand the registry enough
             with winreg.OpenKey(
                 winreg.HKEY_CURRENT_USER,
@@ -85,7 +86,9 @@ def add_tray_option(option: str, func):
 def _on_theme_change(theme: str):
     if _tray_icon is not None:
         # On Windows, re-check SystemUsesLightTheme because darkdetect tracks AppsUseLightTheme
-        is_dark = _is_system_dark() if sys.platform.startswith("win") else (theme == "Dark")
+        is_dark = (
+            _is_system_dark() if sys.platform.startswith("win") else (theme == "Dark")
+        )
         _tray_icon.icon = _icons["dark" if is_dark else "light"]
 
 

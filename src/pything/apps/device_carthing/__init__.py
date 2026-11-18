@@ -32,9 +32,8 @@ app = App(
             "replace_webapp",
             "Fully replace the original UI with PYThing",
             "/apps/device-carthing/replace",
-        )
+        ),
     ],
-
 )
 
 adb = False
@@ -278,7 +277,13 @@ def full_replace_carthing(serials: list | None = None):
         restore_ct_webapp(fserial=serial, restart=False)
         app.logger.info("Replacing %s...", serial)
         run_adb_cmd(serial, ["shell", "mount -o remount,rw /"])
-        run_adb_cmd(serial, ["shell", "[ ! -d /usr/share/qt-superbird-app/webapp.bak ] && mv /usr/share/qt-superbird-app/webapp /usr/share/qt-superbird-app/webapp.bak"])
+        run_adb_cmd(
+            serial,
+            [
+                "shell",
+                "[ ! -d /usr/share/qt-superbird-app/webapp.bak ] && mv /usr/share/qt-superbird-app/webapp /usr/share/qt-superbird-app/webapp.bak",
+            ],
+        )
         run_adb_cmd(
             serial,
             [
@@ -335,10 +340,12 @@ else:
         "ADB is not available, the carthing will not be able to connect."
     )
 
+
 @app.blueprint.route("/restore")
 def restore_webapp():
     restore_ct_webapp()
     return redirect("/settings")
+
 
 @app.blueprint.route("/replace")
 def replace_webapp():

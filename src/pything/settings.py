@@ -108,6 +108,7 @@ class ElementSetting:
     """
     A placeholder setting that displays in the UI, but cannot store data. Do not call this directly.
     """
+
     def __init__(self, id: str, type: str, hidden: bool = False) -> None:
         self.type = type
         self.id = id

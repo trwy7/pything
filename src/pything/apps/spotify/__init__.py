@@ -241,7 +241,7 @@ def music_thread():
             ),
             [Artist("spotify", a["id"], a["name"]) for a in data["item"]["artists"]],
             data["item"]["duration_ms"],
-            isrc=data["item"]["external_ids"].get("isrc")
+            isrc=data["item"]["external_ids"].get("isrc"),
         )
         playback.update(song, data["is_playing"], data["progress_ms"])
 

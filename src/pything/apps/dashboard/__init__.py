@@ -1,7 +1,8 @@
 import webbrowser
 
-from pything.app import App, get_apps
+from pything.app import App
 from pything.settings import BooleanSetting
+from pything.state import apps
 from pything.web import redirect, render_template
 
 app = App([BooleanSetting("warn", "Show settings hint (turn me off)", True)])
@@ -18,7 +19,7 @@ hidewarn({"warn": app.settings["warn"].get_value()})
 
 @app.blueprint.route("/launch")
 def launch():
-    return render_template(f"{app.dirname}/pages/index.html", apps=get_apps())
+    return render_template(f"{app.dirname}/pages/index.html", apps=apps)
 
 
 @app.blueprint.route("/settings")

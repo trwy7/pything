@@ -39,6 +39,7 @@ class App:
             category (str): The category of the app.
             dir (str): The directory of the app.
             dirname (str): The name of the app's directory.
+            custom (bool): Whether the app is a custom app or not. These can either be loaded from the customapps folder or the user's appdata folder.
             cache_dir (Path): The cache directory for the app.
             data_dir (Path): The data directory for the app.
             config_dir (Path): The configuration directory for the app. Only use for data that cannot be stored in a setting, like a database or other large files.
@@ -49,6 +50,7 @@ class App:
         stack = inspect.stack()  # little janky, but works
         self.dir: str = os.path.dirname(os.path.abspath(stack[1].filename))
         self.dirname: str = os.path.basename(self.dir)
+        self.custom = False # TODO: implement
         manifest_path = os.path.join(self.dir, "manifest.json")
         try:
             with open(manifest_path, encoding="utf-8") as manifest_file:
@@ -153,6 +155,7 @@ class App:
         The listener will be called with the data sent from the client app.
         You can send an event from the client app with the `send("event", data)` function in your apps javascript.
         """
+
         def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             self.listeners[event] = func
             return func
@@ -200,6 +203,7 @@ class App:
         Listen for an event from another app. Your listener should run short, as it will block other apps from recieving the message until your listener returns. If you need to do something long, use a background thread.
         Broadcast names should be unique, like "music-set-playback-state" or "customizer-new-color". If you are broadcasting an event, make sure to document it in your app's README so other apps can listen for it.
         """
+
         # TODO: follow my own advice and standardize broadcast names, maybe even make a registry of them (probably not though)
         def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             if event not in state.broadcast_listeners:
@@ -238,10 +242,6 @@ class App:
         self.logger.debug("Adding setting modify listener %s", func.__name__)
         self.settingmodifylisteners.append(func)
         return func
-
-
-def get_apps() -> dict[str, App]:
-    return state.apps
 
 
 def stop_server(exit_code: int = 0) -> None:

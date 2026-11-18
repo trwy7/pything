@@ -110,7 +110,9 @@ sys.path.insert(0, base_dir)
 jinja_env = Environment(
     loader=ChoiceLoader(
         [
-            FileSystemLoader(os.path.join(base_dir, "pages").replace("\\", "/")),
+            FileSystemLoader(
+                os.path.join(base_dir, "pages").replace("\\", "/")
+            ),  # TODO: remove this so custom apps cant conflict with core templates
             FileSystemLoader(os.path.join(base_dir, "apps").replace("\\", "/")),
             FileSystemLoader(os.path.join(base_dir, "customapps").replace("\\", "/")),
         ]

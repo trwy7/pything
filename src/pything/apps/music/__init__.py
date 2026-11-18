@@ -32,10 +32,13 @@ def send_playbar_style(changed: dict[str, object]):
     if "playbar_style" in changed:
         socket.emit("music_playbar_style", changed["playbar_style"])
     if "playbar_animate" in changed:
-        socket.emit("music+playbar_animate", changed["playbar_animate"]) # in the future
+        socket.emit(
+            "music+playbar_animate", changed["playbar_animate"]
+        )  # in the future
         app.send("music_playbar_animate", changed["playbar_animate"])
     if changed.get("accent") and app.settings["accent"].get_value():
         send_playback_accent()
+
 
 @app.on("get")
 @playback.on_update
@@ -53,10 +56,12 @@ def send_song(_=None):
     )
     app.send("music_playbar_animate", app.settings["playbar_animate"].get_value())
 
+
 @socket.on("music+get")
 def rs_song():
     socket.emit("music+playbar_animate", app.settings["playbar_animate"].get_value())
     send_playback_state()
+
 
 def send_playback_accent():
     global _last_broadcast_accent
@@ -64,11 +69,19 @@ def send_playback_accent():
         return
     accent = playback.song.album.accent if playback.song else None
     if accent != _last_broadcast_accent:
-        app.logger.debug("Broadcasting accent color: %s for %s", accent, playback.song.title if playback.song else "None")
+        app.logger.debug(
+            "Broadcasting accent color: %s for %s",
+            accent,
+            playback.song.title if playback.song else "None",
+        )
         app.broadcast("set_accent", accent)
         _last_broadcast_accent = accent
     else:
-        app.logger.debug("Not broadcasting accent color: %s for %s (unchanged)", accent, playback.song.title if playback.song else "None")
+        app.logger.debug(
+            "Not broadcasting accent color: %s for %s (unchanged)",
+            accent,
+            playback.song.title if playback.song else "None",
+        )
 
 
 def send_playback_state():

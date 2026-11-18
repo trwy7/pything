@@ -54,7 +54,11 @@ def _ttml_time(value: str) -> int:
 
 def _xml_attr(element, name: str) -> str | None:
     return next(
-        (value for key, value in element.attrib.items() if key.rsplit("}", 1)[-1] == name),
+        (
+            value
+            for key, value in element.attrib.items()
+            if key.rsplit("}", 1)[-1] == name
+        ),
         None,
     )
 
@@ -89,7 +93,9 @@ def _element_times(element) -> tuple[int | None, int | None]:
 def _parse_lrcred_ttml(content: bytes) -> list[dict]:
     """Parse timed TTML lines, retaining speaker and concurrent background vocals."""
     root = ET.fromstring(content)
-    body = next((node for node in root.iter() if node.tag.rsplit("}", 1)[-1] == "body"), root)
+    body = next(
+        (node for node in root.iter() if node.tag.rsplit("}", 1)[-1] == "body"), root
+    )
     body_agent = _xml_attr(body, "agent")
     rows = []
 
@@ -99,28 +105,42 @@ def _parse_lrcred_ttml(content: bytes) -> list[dict]:
         div_agent = _xml_attr(div, "agent") or body_agent
         for paragraph in (node for node in div if node.tag.rsplit("}", 1)[-1] == "p"):
             line_start, line_end = _element_times(paragraph)
-            line_start = _ttml_time(_xml_attr(paragraph, "begin")) if _xml_attr(paragraph, "begin") else line_start
-            line_end = _ttml_time(_xml_attr(paragraph, "end")) if _xml_attr(paragraph, "end") else line_end
+            line_start = (
+                _ttml_time(_xml_attr(paragraph, "begin"))
+                if _xml_attr(paragraph, "begin")
+                else line_start
+            )
+            line_end = (
+                _ttml_time(_xml_attr(paragraph, "end"))
+                if _xml_attr(paragraph, "end")
+                else line_end
+            )
             text = _element_text(paragraph, skip_background=True)
             agent = _xml_attr(paragraph, "agent") or div_agent
             backgrounds = []
 
             def collect_backgrounds(
                 parent,
-                backgrounds=backgrounds, # lint things
-                default_start=line_start, # lint things
-                default_end=line_end, # lint things
+                backgrounds=backgrounds,  # lint things
+                default_start=line_start,  # lint things
+                default_end=line_end,  # lint things
             ):
                 for child in parent:
                     if _is_background(child):
                         bg_text = _element_text(child)
                         if bg_text:
                             bg_start, bg_end = _element_times(child)
-                            backgrounds.append({
-                                "time": bg_start if bg_start is not None else default_start,
-                                "end": bg_end if bg_end is not None else default_end,
-                                "text": bg_text,
-                            })
+                            backgrounds.append(
+                                {
+                                    "time": bg_start
+                                    if bg_start is not None
+                                    else default_start,
+                                    "end": bg_end
+                                    if bg_end is not None
+                                    else default_end,
+                                    "text": bg_text,
+                                }
+                            )
                     else:
                         collect_backgrounds(child)
 
@@ -128,15 +148,20 @@ def _parse_lrcred_ttml(content: bytes) -> list[dict]:
             if not text and not backgrounds:
                 continue
             if line_start is None:
-                line_start = min((bg["time"] for bg in backgrounds if bg["time"] is not None), default=0)
-            rows.append({
-                "time": line_start,
-                "end": line_end,
-                "text": text,
-                "speaker": agent,
-                "opposite": agent in {"v2", "v2000"},
-                "background": backgrounds,
-            })
+                line_start = min(
+                    (bg["time"] for bg in backgrounds if bg["time"] is not None),
+                    default=0,
+                )
+            rows.append(
+                {
+                    "time": line_start,
+                    "end": line_end,
+                    "text": text,
+                    "speaker": agent,
+                    "opposite": agent in {"v2", "v2000"},
+                    "background": backgrounds,
+                }
+            )
 
     return sorted(rows, key=lambda row: row["time"])
 
@@ -155,7 +180,7 @@ def _fetch_lrcred(cpbs) -> list[dict] | None:
             # Search musicbrainz for the ISRC if not available from the provider
             app.logger.debug("Searching MusicBrainz for ISRC of '%s'", cpbs.title)
             title = re.sub(
-                r"\s*(?:\([^)]*\)|\[[^]]*\]|(?:feat\.?|ft\.?|featuring)\s+.*)$", # very ai regex to hopefully detect patterns that musicbrainz misses
+                r"\s*(?:\([^)]*\)|\[[^]]*\]|(?:feat\.?|ft\.?|featuring)\s+.*)$",  # very ai regex to hopefully detect patterns that musicbrainz misses
                 "",
                 cpbs.title,
                 flags=re.IGNORECASE,
@@ -184,7 +209,9 @@ def _fetch_lrcred(cpbs) -> list[dict] | None:
                     if isrcs:
                         isrc = isrcs[0]
                         app.logger.debug(
-                            "Found ISRC '%s' for '%s' on MusicBrainz", isrc, rec.get("title", "<unknown>")
+                            "Found ISRC '%s' for '%s' on MusicBrainz",
+                            isrc,
+                            rec.get("title", "<unknown>"),
                         )
                         break
             else:
@@ -195,7 +222,11 @@ def _fetch_lrcred(cpbs) -> list[dict] | None:
                     mb_response.text,
                 )
         if not isrc:
-            app.logger.debug("No ISRC found on musicbrainz for '%s': %s", cpbs.title, mb_response.text)
+            app.logger.debug(
+                "No ISRC found on musicbrainz for '%s': %s",
+                cpbs.title,
+                mb_response.text,
+            )
             return None
 
         app.logger.debug("Fetching lrc.red TTML for ISRC %s", isrc)
@@ -240,7 +271,7 @@ def get_current_lrc() -> list[tuple[int, str]] | list[str] | list[dict] | str:
             current_source = None
             _send_lyrics(message)
         return message
-    if not cpbs.album or not cpbs.album.title: # assume misc media that isnt a song
+    if not cpbs.album or not cpbs.album.title:  # assume misc media that isnt a song
         app.logger.debug("Skipping lyrics search for '%s' (no album title)", cpbs.title)
         message = "Skipped search for '" + cpbs.title + "'"
         if playback.song and cpbs.id == playback.song.id:
