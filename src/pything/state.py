@@ -40,7 +40,7 @@ if sys.platform == "win32":  # Windows
 elif sys.platform == "darwin":  # macOS
     CONFIG_DIR = Path.home() / "Library" / "Application Support" / "pything"
     OLD_DATA_PATH = None
-    CACHE_ROOT = Path.home() / "Library" / "Caches"
+    CACHE_ROOT = Path.home() / "Library" / "Caches" / "pything"
     DATA_ROOT = Path.home() / "Library" / "Application Support" / "pything"
 else:  # generic unix (hopefully linux)
     CONFIG_DIR = Path.home() / ".config" / "pything"
@@ -49,7 +49,7 @@ else:  # generic unix (hopefully linux)
         Path(os.environ["XDG_CACHE_HOME"])
         if os.environ.get("XDG_CACHE_HOME")
         else Path.home() / ".cache"
-    )
+    ) / "pything"
     DATA_ROOT = Path.home() / ".local" / "share" / "pything"
 
 # Dependency directory
