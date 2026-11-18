@@ -2,7 +2,7 @@ import webbrowser
 
 from pything.app import App
 from pything.settings import BooleanSetting
-from pything.state import apps
+from pything.state import apps, PORT
 from pything.web import redirect, render_template
 
 app = App([BooleanSetting("warn", "Show settings hint (turn me off)", True)])
@@ -24,5 +24,5 @@ def launch():
 
 @app.blueprint.route("/settings")
 def opensettings():
-    webbrowser.open_new("http://127.0.0.1:5192/settings")
+    webbrowser.open_new(f"http://127.0.0.1:{PORT}/settings")
     return redirect("/apps/dashboard/launch")

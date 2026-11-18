@@ -13,6 +13,7 @@ from pything.app import App
 from pything.settings import BooleanSetting, LinkSetting
 from pything.state import (
     DATA_ROOT,  # you should probably use app.data_dir instead, but other apps may need adb, so we download it to a global directory
+    PORT,
 )
 from pything.web import redirect
 
@@ -207,7 +208,7 @@ def inject_thread():
         for serial in connected:
             if serial_cache[serial][1]:
                 continue
-            run_adb_cmd(serial, ["reverse", "tcp:5192", "tcp:5192"])
+            run_adb_cmd(serial, ["reverse", "tcp:5192", f"tcp:{PORT}"])
             if serial_cache[serial][2]:
                 app.logger.debug("No need to push webapp for %s (bridgething)", serial)
                 app.logger.info(

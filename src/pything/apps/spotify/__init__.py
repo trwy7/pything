@@ -11,12 +11,13 @@ from apps.music.utils import get_accent
 from pything.app import App
 from pything.settings import DataSetting, LabelSetting, LinkSetting, StringSetting
 from pything.web import abort, redirect, request, send_file
+from pything.state import PORT
 
 app = App(
     [
         LabelSetting(
             "callbackhint",
-            "Create a spotify developer application from <a href='https://developer.spotify.com/dashboard' target='_blank'>https://developer.spotify.com/dashboard</a>. The callback url should be <code>http://127.0.0.1:5192/apps/spotify/callback</code>",
+            f"Create a spotify developer application from <a href='https://developer.spotify.com/dashboard' target='_blank'>https://developer.spotify.com/dashboard</a>. The callback url should be <code>http://127.0.0.1:{PORT}/apps/spotify/callback</code>",
         ),
         StringSetting("client_id", "Client ID", "", False),
         StringSetting("client_secret", "Client Secret", "", False),
@@ -110,7 +111,7 @@ def update_auth_url(changed: dict[str, object]):
     app.settings["auth"].hidden = False
     app.settings[
         "auth"
-    ].link = f"https://accounts.spotify.com/authorize?response_type=code&client_id={client_id}&scope=user-read-playback-state&redirect_uri=http://127.0.0.1:5192/apps/spotify/callback"  # type: ignore
+    ].link = f"https://accounts.spotify.com/authorize?response_type=code&client_id={client_id}&scope=user-read-playback-state&redirect_uri=http://127.0.0.1:{PORT}/apps/spotify/callback"  # type: ignore
 
 
 def get_art(url: str, id: str):
@@ -180,7 +181,7 @@ def callback():
         data={
             "grant_type": "authorization_code",
             "code": request.args["code"],
-            "redirect_uri": "http://127.0.0.1:5192/apps/spotify/callback",
+            "redirect_uri": f"http://127.0.0.1:{PORT}/apps/spotify/callback",
         },
     )
 
