@@ -1,4 +1,3 @@
-import os
 import threading
 import time
 import urllib.request
@@ -27,16 +26,14 @@ app = App(
     ],
 )
 USER_AGENT = "PYThing Spotify Provider (https://github.com/trwy7/pything)"
-art_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache", "art")
+art_dir = app.cache_dir / "art"
+art_dir.mkdir(parents=True, exist_ok=True)
 art_lock = threading.Lock()
 downloading: list[str] = []
 accent_cache: dict[str, int | None] = {}
 accent_lock = threading.Lock()
 client_id = app.settings["client_id"].get_value()
 client_secret = app.settings["client_secret"].get_value()
-
-if not os.path.isdir(art_dir):
-    os.makedirs(art_dir)
 
 
 def request_new_token():
@@ -117,7 +114,8 @@ def update_auth_url(changed: dict[str, object]):
 
 
 def get_art(url: str, id: str):
-    if os.path.exists(os.path.join(art_dir, id + ".jpg")):
+    art_path = art_dir / f"{id}.jpg"
+    if art_path.is_file():
         app.logger.debug("Reusing art")
         if id not in accent_cache:
             threading.Thread(target=accent_thread, daemon=True, args=(id,)).start()
@@ -130,7 +128,7 @@ def accent_thread(id: str):
     with accent_lock:
         if id in accent_cache:
             return
-        accent_cache[id] = get_accent(os.path.join(art_dir, id + ".jpg"))
+        accent_cache[id] = get_accent(art_dir / f"{id}.jpg")
         if playback.song and id == playback.song.album.id:
             playback.song.album.accent = accent_cache[id]
             playback.update(playback.song, playback.playing, playback.position)
@@ -140,11 +138,12 @@ def download_art(url: str, id: str):
     if id in downloading:
         return
     with art_lock:
-        if os.path.exists(os.path.join(art_dir, id + ".jpg")):
+        art_path = art_dir / f"{id}.jpg"
+        if art_path.is_file():
             return
         downloading.append(id)
         app.logger.debug("Downloading art for %s...", id)
-        urllib.request.urlretrieve(url, os.path.join(art_dir, id + ".jpg"))
+        urllib.request.urlretrieve(url, art_path)
         downloading.remove(
             id
         )  # this should also mean if the download fails, it wont be re-attempted until app restart
@@ -249,9 +248,10 @@ def music_thread():
 
 @app.blueprint.route("/art/<string:ap>")
 def art_route(ap):
-    if not os.path.exists(os.path.join(art_dir, ap)):
+    art_path = art_dir / ap
+    if not art_path.is_file():
         return abort(404)
-    return send_file(os.path.join(art_dir, ap))
+    return send_file(art_path)
 
 
 @app.on_startup

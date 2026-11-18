@@ -1,5 +1,6 @@
 import colorsys
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 from PIL import Image
@@ -9,7 +10,7 @@ from sklearn.cluster import KMeans
 from . import app
 
 
-def get_accent(path: str) -> int | None:
+def get_accent(path: Path) -> int | None:
     start_time = datetime.now()
     # 1. Load image and resize to a 50x50 thumbnail.
     # 2,500 pixels is plenty to capture dominant artwork colors while keeping performance fast.

@@ -34,8 +34,8 @@ app = App(
     ],
 )
 
-art_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache", "art")
-os.makedirs(art_dir, exist_ok=True)
+art_dir = app.cache_dir / "art"
+art_dir.mkdir(parents=True, exist_ok=True)
 accent_cache: dict[str, int | None] = {}
 windows_position_cache: dict[str, tuple[int, int, float]] = {}
 switch_delay = 0.5
@@ -109,8 +109,8 @@ def get_art(track: LocalTrack) -> str | None:
     if not track.art_url:
         return None
     identifier = art_id(track)
-    path = os.path.join(art_dir, identifier + ".jpg")
-    if not os.path.exists(path):
+    path = art_dir / (identifier + ".jpg")
+    if not path.exists():
         parsed = urlparse(track.art_url)
         try:
             if parsed.scheme == "file":
@@ -122,7 +122,7 @@ def get_art(track: LocalTrack) -> str | None:
                     and source[2] == ":"
                 ):
                     source = source[1:]
-                if not source or not os.path.isfile(source):
+                if not source or not path.is_file():
                     return None
                 shutil.copyfile(source, path)
             elif parsed.scheme == "" and os.path.isfile(track.art_url):
@@ -290,10 +290,10 @@ async def windows_track(manager) -> LocalTrack | None:
             identifier = hashlib.sha256(data).hexdigest()
             await asyncio.to_thread(
                 write_thumbnail,
-                os.path.join(art_dir, identifier + ".jpg"),
+                art_dir / (identifier + ".jpg"),
                 data,
             )
-            art_url = Path(art_dir, identifier + ".jpg").as_uri()
+            art_url = (art_dir / (identifier + ".jpg")).as_uri()
         except (OSError, ValueError):
             app.logger.debug("Could not read Windows album art", exc_info=True)
 
@@ -566,10 +566,8 @@ async def linux_loop() -> None:
 
 @app.blueprint.route("/art/<string:filename>")
 def art_route(filename: str):
-    path = os.path.join(art_dir, filename)
-    if not os.path.isfile(path) or os.path.dirname(
-        os.path.abspath(path)
-    ) != os.path.abspath(art_dir):
+    path = art_dir / filename
+    if not path.is_file() or path.parent != art_dir:
         return abort(404)
     return send_file(path)
 

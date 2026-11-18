@@ -28,7 +28,6 @@ if errorlevel 1 goto :failure
 xcopy "%SCRIPT_DIR%src" "%STAGE%\src\" /E /I /Y >nul
 if errorlevel 1 goto :failure
 for /d /r "%STAGE%\src" %%D in (__pycache__) do if exist "%%D" rmdir /s /q "%%D"
-for /d /r "%STAGE%\src" %%D in (cache) do if exist "%%D" rmdir /s /q "%%D"
 for /r "%STAGE%\src" %%F in (*.pyc) do if exist "%%F" del /q "%%F"
 ::copy /y "%SCRIPT_DIR%pyproject.toml" "%STAGE%\pyproject.toml" >nul
 ::copy /y "%SCRIPT_DIR%uv.lock" "%STAGE%\uv.lock" >nul

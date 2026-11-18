@@ -7,6 +7,7 @@ import json
 import logging
 import os
 from collections.abc import Callable, Generator
+from pathlib import Path
 
 from . import state
 from .settings import ElementSetting, Setting
@@ -45,12 +46,6 @@ class App:
         stack = inspect.stack() # little janky, but works
         self.dir = os.path.dirname(os.path.abspath(stack[1].filename))
         self.dirname = os.path.basename(self.dir)
-        self.cache_dir = state.CACHE_ROOT / "apps" / self.dirname
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
-        self.data_dir = state.DATA_ROOT / "apps" / self.dirname
-        self.data_dir.mkdir(parents=True, exist_ok=True)
-        self.config_dir = state.CONFIG_DIR / "apps" / self.dirname
-        self.config_dir.mkdir(parents=True, exist_ok=True)
         manifest_path = os.path.join(self.dir, "manifest.json")
         try:
             with open(manifest_path, encoding="utf-8") as manifest_file:
@@ -78,6 +73,12 @@ class App:
                 f"Manifest for app directory '{self.dir}' has invalid metadata"
             )
         self.id = manifest["id"]
+        self.cache_dir: Path = state.CACHE_ROOT / "apps" / self.id
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        self.data_dir: Path = state.DATA_ROOT / "apps" / self.id
+        self.data_dir.mkdir(parents=True, exist_ok=True)
+        self.config_dir: Path = state.CONFIG_DIR / "apps" / self.id
+        self.config_dir.mkdir(parents=True, exist_ok=True)
         self.display_name = manifest["name"]
         self.category = manifest["category"]
         state.apps[self.id] = self

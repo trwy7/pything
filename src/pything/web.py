@@ -7,6 +7,7 @@ import os
 import re
 import threading
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
 from . import state
@@ -43,8 +44,8 @@ def redirect(location: str) -> Response:
     return Response(status=303, headers={"Location": location})
 
 
-def send_file(path: str) -> Response:
-    content_type = mimetypes.guess_type(path)[0] or "application/octet-stream"
+def send_file(path: str | Path) -> Response:
+    content_type = mimetypes.guess_type(str(path))[0] or "application/octet-stream"
     with open(path, "rb") as file:
         return Response(file.read(), content_type=content_type)
 

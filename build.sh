@@ -23,7 +23,6 @@ cp "$UV" "$STAGE/bin/uv"
 cp -R "$SCRIPT_DIR/src" "$STAGE/src"
 #cp "$SCRIPT_DIR/pyproject.toml" "$SCRIPT_DIR/uv.lock" "$SCRIPT_DIR/README.md" "$STAGE/"
 find "$STAGE/src" -type d -name __pycache__ -prune -exec rm -rf {} +
-find "$STAGE/src" -type d -name cache -prune -exec rm -rf {} + # TODO: stop using cache dirs in the first place and make apps use a global temp dir
 find "$STAGE/src" -type f -name '*.pyc' -delete
 chmod +x "$STAGE/bin/uv"
 
