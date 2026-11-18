@@ -140,7 +140,7 @@ def render_template(name: str, **ctx: Any) -> Response:
 
 
 class Blueprint:
-    """Minimal stand-in for flask.Blueprint.
+    """Allows apps to register routes.
 
     ``route`` collects handlers that get registered under the app's prefix
     (``/apps/<id>``) when the app is imported.
@@ -157,11 +157,6 @@ class Blueprint:
             return func
 
         return decorator
-
-    def context_processor(self, func: Callable) -> Callable:
-        # Templates always receive ``app`` from render_template; accepted for
-        # compatibility so existing apps keep working.
-        return func
 
 
 _converters = {
