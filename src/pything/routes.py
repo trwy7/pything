@@ -15,17 +15,17 @@ from .web import Response, redirect, render_template, request, route
 
 
 @route("/isready")
-def ct_isready():
+def ct_isready() -> Response:
     return Response("OK", headers={"Access-Control-Allow-Origin": "*"})
 
 
 @route("/")
-def client_redirect():
+def client_redirect() -> Response:
     return redirect("/client")
 
 
 @route("/client")
-def main_client():
+def main_client() -> Response:
     from .web import _set_current_app
 
     _set_current_app(None)
@@ -33,7 +33,7 @@ def main_client():
 
 
 @route("/settings")
-def settings_editor():
+def settings_editor() -> Response:
     # sort and hide apps with no visible settings, beware of ai slop
     sapps: dict[str, list[App]] = {}
     for app in state.apps.values():
@@ -59,7 +59,7 @@ def settings_editor():
 
 
 @route("/apps", methods=("GET",))
-def apps_editor():
+def apps_editor() -> Response:
     manifests = discover_apps()
     return render_template(
         "apps.html",
@@ -69,7 +69,7 @@ def apps_editor():
 
 
 @route("/apps", methods=("POST",))
-def apps_set():
+def apps_set() -> str:
     manifests = discover_apps()
     selected = {app_id for app_id in manifests if f"app-{app_id}" in request.form}
     selected.update(
@@ -94,7 +94,7 @@ def apps_set():
 
 
 @route("/settings", methods=("POST",))
-def settings_set():
+def settings_set() -> Response:
     state.logger.debug("Got new settings: %s", request.form)
     settings_changed = False
     for app in state.apps.values():

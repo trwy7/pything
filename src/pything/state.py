@@ -8,14 +8,20 @@ from __future__ import annotations
 import logging
 import os
 import pickle
+import re
 import shutil
 import sys
 import sysconfig
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import truststore
 from jinja2 import ChoiceLoader, Environment, FileSystemLoader
+
+if TYPE_CHECKING:
+    from .app import App
+    from .websocket import Client
 
 truststore.inject_into_ssl()
 
@@ -23,7 +29,7 @@ DEVMODE = os.environ.get("DEV") == "true"
 DEVAPPS = os.environ.get("DEV", "").split(",") if not DEVMODE else []
 
 # OS specific paths
-if sys.platform == "win32": # Windows
+if sys.platform == "win32":  # Windows
     appdata = Path(os.environ["APPDATA"])
     CONFIG_DIR = appdata / "pything"
     OLD_DATA_PATH = appdata / "pything.pkl"
@@ -31,12 +37,12 @@ if sys.platform == "win32": # Windows
     CACHE_ROOT = Path(localappdata) / "Temp" / "pything"
     DATA_ROOT = Path(localappdata) / "pything"
     del localappdata
-elif sys.platform == "darwin": # macOS
+elif sys.platform == "darwin":  # macOS
     CONFIG_DIR = Path.home() / "Library" / "Application Support" / "pything"
     OLD_DATA_PATH = None
     CACHE_ROOT = Path.home() / "Library" / "Caches"
     DATA_ROOT = Path.home() / "Library" / "Application Support" / "pything"
-else: # generic unix (hopefully linux)
+else:  # generic unix (hopefully linux)
     CONFIG_DIR = Path.home() / ".config" / "pything"
     OLD_DATA_PATH = Path.home() / ".config" / "pything.pkl"
     CACHE_ROOT = (
@@ -50,7 +56,12 @@ else: # generic unix (hopefully linux)
 runtime = sys.implementation.cache_tag or (
     f"python-{sys.version_info.major}.{sys.version_info.minor}"
 )
-DEPENDENCY_DIR = Path(CACHE_ROOT) / "pything" / "dependencies" / f"{runtime}-{sysconfig.get_platform()}"
+DEPENDENCY_DIR = (
+    Path(CACHE_ROOT)
+    / "pything"
+    / "dependencies"
+    / f"{runtime}-{sysconfig.get_platform()}"
+)
 
 # Log to both the console and a file under CACHE_ROOT/pything/.
 log_dir = os.path.join(CACHE_ROOT, "pything") if CACHE_ROOT else None
@@ -86,7 +97,7 @@ if OLD_DATA_PATH and os.path.exists(OLD_DATA_PATH) and not os.path.exists(data_p
     os.makedirs(CONFIG_DIR, exist_ok=True)
     shutil.move(OLD_DATA_PATH, data_path)
 
-del OLD_DATA_PATH 
+del OLD_DATA_PATH
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))  # sanity check
 
@@ -114,6 +125,7 @@ def save_config() -> None:
         pickle.dump(config, cfw)
 
 
+config: dict[str, Any]
 if os.path.exists(data_path):
     with open(data_path, "rb") as cfr:
         config = pickle.load(cfr)
@@ -125,14 +137,22 @@ show_output = logger.isEnabledFor(logging.DEBUG)
 
 # Registries live here so web/websocket/app code can share them without importing
 # each other. Dicts/lists are mutated in place; never rebound after import.
-apps: dict[str, Any] = {}
-clients: dict[str, Any] = {}
-broadcast_listeners: dict[str, list[Any]] = {}
-client_mods: list[tuple[str, Any]] = []
-app_mods: list[tuple[str, Any]] = []
+apps: dict[str, App] = {}
+clients: dict[str, Client] = {}
+broadcast_listeners: dict[str, list[Callable[..., Any]]] = {}
+client_mods: list[tuple[str, App]] = []
+app_mods: list[tuple[str, App]] = []
 app_static_dirs: dict[str, str] = {}
 # (methods, regex, converters, handler, owning app id or None)
-routes: list[tuple[set[str], Any, dict[str, Any], Any, str | None]] = []
+routes: list[
+    tuple[
+        set[str],
+        re.Pattern[str],
+        dict[str, Callable[[str], Any]],
+        Callable[..., Any],
+        str | None,
+    ]
+] = []
 
 READABLE_CATEGORIES = {
     "core": "Core",

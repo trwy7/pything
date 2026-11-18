@@ -8,10 +8,14 @@ import json
 import struct
 import threading
 from collections.abc import Callable
-from typing import Any
+from typing import TYPE_CHECKING, Any, BinaryIO
 
 from . import state
 from .web import MultiDict, _get_request
+
+if TYPE_CHECKING:
+    from .app import App
+    from .settings import Setting
 
 _WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
@@ -23,7 +27,7 @@ def _ws_accept_key(key: str) -> str:
 class WSConnection:
     """A raw websocket connection; safe to send from multiple threads."""
 
-    def __init__(self, rfile, wfile):
+    def __init__(self, rfile: BinaryIO, wfile: BinaryIO) -> None:
         self._rfile = rfile
         self._wfile = wfile
         self._send_lock = threading.Lock()
@@ -119,11 +123,11 @@ class Socket:
     ``socket.on(name, handler)`` usage.
     """
 
-    def __init__(self):
-        self._handlers: dict[str, Callable] = {}
+    def __init__(self) -> None:
+        self._handlers: dict[str, Callable[..., Any]] = {}
 
-    def on(self, event: str):
-        def decorator(func: Callable) -> Callable:
+    def on(self, event: str) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             self._handlers[event] = func
             return func
 
@@ -152,7 +156,7 @@ class Client:
         self.app = "dashboard"
         state.clients[sid] = self
 
-    def change_app(self, app) -> None:
+    def change_app(self, app: App | str) -> None:
         # Local import to avoid a cycle with pything.app at module load time.
         from .app import App
 
@@ -164,7 +168,7 @@ class Client:
         socket.emit("changeframe", "/apps/" + app + "/launch", to=self.sid)
 
 
-def _handle_ws_message(client: Client, event: str, args: list) -> None:
+def _handle_ws_message(client: Client, event: str, args: list[Any]) -> None:
     req = _get_request()
     req.sid = client.sid
     req.args = MultiDict({})
@@ -200,7 +204,7 @@ def _handle_ws_message(client: Client, event: str, args: list) -> None:
         state.logger.debug("Client message: %s", args[0] if args else "")
 
 
-def _setting_value(setting, value):
+def _setting_value(setting: Setting, value: Any) -> Any:
     match setting.type:
         case "bool":
             if isinstance(value, bool):
@@ -288,7 +292,7 @@ def _run_settings_ws_connection(conn: WSConnection) -> None:
                 listener({setting_key: setting_value})
 
 
-def _run_ws_connection(rfile, wfile, client: Client) -> None:
+def _run_ws_connection(rfile: BinaryIO, wfile: BinaryIO, client: Client) -> None:
     try:
         while True:
             try:

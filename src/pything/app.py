@@ -6,13 +6,17 @@ import inspect
 import json
 import logging
 import os
-from collections.abc import Callable, Generator
+from collections.abc import Callable, Iterator
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 from . import state
 from .settings import ElementSetting, Setting
 from .web import Blueprint
 from .websocket import socket
+
+if TYPE_CHECKING:
+    from .websocket import Client
 
 
 class App:
@@ -24,12 +28,12 @@ class App:
     def __init__(
         self,
         settings: list[Setting | ElementSetting],
-    ):
+    ) -> None:
         """Represents a PYThing app.
-        
+
         Args:
             settings (list[Setting | ElementSetting]): A list of settings for the app.
-        
+
         Attributes:
             id (str): The unique identifier for the app.
             display_name (str): The display name of the app.
@@ -43,9 +47,9 @@ class App:
             blueprint (Blueprint): The Flask blueprint for the app.
             settings (dict): A dictionary of settings for the app. Use this to access and modify settings.
         """
-        stack = inspect.stack() # little janky, but works
-        self.dir = os.path.dirname(os.path.abspath(stack[1].filename))
-        self.dirname = os.path.basename(self.dir)
+        stack = inspect.stack()  # little janky, but works
+        self.dir: str = os.path.dirname(os.path.abspath(stack[1].filename))
+        self.dirname: str = os.path.basename(self.dir)
         manifest_path = os.path.join(self.dir, "manifest.json")
         try:
             with open(manifest_path, encoding="utf-8") as manifest_file:
@@ -72,23 +76,23 @@ class App:
             raise RuntimeError(
                 f"Manifest for app directory '{self.dir}' has invalid metadata"
             )
-        self.id = manifest["id"]
+        self.id: str = manifest["id"]
         self.cache_dir: Path = state.CACHE_ROOT / "apps" / self.id
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.data_dir: Path = state.DATA_ROOT / "apps" / self.id
         self.data_dir.mkdir(parents=True, exist_ok=True)
         self.config_dir: Path = state.CONFIG_DIR / "apps" / self.id
         self.config_dir.mkdir(parents=True, exist_ok=True)
-        self.display_name = manifest["name"]
-        self.category = manifest["category"]
+        self.display_name: str = manifest["name"]
+        self.category: str = manifest["category"]
         state.apps[self.id] = self
-        self.logger = logging.getLogger("pything.app." + self.id)
+        self.logger: logging.Logger = logging.getLogger("pything.app." + self.id)
         if self.id in state.DEVAPPS:
             self.logger.setLevel(logging.DEBUG)
         state.logger.debug(
             f"Logger initialized for '{self.display_name}' with id '{self.id}'"
         )
-        self.blueprint = Blueprint(
+        self.blueprint: Blueprint = Blueprint(
             self.id,
             __name__,
             static_folder=os.path.abspath(self.dir) + "/static"
@@ -98,12 +102,14 @@ class App:
         if self.blueprint.static_folder:
             state.app_static_dirs[self.id] = self.blueprint.static_folder
 
-        self.settings = {s.id: s for s in settings}
-        self.hidden = True  # updated on init
-        self.listeners = {}
-        self.startup_listeners: list[Callable] = []
-        self.settingupdatelisteners: list[Callable] = []
-        self.settingmodifylisteners: list[Callable] = []
+        self.settings: dict[str, Setting | ElementSetting] = {
+            setting.id: setting for setting in settings
+        }
+        self.hidden: bool = True  # updated on init
+        self.listeners: dict[str, Callable[..., Any]] = {}
+        self.startup_listeners: list[Callable[..., Any]] = []
+        self.settingupdatelisteners: list[Callable[..., Any]] = []
+        self.settingmodifylisteners: list[Callable[..., Any]] = []
         if not self.id in state.config:
             state.config[self.id] = {}
         schange = False
@@ -134,19 +140,19 @@ class App:
                 return True
         return False
 
-    def get_open_clients(self) -> Generator:
+    def get_open_clients(self) -> Iterator[Client]:
         for client in state.clients.values():
             if client.app == self.id:
                 yield client
 
-    def on(self, event: str):
-        def decorator(func):
+    def on(self, event: str) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             self.listeners[event] = func
             return func
 
         return decorator
 
-    def send(self, event: str, data, to: set[str] | str | None = None):
+    def send(self, event: str, data: Any, to: set[str] | str | None = None) -> None:
         state.logger.debug("serverapp>clientapp: %s > %s", self.id, event)
         if isinstance(to, set):
             for c in self.get_open_clients():
@@ -161,17 +167,19 @@ class App:
         for c in self.get_open_clients():
             socket.emit("app_com", [self.id, event, data], to=c.sid)
 
-    def on_startup(self, func: Callable):
+    def on_startup(self, func: Callable[..., Any]) -> Callable[..., Any]:
         self.startup_listeners.append(func)
         return func
 
-    def startup(self):
+    def startup(self) -> None:
         for listener in self.startup_listeners:
             self.logger.debug("Calling startup listener %s", listener.__name__)
             listener()
 
-    def on_broadcast(self, event: str):
-        def decorator(func):
+    def on_broadcast(
+        self, event: str
+    ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             if event not in state.broadcast_listeners:
                 state.broadcast_listeners[event] = []
             state.broadcast_listeners[event].append(func)
@@ -179,7 +187,7 @@ class App:
 
         return decorator
 
-    def broadcast(self, event: str, *args, **kwargs):
+    def broadcast(self, event: str, *args: Any, **kwargs: Any) -> None:
         if event not in state.broadcast_listeners:
             self.logger.debug(
                 "A broadcast to %s was sent by %s, but that event has no listeners, you can probably ignore this",
@@ -195,22 +203,22 @@ class App:
             len(state.broadcast_listeners[event]),
         )
 
-    def on_setting_update(self, func: Callable):
+    def on_setting_update(self, func: Callable[..., Any]) -> Callable[..., Any]:
         self.logger.debug("Adding setting update listener %s", func.__name__)
         self.settingupdatelisteners.append(func)
         return func
 
-    def on_setting_modify(self, func: Callable):
+    def on_setting_modify(self, func: Callable[..., Any]) -> Callable[..., Any]:
         self.logger.debug("Adding setting modify listener %s", func.__name__)
         self.settingmodifylisteners.append(func)
         return func
 
 
-def get_apps():
+def get_apps() -> dict[str, App]:
     return state.apps
 
 
-def stop_server(exit_code: int = 0):
+def stop_server(exit_code: int = 0) -> None:
     state.logger.info("Stopping server")
     event = "shutdown"
     socket.emit("shutdown")

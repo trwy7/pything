@@ -29,7 +29,7 @@ class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
     server_version = "PYThing/1.0"
 
-    def log_message(self, format, *args):
+    def log_message(self, format: str, *args: object) -> None:
         state.logger.debug("%s - %s", self.address_string(), format % args)
 
     # -- websocket upgrade ------------------------------------------------
@@ -101,7 +101,7 @@ class Handler(BaseHTTPRequestHandler):
         if self.command != "HEAD" and response.body:
             self.wfile.write(response.body)
 
-    def do_GET(self):
+    def do_GET(self) -> None:
         if self._is_websocket_upgrade():
             path = urllib.parse.urlparse(self.path).path
             if path == "/ws":
@@ -112,8 +112,8 @@ class Handler(BaseHTTPRequestHandler):
                 return
         self._handle()
 
-    def do_POST(self):
+    def do_POST(self) -> None:
         self._handle()
 
-    def do_HEAD(self):
+    def do_HEAD(self) -> None:
         self._handle()

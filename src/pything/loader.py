@@ -17,13 +17,13 @@ from .web import Blueprint, _register_blueprint_routes
 from .websocket import socket
 
 
-def clock_thread():
+def clock_thread() -> None:
     while True:
         socket.emit("dt", datetime.datetime.now().isoformat())
         time.sleep(60)
 
 
-def import_app(iappd: str):
+def import_app(iappd: str) -> None:
     if not os.path.isdir(iappd):
         raise RuntimeError(
             "All apps must be directories, name your app as <name>/__init__.py"

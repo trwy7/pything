@@ -6,9 +6,9 @@ import mimetypes
 import os
 import re
 import threading
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from pathlib import Path
-from typing import Any
+from typing import Any, NoReturn
 
 from . import state
 
@@ -16,11 +16,11 @@ logger = state.logger  # alias so logging calls match the original module
 
 
 class Abort(Exception):
-    def __init__(self, status: int):
+    def __init__(self, status: int) -> None:
         self.status = status
 
 
-def abort(status: int):
+def abort(status: int) -> NoReturn:
     raise Abort(status)
 
 
@@ -31,7 +31,7 @@ class Response:
         status: int = 200,
         content_type: str = "text/html; charset=utf-8",
         headers: dict[str, str] | None = None,
-    ):
+    ) -> None:
         if isinstance(body, str):
             body = body.encode()
         self.body = body
@@ -53,7 +53,7 @@ def send_file(path: str | Path) -> Response:
 class MultiDict:
     """Minimal dict-like wrapper over ``parse_qs`` output (values are lists)."""
 
-    def __init__(self, data: dict[str, list[str]]):
+    def __init__(self, data: dict[str, list[str]]) -> None:
         self._data = data
 
     def __contains__(self, key: str) -> bool:
@@ -66,17 +66,17 @@ class MultiDict:
         values = self._data.get(key)
         return values[0] if values else default
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[str]:
         return iter(self._data)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"MultiDict({self._data!r})"
 
 
 class _Request:
     """Request shim: args/form for HTTP routes, sid for websocket dispatches."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.args: MultiDict = MultiDict({})
         self.form: MultiDict = MultiDict({})
         self.sid: str | None = None
@@ -147,13 +147,17 @@ class Blueprint:
     (``/apps/<id>``) when the app is imported.
     """
 
-    def __init__(self, name: str, import_name: str, static_folder: str | None = None):
+    def __init__(
+        self, name: str, import_name: str, static_folder: str | None = None
+    ) -> None:
         self.name = name
         self.static_folder = static_folder
-        self._routes: list[tuple[str, tuple[str, ...], Callable]] = []
+        self._routes: list[tuple[str, tuple[str, ...], Callable[..., Any]]] = []
 
-    def route(self, path: str, methods: tuple[str, ...] = ("GET",)):
-        def decorator(func: Callable) -> Callable:
+    def route(
+        self, path: str, methods: tuple[str, ...] = ("GET",)
+    ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             self._routes.append((path, methods, func))
             return func
 
@@ -167,10 +171,12 @@ _converters = {
 }
 
 
-def _compile_route(path: str) -> tuple[re.Pattern, dict[str, Callable]]:
-    converters: dict[str, Callable] = {}
+def _compile_route(
+    path: str,
+) -> tuple[re.Pattern[str], dict[str, Callable[[str], Any]]]:
+    converters: dict[str, Callable[[str], Any]] = {}
 
-    def repl(match: re.Match) -> str:
+    def repl(match: re.Match[str]) -> str:
         kind, name = match.group(1), match.group(2)
         pattern, conv = _converters.get(kind, ("[^/]+", str))
         converters[name] = conv
@@ -180,8 +186,10 @@ def _compile_route(path: str) -> tuple[re.Pattern, dict[str, Callable]]:
     return re.compile("^" + regex + "$"), converters
 
 
-def route(path: str, methods: tuple[str, ...] = ("GET",)):
-    def decorator(func: Callable) -> Callable:
+def route(
+    path: str, methods: tuple[str, ...] = ("GET",)
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         regex, converters = _compile_route(path)
         state.routes.append((set(methods), regex, converters, func, None))
         return func

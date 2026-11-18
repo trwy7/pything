@@ -17,7 +17,7 @@ class Setting:
 
     def __init__(
         self, id: str, display_name: str, default: Any, type: str, hidden: bool = False
-    ):
+    ) -> None:
         self.id = id
         self.display_name = display_name
         self.default = default
@@ -25,12 +25,12 @@ class Setting:
         self.type = type
         self.app: App | None = None
 
-    def get_value(self):
+    def get_value(self) -> Any:
         if self.app is None:
             raise ValueError("Setting must be added to an app")
         return state.config[self.app.id][self.id]
 
-    def set_value(self, value: Any, persist: bool = True):
+    def set_value(self, value: Any, persist: bool = True) -> None:
         if self.app is None:
             raise ValueError("Setting must be added to an app before setting a value")
         state.config[self.app.id][self.id] = value
@@ -39,12 +39,16 @@ class Setting:
 
 
 class StringSetting(Setting):
-    def __init__(self, id: str, display_name: str, default: str, hidden: bool = False):
+    def __init__(
+        self, id: str, display_name: str, default: str, hidden: bool = False
+    ) -> None:
         super().__init__(id, display_name, default, "string", hidden)
 
 
 class BooleanSetting(Setting):
-    def __init__(self, id: str, display_name: str, default: bool, hidden: bool = False):
+    def __init__(
+        self, id: str, display_name: str, default: bool, hidden: bool = False
+    ) -> None:
         super().__init__(id, display_name, default, "bool", hidden)
 
 
@@ -58,7 +62,7 @@ class FloatSetting(Setting):
         min_value: float | None = None,
         max_value: float | None = None,
         unit: str | None = None,
-    ):
+    ) -> None:
         super().__init__(id, display_name, default, "float", hidden)
         self.min_value = min_value
         self.max_value = max_value
@@ -75,7 +79,7 @@ class IntegerSetting(Setting):
         min_value: int | None = None,
         max_value: int | None = None,
         unit: str | None = None,
-    ):
+    ) -> None:
         super().__init__(id, display_name, default, "int", hidden)
         self.min_value = min_value
         self.max_value = max_value
@@ -90,41 +94,41 @@ class SelectSetting(Setting):
         default: str,
         options: dict[str, str],
         hidden: bool = False,
-    ):
+    ) -> None:
         super().__init__(id, display_name, default, "select", hidden)
         self.options = options
 
 
 class DataSetting(Setting):
-    def __init__(self, id: str, default: Any):
+    def __init__(self, id: str, default: Any) -> None:
         super().__init__(id, "", default, "data", True)
 
 
 class ElementSetting:
-    def __init__(self, id: str, type: str, hidden: bool = False):
+    def __init__(self, id: str, type: str, hidden: bool = False) -> None:
         self.type = type
         self.id = id
         self.hidden = hidden
 
-    def get_value(self):
+    def get_value(self) -> Any:
         raise NotImplementedError(
             "ElementSettings cannot store data, but get_value was called."
         )
 
-    def set_value(self, value: Any):
+    def set_value(self, value: Any) -> None:
         raise NotImplementedError(
             "ElementSettings cannot store data, but set_value was called."
         )
 
 
 class LinkSetting(ElementSetting):
-    def __init__(self, id: str, label: str, link: str, hidden: bool = False):
+    def __init__(self, id: str, label: str, link: str, hidden: bool = False) -> None:
         super().__init__(id, "link", hidden)
         self.label = label
         self.link = link
 
 
 class LabelSetting(ElementSetting):
-    def __init__(self, id: str, label: str, hidden: bool = False):
+    def __init__(self, id: str, label: str, hidden: bool = False) -> None:
         super().__init__(id, "label", hidden)
         self.label = label

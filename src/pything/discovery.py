@@ -127,7 +127,9 @@ def enabled_apps(manifests: dict[str, dict[str, Any]]) -> set[str]:
     return required_dependency_closure(set(manifests) - disabled | core_apps, manifests)
 
 
-def app_dependency_view(manifests: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+def app_dependency_view(
+    manifests: dict[str, dict[str, Any]],
+) -> list[dict[str, Any]]:
     enabled = enabled_apps(manifests)
     app_names = {app_id: manifest["name"] for app_id, manifest in manifests.items()}
     required_by: dict[str, set[str]] = {app_id: set() for app_id in manifests}
@@ -135,7 +137,7 @@ def app_dependency_view(manifests: dict[str, dict[str, Any]]) -> list[dict[str, 
         for dependency in manifest["dependencies"]["required"]:
             if dependency in required_by and app_id in enabled:
                 required_by[dependency].add(app_id)
-    result = []
+    result: list[dict[str, Any]] = []
     for app_id in sorted(
         manifests,
         key=lambda item: (manifests[item]["core"], manifests[item]["name"].casefold()),
