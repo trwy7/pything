@@ -142,6 +142,9 @@ show_output = logger.isEnabledFor(logging.DEBUG)
 # Registries live here so web/websocket/app code can share them without importing
 # each other. Dicts/lists are mutated in place; never rebound after import.
 apps: dict[str, App] = {}
+discovered_app_manifests: dict[str, dict[str, Any]] = {}
+enabled_app_ids: set[str] = set()
+overwritten_app_ids: list[str] = []
 clients: dict[str, Client] = {}
 broadcast_listeners: dict[str, list[Callable[..., Any]]] = {}
 client_mods: list[tuple[str, App]] = []

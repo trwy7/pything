@@ -40,7 +40,7 @@ def app_manifest(app_dir: str) -> dict[str, Any]:
 def discover_apps() -> dict[str, dict[str, Any]]:
     discovered: dict[str, dict[str, Any]] = {}
     priorities: dict[str, int] = {}
-    core_app_ids: set[str] = set()
+    builtin_app_ids: set[str] = set()
     app_roots = (
         ("apps", 0),
         (os.fspath(state.CUSTOM_APP_DIR), 1),
@@ -61,8 +61,8 @@ def discover_apps() -> dict[str, dict[str, Any]]:
                 raise TypeError(
                     f"Manifest for app directory '{app_dir}' has invalid id"
                 )
-            if priority == 0 and manifest.get("core", False):
-                core_app_ids.add(app_id)
+            if priority == 0:
+                builtin_app_ids.add(app_id)
             if app_id in discovered and priorities[app_id] == priority:
                 raise RuntimeError(f"App id '{app_id}' is defined more than once")
             if app_id in discovered and priority > priorities[app_id]:
@@ -87,7 +87,7 @@ def discover_apps() -> dict[str, dict[str, Any]]:
 
     overwritten_apps[:] = sorted(
         app_id
-        for app_id in core_app_ids
+        for app_id in builtin_app_ids
         if app_id in discovered and priorities[app_id] > 0
     )
     return discovered

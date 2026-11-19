@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PYThing Custom Apps</title>
+    <style>
+        :root {
+            --custom-hue: {{ custom_hue }};
+            --panel: rgba(255, 255, 255, 0.08);
+            --panel-strong: rgba(255, 255, 255, 0.12);
+            --border: rgba(255, 255, 255, 0.2);
+            --muted: rgba(255, 255, 255, 0.68);
+            --accent: hsl(var(--custom-hue, 158), 100%, 78%);
+        }
+        * { box-sizing: border-box; }
+        body {
+            min-height: 100vh;
+            margin: 0;
+            padding: 32px clamp(18px, 5vw, 80px) 48px;
+            background: linear-gradient(350deg, #272727, #1f1f1f);
+            color: white;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        main { width: min(100%, 900px); margin: 0 auto; }
+        h1 { margin: 0 0 18px; font-size: clamp(1.8rem, 4vw, 2.5rem); text-align: center; }
+        h2 { margin: 34px 0 12px; color: var(--accent); font-size: 1.25rem; }
+        a { color: var(--accent); }
+        .nav { margin-bottom: 30px; text-align: center; }
+        .panel {
+            padding: 18px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--panel);
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.18);
+        }
+        .upload-form { display: grid; gap: 14px; }
+        .app-id, .empty { color: var(--muted); }
+        input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.22);
+            color: white;
+            font: inherit;
+        }
+        input[type="submit"], button {
+            justify-self: start;
+            padding: 11px 24px;
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            background: hsl(var(--custom-hue, 158), 35%, 28%);
+            color: white;
+            cursor: pointer;
+            font: inherit;
+            font-weight: bold;
+        }
+        input[type="submit"]:hover, button:hover {
+            background: hsl(var(--custom-hue, 158), 40%, 36%);
+        }
+        .apps {
+            display: grid;
+            gap: 1px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--border);
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.18);
+        }
+        .app {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            min-height: 58px;
+            padding: 12px 16px;
+            background: var(--panel);
+        }
+        .app:hover { background: var(--panel-strong); }
+        .app-name { display: block; margin-bottom: 4px; }
+        .delete-button { flex: 0 0 auto; margin: 0; }
+        .empty { margin: 0; padding: 16px; }
+        @media (max-width: 560px) {
+            .app { align-items: flex-start; flex-direction: column; gap: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <h1>Custom Apps</h1>
+        <div class="nav"><a href="/apps">Back to Apps</a></div>
+
+        <section aria-labelledby="upload-heading">
+            <h2 id="upload-heading">Upload apps</h2>
+            <div class="panel">
+                <form class="upload-form" action="/customapps/upload" method="post" enctype="multipart/form-data">
+                    <label for="app-zips">Choose one or more .zip files</label>
+                    <input id="fapp-zips" type="file" name="apps" accept=".zip,application/zip" multiple required>
+                    <input type="submit" value="Upload and restart">
+                </form>
+            </div>
+        </section>
+
+        <section aria-labelledby="installed-heading">
+            <h2 id="installed-heading">Installed custom apps</h2>
+            <div class="apps">
+                {% for app in custom_apps %}
+                <div class="app">
+                    <span>
+                        <strong class="app-name">{{ app.display_name }}</strong>
+                        <span class="app-id">{{ app.id }}{% if not app.enabled %} · Disabled{% endif %}{% if app.id in overwritten_apps %} · Overrides an existing app{% endif %}</span>
+                    </span>
+                    {% if not app.source %}
+                    <button class="delete-button" type="button" data-app-id="{{ app.id }}" data-app-name="{{ app.display_name }}">Delete</button>
+                    {% endif %}
+                </div>
+                {% else %}
+                <p class="empty">No custom apps are installed.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </main>
+    <script>
+        document.querySelectorAll('.delete-button').forEach((button) => {
+            button.addEventListener('click', async () => {
+                const appName = button.dataset.appName;
+                if (!window.confirm(`Delete ${appName}? PYThing will restart.`)) return;
+                const response = await fetch(`/customapps/${encodeURIComponent(button.dataset.appId)}`, {
+                    method: 'DELETE'
+                });
+                if (response.ok) {
+                    document.open();
+                    document.write(await response.text());
+                    document.close();
+                } else {
+                    window.alert(`Could not delete ${appName}: ${await response.text()}`);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

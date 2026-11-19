@@ -14,7 +14,7 @@ from http.server import ThreadingHTTPServer
 
 from . import state
 from .depends import install_app_requirements
-from .discovery import discover_apps, enabled_apps
+from .discovery import discover_apps, enabled_apps, overwritten_apps
 from .server import Handler
 from .web import Blueprint, _register_blueprint_routes
 from .websocket import socket
@@ -108,7 +108,14 @@ def main() -> None:
 
     # Load enabled apps
     manifests = discover_apps()
-    enabled = sorted(enabled_apps(manifests))
+    enabled = enabled_apps(manifests)
+    state.discovered_app_manifests.clear()
+    state.discovered_app_manifests.update(manifests)
+    state.enabled_app_ids.clear()
+    state.enabled_app_ids.update(enabled)
+    state.overwritten_app_ids.clear()
+    state.overwritten_app_ids.extend(overwritten_apps)
+    enabled = sorted(enabled)
     install_app_requirements(manifests[app_id]["directory"] for app_id in enabled)
     for app_id in enabled:
         import_app(manifests[app_id]["directory"])

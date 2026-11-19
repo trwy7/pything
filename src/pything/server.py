@@ -5,12 +5,16 @@ from __future__ import annotations
 import datetime
 import os
 import urllib.parse
+from email.parser import BytesParser
+from email.policy import default as email_policy
 from http.server import BaseHTTPRequestHandler
 
 from . import state
 from .web import (
+    FileMultiDict,
     MultiDict,
     Response,
+    UploadedFile,
     _dispatch,
     _get_request,
     _serve_static,
@@ -72,17 +76,50 @@ class Handler(BaseHTTPRequestHandler):
             urllib.parse.parse_qs(parsed.query, keep_blank_values=True)
         )
         req.form = MultiDict({})
+        req.files = FileMultiDict()
+        req.remote_addr = self.client_address[0]
         req.sid = None
         _set_current_app(None)
 
         if self.command == "POST":
             length = int(self.headers.get("Content-Length") or 0)
             body = self.rfile.read(length) if length else b""
-            req.form = MultiDict(
-                urllib.parse.parse_qs(
-                    body.decode(errors="replace"), keep_blank_values=True
+            content_type = self.headers.get("Content-Type", "")
+            if content_type.lower().startswith("multipart/form-data"):
+                message = BytesParser(policy=email_policy).parsebytes(
+                    b"Content-Type: "
+                    + content_type.encode("ascii", errors="replace")
+                    + b"\r\nMIME-Version: 1.0\r\n\r\n"
+                    + body
                 )
-            )
+                form_data: dict[str, list[str]] = {}
+                file_data: dict[str, list[UploadedFile]] = {}
+                if message.is_multipart():
+                    for part in message.iter_parts():
+                        if part.get_content_disposition() != "form-data":
+                            continue
+                        name = part.get_param("name", header="content-disposition")
+                        if not name:
+                            continue
+                        payload = part.get_payload(decode=True) or b""
+                        filename = part.get_filename()
+                        if filename is not None:
+                            file_data.setdefault(name, []).append(
+                                UploadedFile(filename, payload)
+                            )
+                        else:
+                            charset = part.get_content_charset() or "utf-8"
+                            form_data.setdefault(name, []).append(
+                                payload.decode(charset, errors="replace")
+                            )
+                req.form = MultiDict(form_data)
+                req.files = FileMultiDict(file_data)
+            else:
+                req.form = MultiDict(
+                    urllib.parse.parse_qs(
+                        body.decode(errors="replace"), keep_blank_values=True
+                    )
+                )
 
         response = _dispatch(self.command, path)
         if response is None:
@@ -113,6 +150,9 @@ class Handler(BaseHTTPRequestHandler):
         self._handle()
 
     def do_POST(self) -> None:
+        self._handle()
+
+    def do_DELETE(self) -> None:
         self._handle()
 
     def do_HEAD(self) -> None:

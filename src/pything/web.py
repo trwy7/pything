@@ -6,6 +6,7 @@ import mimetypes
 import os
 import re
 import threading
+from io import BytesIO
 from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any, NoReturn
@@ -73,12 +74,35 @@ class MultiDict:
         return f"MultiDict({self._data!r})"
 
 
+class UploadedFile(BytesIO):
+    """In-memory uploaded file, compatible with consumers expecting a file object."""
+
+    def __init__(self, filename: str, data: bytes) -> None:
+        super().__init__(data)
+        self.filename = filename
+
+
+class FileMultiDict:
+    """Small multi-value mapping for uploaded files."""
+
+    def __init__(self, data: dict[str, list[UploadedFile]] | None = None) -> None:
+        self._data = data or {}
+
+    def __contains__(self, key: str) -> bool:
+        return key in self._data
+
+    def getlist(self, key: str) -> list[UploadedFile]:
+        return self._data.get(key, [])
+
+
 class _Request:
-    """Request shim: args/form for HTTP routes, sid for websocket dispatches."""
+    """Request shim: args/form/files for HTTP routes, sid for websocket dispatches."""
 
     def __init__(self) -> None:
         self.args: MultiDict = MultiDict({})
         self.form: MultiDict = MultiDict({})
+        self.files: FileMultiDict = FileMultiDict()
+        self.remote_addr: str | None = None
         self.sid: str | None = None
 
 

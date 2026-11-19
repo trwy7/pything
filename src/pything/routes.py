@@ -7,13 +7,17 @@ from __future__ import annotations
 
 import shutil
 import threading
+from pathlib import Path
 from typing import Any
 
 from . import state
 from .app import App, stop_server
-from .discovery import app_dependency_view, discover_apps, required_dependency_closure
+from .discovery import (
+    app_dependency_view,
+    discover_apps,
+    required_dependency_closure,
+)
 from .web import Response, _set_current_app, redirect, render_template, request, route
-
 
 restart_html = lambda x: (
     "<style>html { background: linear-gradient(350deg, #`   272727, #1f1f1f); color:"
@@ -146,7 +150,7 @@ def settings_set() -> Response:
         state.save_config()
     return redirect("/settings")
 
-@route("/customapps", methods=("POST",))
+@route("/customapps/upload", methods=("POST",))
 def custom_apps_set():
     # Only allow localhost access
     localhost = request.remote_addr in ("127.0.0.1", "::1")
@@ -180,3 +184,52 @@ def custom_apps_set():
             zf.extractall(state.CUSTOM_APP_DIR / app_id)
     restart()
     return restart_html("customapps")
+
+@route("/customapps/<app_id>", methods=("DELETE",))
+def custom_apps_delete(app_id: str):
+    # Only allow localhost access
+    localhost = request.remote_addr in ("127.0.0.1", "::1")
+    if not localhost:
+        return Response("Access denied", status=403)
+    # Check if the app is installed
+    if not (state.CUSTOM_APP_DIR / app_id).exists():
+        return Response("App not found", status=404)
+    # Delete the app directory
+    shutil.rmtree(state.CUSTOM_APP_DIR / app_id)
+    restart()
+    return restart_html("customapps")
+
+@route("/customapps", methods=("GET",))
+def custom_apps_get():
+    # Only allow localhost access
+    localhost = request.remote_addr in ("127.0.0.1", "::1")
+    if not localhost:
+        return Response("You must be on the local machine to access this page.", status=403)
+    # Include installed custom apps even when disabled and therefore not loaded.
+    manifests = state.discovered_app_manifests
+    enabled = state.enabled_app_ids
+    source_custom_root = (Path(state.base_dir) / "customapps").resolve()
+    installed_custom_root = state.CUSTOM_APP_DIR.resolve()
+    custom_apps = []
+    for app_id, manifest in manifests.items():
+        app_path = Path(manifest["directory"]).resolve()
+        if not (
+            app_path.is_relative_to(source_custom_root)
+            or app_path.is_relative_to(installed_custom_root)
+        ):
+            continue
+        custom_apps.append(
+            {
+                "id": app_id,
+                "display_name": manifest["name"],
+                "source": app_path.is_relative_to(source_custom_root),
+                "enabled": app_id in enabled,
+            }
+        )
+    custom_apps.sort(key=lambda app: app["display_name"].casefold())
+    return render_template(
+        "customapps.html",
+        overwritten_apps=state.overwritten_app_ids,
+        custom_apps=custom_apps,
+        custom_hue=state.config.get("customizer", {}).get("hue", 151),
+    )
