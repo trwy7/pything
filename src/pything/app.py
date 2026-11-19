@@ -87,6 +87,8 @@ class App:
         self.config_dir: Path = state.CONFIG_DIR / "apps" / self.id
         self.display_name: str = manifest["name"]
         self.category: str = manifest["category"]
+        self.version: int = int(manifest.get("version", 0))
+        self.update_manifest_url: str | None = manifest.get("update_manifest_url")
         state.apps[self.id] = self
         self.logger: logging.Logger = logging.getLogger("pything.app." + self.id)
         if self.id in state.DEVAPPS:
