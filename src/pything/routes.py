@@ -5,13 +5,14 @@ Importing this module registers its routes
 
 from __future__ import annotations
 
+import re
 import shutil
 import threading
 from pathlib import Path
 from typing import Any
 
 from . import state
-from .app import App, stop_server
+from .app import APP_ID_REGEX, App, stop_server
 from .discovery import (
     app_dependency_view,
     discover_apps,
@@ -187,6 +188,9 @@ def custom_apps_set():
             if "id" not in manifest:
                 return Response("Invalid custom app: missing id in manifest.json", status=400)
             app_id = manifest["id"]
+            # Validate the app_id to prevent directory traversal
+            if not re.match(APP_ID_REGEX, app_id):
+                return Response("Invalid custom app: id must only contain alphanumeric characters and underscores", status=400)
             # Check if the app is already installed
             if (state.CUSTOM_APP_DIR / app_id).exists():
                 # overwrite the existing app
@@ -203,6 +207,9 @@ def custom_apps_delete(app_id: str):
     localhost = request.remote_addr in ("127.0.0.1", "::1")
     if not localhost:
         return Response("Access denied", status=403)
+    # Ensure app id is valid
+    if not re.match(APP_ID_REGEX, app_id):
+        return Response("Invalid app id", status=400)
     # Check if the app is installed
     if not (state.CUSTOM_APP_DIR / app_id).exists():
         return Response("App not found", status=404)
