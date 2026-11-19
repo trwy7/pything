@@ -55,8 +55,6 @@ class App:
         self.source = app_path.is_relative_to(source_root) # also very janky, undocumented intentionally
         custom_roots = (source_root / "customapps", state.CUSTOM_APP_DIR.resolve())
         self.custom = any(app_path.is_relative_to(root) for root in custom_roots)
-        if self.custom:
-            print(f"Loading custom app from {self.dir}")
         manifest_path = os.path.join(self.dir, "manifest.json")
         try:
             with open(manifest_path, encoding="utf-8") as manifest_file:
