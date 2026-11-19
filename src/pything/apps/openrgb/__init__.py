@@ -89,7 +89,10 @@ def _update_color(retry=True):
     try:
         for device in openrgb.devices:
             app.logger.debug("Setting device %s to color %s", device.name, color)
-            device.set_color(color)
+            try:
+                device.set_color(color)
+            except Exception as e:  # noqa: BLE001
+                app.logger.error("Failed to set color for device %s: %s", device.name, e) # jus throws random errors sometimes
     except OpenRGBDisconnected:
         app.logger.warning("Attempting to reconnect to OpenRGB")
         if retry:
