@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime
+import ipaddress
 import os
 import urllib.parse
 from email.parser import BytesParser
@@ -36,6 +37,38 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, format: str, *args: object) -> None:
         state.logger.debug("%s - %s", self.address_string(), format % args)
 
+    def _has_trusted_origin(self) -> bool:
+        """Accept only origins served from this loopback server instance."""
+        origin = self.headers.get("Origin")
+        if not origin:
+            return False
+        try:
+            parsed = urllib.parse.urlsplit(origin)
+            hostname = parsed.hostname
+            port = parsed.port
+        except ValueError:
+            return False
+        if (
+            parsed.scheme not in ("http", "https")
+            or not hostname
+            or parsed.username is not None
+            or parsed.password is not None
+            or parsed.path
+            or parsed.query
+            or parsed.fragment
+        ):
+            return False
+        if port is None:
+            port = 443 if parsed.scheme == "https" else 80
+        if port != self.server.server_port:
+            return False
+        if hostname.casefold() == "localhost":
+            return True
+        try:
+            return ipaddress.ip_address(hostname).is_loopback
+        except ValueError:
+            return False
+
     # -- websocket upgrade ------------------------------------------------
     def _is_websocket_upgrade(self) -> bool:
         return (
@@ -44,6 +77,10 @@ class Handler(BaseHTTPRequestHandler):
         )
 
     def _do_websocket(self, settings: bool = False) -> None:
+        if not self._has_trusted_origin():
+            self.close_connection = True
+            self.send_error(403, "Untrusted Origin")
+            return
         key = self.headers.get("Sec-WebSocket-Key", "")
         rfile = self.rfile
         wfile = self.wfile
@@ -69,6 +106,10 @@ class Handler(BaseHTTPRequestHandler):
 
     # -- normal HTTP --------------------------------------------------------
     def _handle(self) -> None:
+        if self.command in {"POST", "PUT", "PATCH", "DELETE"} and not self._has_trusted_origin():
+            self.close_connection = True
+            self._send_response(Response("Forbidden", status=403))
+            return
         parsed = urllib.parse.urlparse(self.path)
         path = urllib.parse.unquote(parsed.path)
         req = _get_request()
