@@ -20,7 +20,7 @@ from .discovery import (
 from .web import Response, _set_current_app, redirect, render_template, request, route
 
 restart_html = lambda x: (
-    "<style>html { background: linear-gradient(350deg, #`   272727, #1f1f1f); color:"
+    "<style>html { background: linear-gradient(350deg, #272727, #1f1f1f); color:"
     " #fff; }</style><h1 id='restarting'>PYThing is restarting...</h1><script>const params = new"
     " URLSearchParams(window.location.search); if (!params.has('from')) {"
     " setInterval(() => { fetch('/isready').then(response =>"
