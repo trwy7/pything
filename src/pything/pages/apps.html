@@ -55,6 +55,48 @@
         .settinglabel strong { display: block; color: white; }
         .dependency { display: block; font-size: 0.9rem; }
         .message { margin-top: 5px; color: #ffb4a8; font-size: 0.9rem; }
+        .app-id { display: block; color: var(--muted); font-size: 0.9rem; }
+        .custom-app-section { width: 100%; max-width: 900px; margin: 34px auto 0; }
+        .custom-app-section h2 { margin-bottom: 12px; }
+        .custom-apps {
+            display: grid;
+            gap: 1px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--border);
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.18);
+        }
+        .custom-app {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            min-height: 58px;
+            padding: 12px 16px;
+            background: var(--panel);
+        }
+        .custom-app:hover { background: var(--panel-strong); }
+        .custom-apps-empty { margin: 0; padding: 16px; color: var(--muted); }
+        .upload-form {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            margin: 0 auto 16px;
+        }
+        .upload-form input[type="file"] {
+            flex: 1 1 260px;
+            min-width: 0;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.22);
+            color: white;
+            font: inherit;
+        }
+        .upload-form input[type="submit"] { margin-top: 0; }
+        .custom-app .delete-button { flex: 0 0 auto; margin: 0; }
         input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent); }
         input[type="submit"], button {
             margin-top: 30px;
@@ -81,7 +123,7 @@
         dialog label { display: block; margin: 12px 0; color: var(--muted); }
         dialog button { margin: 12px 8px 0 0; }
         @media (max-width: 560px) {
-            .setting { align-items: flex-start; flex-direction: column; }
+            .setting, .custom-app { align-items: flex-start; flex-direction: column; }
             .settinglabel { margin-right: 0; margin-bottom: 8px; }
         }
     </style>
@@ -102,6 +144,9 @@
                     <strong>{{ app.name }}</strong>
                     {% if app.description %}
                     <span class="description">{{ app.description }}</span>
+                    {% endif %}
+                    {% if app.custom %}
+                    <span class="description">Custom app</span>
                     {% endif %}
                     {% if app.required_names %}
                     <span class="dependency">Requires: {{ app.required_names | join(", ") }}</span>
@@ -148,5 +193,46 @@
         updateDependencies();
     </script>
     </form>
+
+    <section class="custom-app-section">
+        <h2>Custom apps</h2>
+        <form class="upload-form" action="/customapps/upload" method="post" enctype="multipart/form-data">
+            <label for="custom-app-zips">Upload .zip files:</label>
+            <input id="custom-app-zips" type="file" name="apps" accept=".zip,application/zip" multiple required>
+            <input type="submit" value="Install and restart" onclick="return confirm('apps can access your system, continue?')">
+        </form>
+        <div class="custom-apps">
+            {% for app in custom_apps %}
+            <div class="custom-app">
+                <span>
+                    <strong>{{ app.name }}</strong>
+                    <span class="app-id">{{ app.id }}{% if not app.enabled %} · Disabled{% endif %}{% if app.id in overwritten_apps %} · Overrides an existing app{% endif %}</span>
+                </span>
+                {% if not app.source %}
+                <button class="delete-button" type="button" data-app-id="{{ app.id }}" data-app-name="{{ app.name }}">Delete</button>
+                {% endif %}
+            </div>
+            {% else %}
+            <p class="custom-apps-empty">No custom apps are installed.</p>
+            {% endfor %}
+        </div>
+    </section>
+    <script>
+        document.querySelectorAll('.delete-button').forEach((button) => {
+            button.addEventListener('click', async () => {
+                const appName = button.dataset.appName;
+                const response = await fetch(`/customapps/${encodeURIComponent(button.dataset.appId)}`, {
+                    method: 'DELETE'
+                });
+                if (response.ok) {
+                    document.open();
+                    document.write(await response.text());
+                    document.close();
+                } else {
+                    window.alert(`Could not delete ${appName}: ${await response.text()}`);
+                }
+            });
+        });
+    </script>
 </body>
 </html>
