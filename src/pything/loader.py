@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import datetime
 import importlib
+import importlib.util
 import os
+import sys
 import threading
 import time
+import types
 from http.server import ThreadingHTTPServer
 
 from . import state
@@ -30,7 +33,38 @@ def import_app(iappd: str) -> None:
         )
     state.logger.debug("Importing app %s", iappd)
     start_time = time.time()
-    iapp = importlib.import_module(iappd.replace(os.sep, "."))
+    app_dir = os.path.abspath(iappd)
+    source_root = os.path.dirname(os.path.abspath(state.__file__))
+    try:
+        is_source_app = os.path.commonpath((source_root, app_dir)) == source_root
+    except ValueError:  # Different drives on Windows.
+        is_source_app = False
+    if is_source_app:
+        module_name = os.path.relpath(app_dir, source_root).replace(os.sep, ".")
+        iapp = importlib.import_module(module_name)
+    else:
+        package_name = "_pything_custom_apps"
+        if package_name not in sys.modules:
+            package = types.ModuleType(package_name)
+            package.__path__ = []
+            sys.modules[package_name] = package
+        # A unique package name allows sibling imports while avoiding collisions
+        # with built-in apps or other external app directories.
+        module_name = f"{package_name}.app_{abs(hash(app_dir))}"
+        spec = importlib.util.spec_from_file_location(
+            module_name,
+            os.path.join(app_dir, "__init__.py"),
+            submodule_search_locations=[app_dir],
+        )
+        if spec is None or spec.loader is None:
+            raise RuntimeError(f"Could not load app package from '{app_dir}'")
+        iapp = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = iapp
+        try:
+            spec.loader.exec_module(iapp)
+        except BaseException:
+            sys.modules.pop(module_name, None)
+            raise
     end_time = time.time()
     state.logger.debug("Imported app %s in %.3f seconds", iappd, end_time - start_time)
     if not hasattr(iapp, "app"):

@@ -57,11 +57,13 @@ runtime = sys.implementation.cache_tag or (
     f"python-{sys.version_info.major}.{sys.version_info.minor}"
 )
 DEPENDENCY_DIR = (
-    Path(CACHE_ROOT)
+    CACHE_ROOT
     / "pything"
     / "dependencies"
     / f"{runtime}-{sysconfig.get_platform()}"
 )
+CUSTOM_APP_DIR = DATA_ROOT / "customapps"
+CUSTOM_APP_DIR.mkdir(parents=True, exist_ok=True)
 
 # Log to both the console and a file under CACHE_ROOT/pything/.
 log_dir = os.path.join(CACHE_ROOT, "pything") if CACHE_ROOT else None
@@ -108,13 +110,14 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, base_dir)
 
 jinja_env = Environment(
-    loader=ChoiceLoader(
+    loader=ChoiceLoader( # TODO: remove this so custom apps cant conflict with core templates
         [
             FileSystemLoader(
                 os.path.join(base_dir, "pages").replace("\\", "/")
-            ),  # TODO: remove this so custom apps cant conflict with core templates
-            FileSystemLoader(os.path.join(base_dir, "apps").replace("\\", "/")),
+            ),
             FileSystemLoader(os.path.join(base_dir, "customapps").replace("\\", "/")),
+            FileSystemLoader(os.fspath(CUSTOM_APP_DIR)),
+            FileSystemLoader(os.path.join(base_dir, "apps").replace("\\", "/")),
         ]
     ),
     autoescape=False,

@@ -39,7 +39,7 @@ class App:
             category (str): The category of the app.
             dir (str): The directory of the app.
             dirname (str): The name of the app's directory.
-            custom (bool): Whether the app is a custom app or not. These can either be loaded from the customapps folder or the user's appdata folder.
+            custom (bool): Whether the app is loaded from either custom-app directory.
             cache_dir (Path): The cache directory for the app.
             data_dir (Path): The data directory for the app.
             config_dir (Path): The configuration directory for the app. Only use for data that cannot be stored in a setting, like a database or other large files.
@@ -50,7 +50,11 @@ class App:
         stack = inspect.stack()  # little janky, but works
         self.dir: str = os.path.dirname(os.path.abspath(stack[1].filename))
         self.dirname: str = os.path.basename(self.dir)
-        self.custom = False # TODO: implement
+        app_path = Path(self.dir).resolve()
+        source_root = Path(__file__).resolve().parent
+        self.source = app_path.is_relative_to(source_root) # also very janky, undocumented intentionally
+        custom_roots = (source_root / "customapps", state.CUSTOM_APP_DIR.resolve())
+        self.custom = any(app_path.is_relative_to(root) for root in custom_roots)
         manifest_path = os.path.join(self.dir, "manifest.json")
         try:
             with open(manifest_path, encoding="utf-8") as manifest_file:
@@ -79,11 +83,8 @@ class App:
             )
         self.id: str = manifest["id"]
         self.cache_dir: Path = state.CACHE_ROOT / "apps" / self.id
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.data_dir: Path = state.DATA_ROOT / "apps" / self.id
-        self.data_dir.mkdir(parents=True, exist_ok=True)
         self.config_dir: Path = state.CONFIG_DIR / "apps" / self.id
-        self.config_dir.mkdir(parents=True, exist_ok=True)
         self.display_name: str = manifest["name"]
         self.category: str = manifest["category"]
         state.apps[self.id] = self
