@@ -102,10 +102,8 @@ def start_tray():
         "pything", _icons[initial_mode], "PYThing", pystray.Menu(*_items)
     )
 
-    # Safer cross-platform alternative to threading.Thread(target=tray_icon.run)
-    _tray_icon.run_detached()
+    threading.Thread(target=_tray_icon.run, daemon=True).start()
 
-    # Event-driven on macOS/Windows (no polling); falls back to polling on Linux
     threading.Thread(
         target=darkdetect.listener, args=(_on_theme_change,), daemon=True
     ).start()
