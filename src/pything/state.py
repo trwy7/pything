@@ -119,7 +119,7 @@ jinja_env = Environment(
             FileSystemLoader(os.path.join(base_dir, "apps").replace("\\", "/")),
         ]
     ),
-    autoescape=False,
+    autoescape=True,
 )
 
 
