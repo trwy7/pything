@@ -63,7 +63,6 @@ DEPENDENCY_DIR = (
     / f"{runtime}-{sysconfig.get_platform()}"
 )
 CUSTOM_APP_DIR = DATA_ROOT / "customapps"
-CUSTOM_APP_DIR.mkdir(parents=True, exist_ok=True)
 
 # Log to both the console and a file under CACHE_ROOT/pything/.
 log_dir = os.path.join(CACHE_ROOT, "pything") if CACHE_ROOT else None
