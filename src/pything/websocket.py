@@ -189,6 +189,14 @@ def _handle_ws_message(client: Client, event: str, args: list[Any]) -> None:
                 "A client just sent a request to non-existent app '%s'", app_id
             )
             return
+        if client.app != app_id:
+            state.logger.warning(
+                "Ignoring client %s event for inactive app '%s' (active app: '%s')",
+                client.sid,
+                app_id,
+                client.app,
+            )
+            return
         if app_event == "debug":
             state.logger.debug("Client debug message to %s: %s", app_id, data)
             return
