@@ -380,7 +380,7 @@ def ha_thread():
                 data = msg.get("event", {}).get("data", {})
                 new_state = data.get("new_state")
                 eid = data.get("entity_id")
-                app.logger.verbose("state_changed for %s new_state=%s", eid, new_state)
+                app.logger.debug("state_changed for %s new_state=%s", eid, new_state)
                 if new_state and eid in ids:
                     state_map[eid] = new_state
                     send_cards(state_map)
