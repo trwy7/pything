@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import datetime
-import importlib
 import importlib.util
 import os
 import sys
@@ -36,41 +35,33 @@ def import_app(iappd: str) -> None:
     state.logger.debug("Importing app %s", iappd)
     start_time = time.time()
     app_dir = os.path.abspath(iappd)
-    # Apps under the source tree can use their normal package imports; external
-    # app directories need a synthetic package namespace instead.
-    source_root = os.path.dirname(os.path.abspath(state.__file__))
+    # Load every app under one namespace so apps can import each other's
+    # modules consistently, regardless of whether they are built-in or external.
+    package_name = "_pything_apps"
+    package = sys.modules.get(package_name)
+    if package is None:
+        package = types.ModuleType(package_name)
+        package.__path__ = []
+        sys.modules[package_name] = package
+    app_name = os.path.basename(app_dir)
+    module_name = f"{package_name}.{app_name}"
+    spec = importlib.util.spec_from_file_location(
+        module_name,
+        os.path.join(app_dir, "__init__.py"),
+        submodule_search_locations=[app_dir],
+    )
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Could not load app package from '{app_dir}'")
+    iapp = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = iapp
+    setattr(package, app_name, iapp)
     try:
-        is_source_app = os.path.commonpath((source_root, app_dir)) == source_root
-    except ValueError:  # Different drives on Windows.
-        is_source_app = False
-    if is_source_app:
-        module_name = os.path.relpath(app_dir, source_root).replace(os.sep, ".")
-        iapp = importlib.import_module(module_name)
-    else:
-        # Give external apps a shared parent package so relative imports between
-        # an app's modules work without colliding with regular package names.
-        package_name = "_pything_apps"
-        if package_name not in sys.modules:
-            package = types.ModuleType(package_name)
-            package.__path__ = []
-            sys.modules[package_name] = package
-        # A unique package name allows sibling imports while avoiding collisions
-        # with built-in apps or other external app directories.
-        module_name = f"{package_name}.{os.path.basename(app_dir)}"
-        spec = importlib.util.spec_from_file_location(
-            module_name,
-            os.path.join(app_dir, "__init__.py"),
-            submodule_search_locations=[app_dir],
-        )
-        if spec is None or spec.loader is None:
-            raise RuntimeError(f"Could not load app package from '{app_dir}'")
-        iapp = importlib.util.module_from_spec(spec)
-        sys.modules[module_name] = iapp
-        try:
-            spec.loader.exec_module(iapp)
-        except BaseException:
-            sys.modules.pop(module_name, None)
-            raise
+        spec.loader.exec_module(iapp)
+    except BaseException:
+        sys.modules.pop(module_name, None)
+        if getattr(package, app_name, None) is iapp:
+            delattr(package, app_name)
+        raise
     end_time = time.time()
     state.logger.debug("Imported app %s in %.3f seconds", iappd, end_time - start_time)
     if not hasattr(iapp, "app"):
