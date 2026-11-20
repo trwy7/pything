@@ -82,6 +82,7 @@ def discover_apps() -> dict[str, dict[str, Any]]:
                     "category": manifest.get("category", "uncategorized"),
                     "dependencies": manifest["dependencies"],
                     "directory": app_dir,
+                    "version": manifest.get("version"),
                 }
                 priorities[app_id] = priority
 

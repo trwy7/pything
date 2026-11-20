@@ -199,14 +199,14 @@
         <form class="upload-form" action="/customapps/upload" method="post" enctype="multipart/form-data">
             <label for="custom-app-zips">Upload .zip files:</label>
             <input id="custom-app-zips" type="file" name="apps" accept=".zip,application/zip" multiple required>
-            <input type="submit" value="Install and restart" onclick="return confirm('apps can access your system, continue?')">
+            <input type="submit" value="Install and restart" onclick="return confirm('Apps can access your system, continue?')">
         </form>
         <div class="custom-apps">
             {% for app in custom_apps %}
             <div class="custom-app">
                 <span>
                     <strong>{{ app.name }}</strong>
-                    <span class="app-id">{{ app.id }}{% if not app.enabled %} · Disabled{% endif %}{% if app.id in overwritten_apps %} · Overrides an existing app{% endif %}</span>
+                    <span class="app-id">{{ app.id }}{% if app.version %} · v{{ app.version }}{% endif %}{% if not app.enabled %} · Disabled{% endif %}{% if app.id in overwritten_apps %} · Modifies an existing app{% endif %}</span>
                 </span>
                 {% if not app.source %}
                 <button class="delete-button" type="button" data-app-id="{{ app.id }}" data-app-name="{{ app.name }}">Delete</button>
