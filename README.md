@@ -139,7 +139,6 @@ The device should boot to a chromium webview (Should be v70 or higher if possibl
    <summary>
       <h2>🏃 Optimization info</h2>
    </summary>
-### Optimization
 
 - The client facing html is written with as little dependencies as possible to save space and load time, no frameworks are used.
 - With as modular as this app is, any unneeded features can be taken away by removing the app responsible for it, even Car Thing support can be removed if only other clients are being used.
