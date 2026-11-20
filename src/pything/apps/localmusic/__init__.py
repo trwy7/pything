@@ -122,7 +122,7 @@ def get_art(track: LocalTrack) -> str | None:
                     and source[2] == ":"
                 ):
                     source = source[1:]
-                if not source or not path.is_file():
+                if not source or not os.path.isfile(source):
                     return None
                 shutil.copyfile(source, path)
             elif parsed.scheme == "" and os.path.isfile(track.art_url):
