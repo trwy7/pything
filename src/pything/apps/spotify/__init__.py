@@ -5,8 +5,8 @@ from datetime import datetime, timedelta
 
 import requests
 import requests.auth
-from apps.music.types import Album, Artist, Song, playback
-from apps.music.utils import get_accent
+from _pything_apps.music.types import Album, Artist, Song, playback
+from _pything_apps.music.utils import get_accent
 
 from pything.app import App
 from pything.settings import DataSetting, LabelSetting, LinkSetting, StringSetting

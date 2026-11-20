@@ -3,7 +3,7 @@ import xml.etree.ElementTree as ET
 from threading import Lock
 
 import requests
-from apps.music.types import playback
+from _pything_apps.music.types import playback  # TODO: maybe figure out typing
 
 from pything.app import App
 from pything.settings import BooleanSetting, StringSetting

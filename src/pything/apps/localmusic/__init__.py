@@ -16,8 +16,8 @@ from datetime import UTC, datetime
 from functools import lru_cache
 from urllib.parse import unquote, unquote_to_bytes, urlparse
 
-from apps.music.types import Album, Artist, Song, playback
-from apps.music.utils import get_accent
+from _pything_apps.music.types import Album, Artist, Song, playback
+from _pything_apps.music.utils import get_accent
 from PIL import Image
 
 from pything.app import App
