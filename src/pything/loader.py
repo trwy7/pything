@@ -11,6 +11,7 @@ import threading
 import time
 import types
 from http.server import ThreadingHTTPServer
+from typing import Any
 
 from . import state
 from .depends import install_app_requirements
@@ -48,14 +49,14 @@ def import_app(iappd: str) -> None:
     else:
         # Give external apps a shared parent package so relative imports between
         # an app's modules work without colliding with regular package names.
-        package_name = "_pything_custom_apps"
+        package_name = "_pything_apps"
         if package_name not in sys.modules:
             package = types.ModuleType(package_name)
             package.__path__ = []
             sys.modules[package_name] = package
         # A unique package name allows sibling imports while avoiding collisions
         # with built-in apps or other external app directories.
-        module_name = f"{package_name}.app_{abs(hash(app_dir))}"
+        module_name = f"{package_name}.{os.path.basename(app_dir)}"
         spec = importlib.util.spec_from_file_location(
             module_name,
             os.path.join(app_dir, "__init__.py"),
@@ -110,6 +111,40 @@ def import_app(iappd: str) -> None:
             break
 
 
+def dependency_order(
+    app_ids: set[str], manifests: dict[str, dict[str, Any]]
+) -> list[str]:
+    """Return enabled apps with dependencies before their dependents."""
+    ordered: list[str] = []
+    visited: set[str] = set()
+    visiting: list[str] = []
+
+    def visit(app_id: str) -> None:
+        if app_id in visited:
+            return
+        visiting.append(app_id)
+        dependencies = manifests[app_id]["dependencies"]
+        for dependency in sorted(
+            set(dependencies["required"]) | set(dependencies["optional"])
+        ):
+            if dependency not in app_ids:
+                continue
+            if dependency in visiting:
+                cycle = visiting[visiting.index(dependency) :] + [dependency]
+                state.logger.error(
+                    "Ignoring app dependency cycle: %s", " -> ".join(cycle)
+                )
+                continue
+            visit(dependency)
+        visiting.pop()
+        visited.add(app_id)
+        ordered.append(app_id)
+
+    for app_id in sorted(app_ids):
+        visit(app_id)
+    return ordered
+
+
 def main() -> None:
     print("Starting PYThing...")
     state.logger.debug("Init apps...")
@@ -117,13 +152,37 @@ def main() -> None:
     # Load enabled apps
     manifests = discover_apps()
     enabled = enabled_apps(manifests)
+
+    # Report apps that cannot be loaded because a required dependency is absent
+    # or itself cannot be loaded. Optional dependencies do not affect loading.
+    unavailable: dict[str, str] = {}
+    for app_id, manifest in manifests.items():
+        for dependency in manifest["dependencies"]["required"]:
+            if dependency not in manifests:
+                unavailable[app_id] = (
+                    f"required dependency '{dependency}' does not exist"
+                )
+                break
+    changed = True
+    while changed:
+        changed = False
+        for app_id in sorted(set(manifests) - set(unavailable)):
+            for dependency in manifests[app_id]["dependencies"]["required"]:
+                if dependency in unavailable:
+                    unavailable[app_id] = (
+                        f"required dependency '{dependency}' cannot be loaded"
+                    )
+                    changed = True
+                    break
+    for app_id, reason in sorted(unavailable.items()):
+        state.logger.warning("Skipping app %s: %s", app_id, reason)
     state.discovered_app_manifests.clear()
     state.discovered_app_manifests.update(manifests)
     state.enabled_app_ids.clear()
     state.enabled_app_ids.update(enabled)
     state.overwritten_app_ids.clear()
     state.overwritten_app_ids.extend(overwritten_apps)
-    enabled = sorted(enabled)
+    enabled = dependency_order(enabled, manifests)
     # Install dependencies before importing apps, since imports may need them.
     install_app_requirements(manifests[app_id]["directory"] for app_id in enabled)
     for app_id in enabled:

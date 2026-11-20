@@ -97,19 +97,29 @@ def discover_apps() -> dict[str, dict[str, Any]]:
 def required_dependency_closure(
     selected: set[str], manifests: dict[str, dict[str, Any]]
 ) -> set[str]:
-    enabled = selected & set(manifests)
+    # Exclude apps whose required dependency chain cannot be satisfied before
+    # calculating the enabled dependency closure. Otherwise a dependent can
+    # repeatedly re-enable a dependency that was just removed as unavailable.
+    available = set(manifests)
     changed = True
     while changed:
         changed = False
-        for app_id in tuple(enabled):
-            for dependency in manifests[app_id]["dependencies"]["required"]:
-                if dependency not in manifests:
-                    enabled.remove(app_id)
-                    changed = True
-                    break
-                if dependency not in enabled:
-                    enabled.add(dependency)
-                    changed = True
+        for app_id in tuple(available):
+            if any(
+                dependency not in available
+                for dependency in manifests[app_id]["dependencies"]["required"]
+            ):
+                available.remove(app_id)
+                changed = True
+
+    enabled = selected & available
+    pending = list(enabled)
+    while pending:
+        app_id = pending.pop()
+        for dependency in manifests[app_id]["dependencies"]["required"]:
+            if dependency not in enabled:
+                enabled.add(dependency)
+                pending.append(dependency)
     return enabled
 
 
