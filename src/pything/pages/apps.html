@@ -152,7 +152,7 @@
                     <span class="dependency">Requires: {{ app.required_names | join(", ") }}</span>
                     {% endif %}
                     {% if app.optional_names %}
-                    <span class="dependency">Wants: {{ app.optional_names | join(", ") }}</span>
+                    <span class="dependency">Optional: {{ app.optional_names | join(", ") }}</span>
                     {% endif %}
                     {% if app.missing_required %}
                     <span class="message">Disabled: missing required app{{ "s" if app.missing_required | length != 1 else "" }}: {{ app.missing_required_names | join(", ") }}</span>
