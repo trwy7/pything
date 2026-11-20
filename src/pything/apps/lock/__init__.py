@@ -4,17 +4,11 @@ import sys
 import threading
 
 from pything.app import App
-from pything.settings import BooleanSetting
 from pything.websocket import socket
 
-app = App(
-    [BooleanSetting("lockstate", "Hide the display when the screen is locked", True)],
-)
+app = App([])
 
 app.screenlockstate = False
-listener_lock = threading.Lock()
-listener_thread: threading.Thread | None = None
-listener_stop_event: threading.Event | None = None
 
 
 def update_lock_state(locked: bool) -> None:
@@ -231,45 +225,12 @@ def lock_thread(stop_event: threading.Event) -> None:
             app.logger.debug("Failed to subscribe to screen lock state", exc_info=True)
 
 
-def stop_lock_listener() -> None:
-    global listener_thread, listener_stop_event
-    with listener_lock:
-        thread = listener_thread
-        stop_event = listener_stop_event
-        listener_thread = None
-        listener_stop_event = None
-    if stop_event is not None:
-        stop_event.set()
-    if thread is not None and thread is not threading.current_thread():
-        thread.join()
-
-
 def start_lock_listener() -> None:
-    global listener_thread, listener_stop_event
-    if (
-        sys.platform not in ("win32", "linux")
-        or not app.settings["lockstate"].get_value()
-    ):
+    if sys.platform not in ("win32", "linux"):
         return
-    with listener_lock:
-        if listener_thread is not None and listener_thread.is_alive():
-            return
-        listener_stop_event = threading.Event()
-        listener_thread = threading.Thread(
-            target=lock_thread, args=(listener_stop_event,), daemon=True
-        )
-        listener_thread.start()
-
-
-@app.on_setting_update
-def update_lock_listener(changed: dict[str, object]) -> None:
-    if "lockstate" not in changed:
-        return
-    stop_lock_listener()
-    if changed["lockstate"]:
-        start_lock_listener()
-    else:
-        update_lock_state(False)
+    stop_event = threading.Event()
+    thread = threading.Thread(target=lock_thread, args=(stop_event,), daemon=True)
+    thread.start()
 
 
 @app.on_startup

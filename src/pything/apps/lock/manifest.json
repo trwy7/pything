@@ -1,7 +1,7 @@
 {
-  "id": "addons",
-  "name": "Extras",
-  "description": "Adds features that do not belong in the core.",
+  "id": "locker",
+  "name": "Locker",
+  "description": "Blanks the screen when the computer is locked",
   "codeowners": ["@trwy7"],
   "category": "system",
   "requirements-linux": ["dbus-next==0.2.3"],
