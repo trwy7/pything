@@ -86,11 +86,11 @@ def import_app(iappd: str) -> None:
     _register_blueprint_routes(iapp.app.blueprint, "/apps/" + iapp.app.id, iapp.app.id)
     if os.path.exists(os.path.join(iappd, "clientmod.html")):
         state.client_mods.append(
-            (os.path.join(iapp.app.id, "clientmod.html").replace("\\", "/"), iapp.app)
+            (os.path.join(iapp.app.dirname, "clientmod.html").replace("\\", "/"), iapp.app)
         )
     if os.path.exists(os.path.join(iappd, "appmod.html")):
         state.app_mods.append(
-            (os.path.join(iapp.app.id, "appmod.html").replace("\\", "/"), iapp.app)
+            (os.path.join(iapp.app.dirname, "appmod.html").replace("\\", "/"), iapp.app)
         )
     for _methods, regex, _conv, _handler, app_id in state.routes:
         if (
