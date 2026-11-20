@@ -170,14 +170,23 @@ class Handler(BaseHTTPRequestHandler):
         self._send_response(response)
 
     def _send_response(self, response: Response) -> None:
-        self.send_response(response.status)
-        self.send_header("Content-Type", response.content_type)
-        self.send_header("Content-Length", str(len(response.body)))
-        for key, value in response.headers.items():
-            self.send_header(key, value)
-        self.end_headers()
-        if self.command != "HEAD" and response.body:
-            self.wfile.write(response.body)
+        try:
+            self.send_response(response.status)
+            self.send_header("Content-Type", response.content_type)
+            self.send_header("Content-Length", str(response.content_length))
+            for key, value in response.headers.items():
+                self.send_header(key, value)
+            self.end_headers()
+            if self.command == "HEAD":
+                return
+            if response.file is not None:
+                while chunk := response.file.read(64 * 1024):
+                    self.wfile.write(chunk)
+            elif response.body:
+                self.wfile.write(response.body)
+        finally:
+            if response.file is not None:
+                response.file.close()
 
     def do_GET(self) -> None:
         if self._is_websocket_upgrade():

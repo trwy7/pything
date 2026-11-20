@@ -6,10 +6,10 @@ import mimetypes
 import os
 import re
 import threading
-from io import BytesIO
 from collections.abc import Callable, Iterator
+from io import BytesIO
 from pathlib import Path
-from typing import Any, NoReturn
+from typing import Any, BinaryIO, NoReturn
 
 from . import state
 
@@ -32,6 +32,8 @@ class Response:
         status: int = 200,
         content_type: str = "text/html; charset=utf-8",
         headers: dict[str, str] | None = None,
+        file: BinaryIO | None = None,
+        content_length: int | None = None,
     ) -> None:
         if isinstance(body, str):
             body = body.encode()
@@ -39,6 +41,10 @@ class Response:
         self.status = status
         self.content_type = content_type
         self.headers = headers or {}
+        self.file = file
+        self.content_length = (
+            content_length if content_length is not None else len(body)
+        )
 
 
 def redirect(location: str) -> Response:
@@ -47,8 +53,18 @@ def redirect(location: str) -> Response:
 
 def send_file(path: str | Path) -> Response:
     content_type = mimetypes.guess_type(str(path))[0] or "application/octet-stream"
-    with open(path, "rb") as file:
-        return Response(file.read(), content_type=content_type)
+    file = open(path, "rb")  # noqa: SIM115
+    try:
+        content_length = os.fstat(file.fileno()).st_size
+    except OSError:
+        file.close()
+        raise
+    return Response(
+        content_type=content_type,
+        headers={"Cache-Control": "public, max-age=3600"},
+        file=file,
+        content_length=content_length,
+    )
 
 
 class MultiDict:

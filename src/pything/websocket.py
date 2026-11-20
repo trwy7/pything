@@ -8,6 +8,7 @@ import json
 import struct
 import threading
 from collections.abc import Callable
+from functools import lru_cache
 from typing import TYPE_CHECKING, Any, BinaryIO
 
 from . import state
@@ -18,6 +19,14 @@ if TYPE_CHECKING:
     from .settings import Setting
 
 _WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+_BYTE_VALUES = bytes(range(256))
+
+
+@lru_cache(maxsize=256)
+def _xor_translation(mask_byte: int) -> bytes:
+    return bytes.maketrans(
+        _BYTE_VALUES, bytes(value ^ mask_byte for value in range(256))
+    )
 
 
 def _ws_accept_key(key: str) -> str:
@@ -69,13 +78,15 @@ class WSConnection:
         return header + payload
 
     def _read_exact(self, n: int) -> bytes:
-        data = b""
-        while len(data) < n:
-            chunk = self._rfile.read(n - len(data))
+        chunks = []
+        remaining = n
+        while remaining:
+            chunk = self._rfile.read(remaining)
             if not chunk:
                 raise ConnectionError("websocket closed by peer")
-            data += chunk
-        return data
+            chunks.append(chunk)
+            remaining -= len(chunk)
+        return b"".join(chunks)
 
     def recv_text(self) -> str | None:
         """Read the next text message. Returns None once the peer closes."""
@@ -91,16 +102,23 @@ class WSConnection:
             elif length == 127:
                 (length,) = struct.unpack("!Q", self._read_exact(8))
             mask = self._read_exact(4) if masked else None
-            payload = self._read_exact(length) if length else b""
+            payload = bytearray(self._read_exact(length)) if length else bytearray()
             if mask is not None:
-                payload = bytes(b ^ mask[i % 4] for i, b in enumerate(payload))
+                if len(payload) >= 1024:
+                    for offset, mask_byte in enumerate(mask):
+                        payload[offset::4] = payload[offset::4].translate(
+                            _xor_translation(mask_byte)
+                        )
+                else:
+                    for i in range(len(payload)):
+                        payload[i] ^= mask[i & 3]
             if opcode == 0x8:  # close
                 self.close()
                 return None
             if opcode == 0x9:  # ping -> pong
                 try:
                     with self._send_lock:
-                        self._wfile.write(self._encode_frame(payload, opcode=0xA))
+                        self._wfile.write(self._encode_frame(bytes(payload), opcode=0xA))
                         self._wfile.flush()
                 except OSError:
                     return None
