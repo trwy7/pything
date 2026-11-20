@@ -75,7 +75,7 @@ def settings_editor() -> Response:
     )
 
 
-@route("/apps", methods=("GET",))
+@route("/apps", methods=("GET",)) # TODO: app repos (maybe)
 def apps_editor() -> Response:
     installed_apps = app_dependency_view(state.discovered_app_manifests)
     source_custom_root = (Path(state.base_dir) / "customapps").resolve()
