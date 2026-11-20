@@ -220,6 +220,9 @@
     <script>
         document.querySelectorAll('.delete-button').forEach((button) => {
             button.addEventListener('click', async () => {
+                if (!window.confirm(`Are you sure you want to delete ${button.dataset.appName}? This cannot be undone.`)) {
+                    return;
+                }
                 const appName = button.dataset.appName;
                 const response = await fetch(`/customapps/${encodeURIComponent(button.dataset.appId)}`, {
                     method: 'DELETE'
