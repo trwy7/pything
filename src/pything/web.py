@@ -7,8 +7,9 @@ import os
 import re
 import threading
 from collections.abc import Callable, Iterator
+from io import BytesIO
 from pathlib import Path
-from typing import Any, NoReturn
+from typing import Any, BinaryIO, NoReturn
 
 from . import state
 
@@ -31,6 +32,8 @@ class Response:
         status: int = 200,
         content_type: str = "text/html; charset=utf-8",
         headers: dict[str, str] | None = None,
+        file: BinaryIO | None = None,
+        content_length: int | None = None,
     ) -> None:
         if isinstance(body, str):
             body = body.encode()
@@ -38,6 +41,10 @@ class Response:
         self.status = status
         self.content_type = content_type
         self.headers = headers or {}
+        self.file = file
+        self.content_length = (
+            content_length if content_length is not None else len(body)
+        )
 
 
 def redirect(location: str) -> Response:
@@ -46,8 +53,18 @@ def redirect(location: str) -> Response:
 
 def send_file(path: str | Path) -> Response:
     content_type = mimetypes.guess_type(str(path))[0] or "application/octet-stream"
-    with open(path, "rb") as file:
-        return Response(file.read(), content_type=content_type)
+    file = open(path, "rb")  # noqa: SIM115
+    try:
+        content_length = os.fstat(file.fileno()).st_size
+    except OSError:
+        file.close()
+        raise
+    return Response(
+        content_type=content_type,
+        headers={"Cache-Control": "public, max-age=3600"},
+        file=file,
+        content_length=content_length,
+    )
 
 
 class MultiDict:
@@ -73,12 +90,35 @@ class MultiDict:
         return f"MultiDict({self._data!r})"
 
 
+class UploadedFile(BytesIO):
+    """In-memory uploaded file, compatible with consumers expecting a file object."""
+
+    def __init__(self, filename: str, data: bytes) -> None:
+        super().__init__(data)
+        self.filename = filename
+
+
+class FileMultiDict:
+    """Small multi-value mapping for uploaded files."""
+
+    def __init__(self, data: dict[str, list[UploadedFile]] | None = None) -> None:
+        self._data = data or {}
+
+    def __contains__(self, key: str) -> bool:
+        return key in self._data
+
+    def getlist(self, key: str) -> list[UploadedFile]:
+        return self._data.get(key, [])
+
+
 class _Request:
-    """Request shim: args/form for HTTP routes, sid for websocket dispatches."""
+    """Request shim: args/form/files for HTTP routes, sid for websocket dispatches."""
 
     def __init__(self) -> None:
         self.args: MultiDict = MultiDict({})
         self.form: MultiDict = MultiDict({})
+        self.files: FileMultiDict = FileMultiDict()
+        self.remote_addr: str | None = None
         self.sid: str | None = None
 
 

@@ -5,14 +5,32 @@ Importing this module registers its routes
 
 from __future__ import annotations
 
+import re
+import shutil
 import threading
+from pathlib import Path
 from typing import Any
 
 from . import state
-from .app import App, stop_server
-from .discovery import app_dependency_view, discover_apps, required_dependency_closure
-from .web import Response, redirect, render_template, request, route
+from .app import APP_ID_REGEX, App, stop_server
+from .discovery import (
+    app_dependency_view,
+    discover_apps,
+    required_dependency_closure,
+)
+from .web import Response, _set_current_app, redirect, render_template, request, route
 
+restart_html = lambda x: (
+    "<style>html { background: linear-gradient(350deg, #272727, #1f1f1f); color:"
+    " #fff; }</style><h1 id='restarting'>PYThing is restarting...</h1><script>const params = new"
+    " URLSearchParams(window.location.search); if (!params.has('from')) {"
+    " setInterval(() => { fetch('/isready').then(response =>"
+    f" response.text()).then(data => {{ window.location.href = '/{x}'; }}); }},"
+    " 1000); } else { document.getElementById('restarting').style.textAlign = 'center'; document.getElementById('restarting').style.lineHeight = '99vh'; } </script>"
+) # todo: make this a template
+
+def restart() -> None:
+    threading.Timer(0.5, stop_server, kwargs={"exit_code": state.RESTART_EXIT_CODE}).start()
 
 @route("/isready")
 def ct_isready() -> Response:
@@ -26,7 +44,6 @@ def client_redirect() -> Response:
 
 @route("/client")
 def main_client() -> Response:
-    from .web import _set_current_app
 
     _set_current_app(None)
     return render_template("client.html", mods=state.client_mods)
@@ -58,12 +75,24 @@ def settings_editor() -> Response:
     )
 
 
-@route("/apps", methods=("GET",))
+@route("/apps", methods=("GET",)) # TODO: app repos (maybe)
 def apps_editor() -> Response:
-    manifests = discover_apps()
+    installed_apps = app_dependency_view(state.discovered_app_manifests)
+    source_custom_root = (Path(state.base_dir) / "customapps").resolve()
+    installed_custom_root = state.CUSTOM_APP_DIR.resolve()
+    custom_apps = []
+    for app in installed_apps:
+        app_path = Path(app["directory"]).resolve()
+        if app_path.is_relative_to(source_custom_root):
+            custom_apps.append({**app, "source": True}) # jank
+        elif app_path.is_relative_to(installed_custom_root):
+            custom_apps.append({**app, "source": False})
+
     return render_template(
         "apps.html",
-        installed_apps=app_dependency_view(manifests),
+        installed_apps=installed_apps,
+        custom_apps=custom_apps,
+        overwritten_apps=state.overwritten_app_ids,
         custom_hue=state.config.get("customizer", {}).get("hue", 151),
     )
 
@@ -79,21 +108,12 @@ def apps_set() -> str:
     state.config[state.APP_CONFIG_ID] = {"disabled": sorted(set(manifests) - enabled)}
     state.save_config()
 
-    def restart() -> None:
-        stop_server(exit_code=state.RESTART_EXIT_CODE)
+    restart()
 
-    threading.Timer(0.5, restart).start()
-    return (
-        "<style>html { background: linear-gradient(350deg, #272727, #1f1f1f); color:"
-        " #fff; }</style><h1 id='restarting'>PYThing is restarting...</h1><script>const params = new"
-        " URLSearchParams(window.location.search); if (!params.has('from')) {"
-        " setInterval(() => { fetch('/apps').then(response =>"
-        " response.text()).then(data => { window.location.href = '/settings'; }); },"
-        " 1000); } else { document.getElementById('restarting').style.textAlign = 'center'; document.getElementById('restarting').style.lineHeight = '99vh'; } </script>"
-    )
+    return restart_html("apps")
 
 
-@route("/settings", methods=("POST",))
+@route("/settings", methods=("POST",)) # TODO: upload/enable/disable/delete custom apps
 def settings_set() -> Response:
     state.logger.debug("Got new settings: %s", request.form)
     settings_changed = False
@@ -142,3 +162,58 @@ def settings_set() -> Response:
     if settings_changed:
         state.save_config()
     return redirect("/settings")
+
+@route("/customapps/upload", methods=("POST",))
+def custom_apps_set():
+    # Only allow localhost access
+    localhost = request.remote_addr in ("127.0.0.1", "::1")
+    if not localhost:
+        return Response("Access denied", status=403)
+    if "apps" not in request.files:
+        return Response("No files uploaded", status=400)
+    for file in request.files.getlist("apps"):
+        if not file.filename.endswith(".zip"): # bad way of checking type but it's fine for now because we only allow localhost
+            return Response("Invalid file type", status=400)
+        state.logger.info(f"Extracting custom app from {file.filename}")
+        state.CUSTOM_APP_DIR.mkdir(parents=True, exist_ok=True)
+        import zipfile  # lazy import
+
+        with zipfile.ZipFile(file) as zf:
+            # Read the manifest.json and check the "id" field
+            if "manifest.json" not in zf.namelist():
+                return Response("Invalid custom app: missing manifest.json", status=400)
+            import json  # another lazy import
+
+            manifest = json.loads(zf.read("manifest.json").decode("utf-8"))
+            if "id" not in manifest:
+                return Response("Invalid custom app: missing id in manifest.json", status=400)
+            app_id = manifest["id"]
+            # Validate the app_id to prevent directory traversal
+            if not re.match(APP_ID_REGEX, app_id):
+                return Response("Invalid custom app: id must only contain alphanumeric characters and underscores", status=400)
+            # Check if the app is already installed
+            if (state.CUSTOM_APP_DIR / app_id).exists():
+                # overwrite the existing app
+                state.logger.info(f"Overwriting custom app {app_id}")
+                shutil.rmtree(state.CUSTOM_APP_DIR / app_id)
+            # Extract the zip file to the custom apps directory
+            zf.extractall(state.CUSTOM_APP_DIR / app_id)
+    restart()
+    return restart_html("apps")
+
+@route("/customapps/<app_id>", methods=("DELETE",))
+def custom_apps_delete(app_id: str):
+    # Only allow localhost access
+    localhost = request.remote_addr in ("127.0.0.1", "::1")
+    if not localhost:
+        return Response("Access denied", status=403)
+    # Ensure app id is valid
+    if not re.match(APP_ID_REGEX, app_id):
+        return Response("Invalid app id", status=400)
+    # Check if the app is installed
+    if not (state.CUSTOM_APP_DIR / app_id).exists():
+        return Response("App not found", status=404)
+    # Delete the app directory
+    shutil.rmtree(state.CUSTOM_APP_DIR / app_id)
+    restart()
+    return restart_html("apps")

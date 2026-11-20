@@ -22,7 +22,6 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
-    "pyinstaller>=6.19.0",
     "ruff>=0.17.3",
     "uv>=0.13.6",
 ]

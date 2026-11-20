@@ -36,6 +36,7 @@ app = App(
 art_dir = app.cache_dir / "art"
 art_dir.mkdir(parents=True, exist_ok=True)
 accent_cache: dict[str, int | None] = {}
+windows_art_cache: dict[str, tuple[str, str | None]] = {}
 windows_position_cache: dict[str, tuple[int, int, float]] = {}
 switch_delay = 0.5
 playback_lock = threading.Lock()
@@ -275,26 +276,38 @@ async def windows_track(manager) -> LocalTrack | None:
         return None
     selected, selected_properties, provider, status = selected
 
-    art_url = None
-    if selected_properties.thumbnail:
-        try:
-            stream = await selected_properties.thumbnail.open_read_async()
-            reader = DataReader(stream)
-            await reader.load_async(stream.size)
-            buffer = bytearray(stream.size)
-            reader.read_bytes(buffer)
-            data = bytes(buffer)
-            reader.close()
+    art_track_key = "\0".join(
+        str(value or "")
+        for value in (
+            selected_properties.track_number,
+            selected_properties.title,
+            selected_properties.artist,
+            selected_properties.album_title,
+        )
+    )
+    cached_art = windows_art_cache.get(provider)
+    art_url = cached_art[1] if cached_art and cached_art[0] == art_track_key else None
+    if cached_art is None or cached_art[0] != art_track_key:
+        if selected_properties.thumbnail:
+            try:
+                stream = await selected_properties.thumbnail.open_read_async()
+                reader = DataReader(stream)
+                await reader.load_async(stream.size)
+                buffer = bytearray(stream.size)
+                reader.read_bytes(buffer)
+                data = bytes(buffer)
+                reader.close()
 
-            identifier = hashlib.sha256(data).hexdigest()
-            await asyncio.to_thread(
-                write_thumbnail,
-                art_dir / (identifier + ".jpg"),
-                data,
-            )
-            art_url = (art_dir / (identifier + ".jpg")).as_uri()
-        except (OSError, ValueError):
-            app.logger.debug("Could not read Windows album art", exc_info=True)
+                identifier = hashlib.sha256(data).hexdigest()
+                thumbnail_path = art_dir / (identifier + ".jpg")
+                if not thumbnail_path.is_file():
+                    await asyncio.to_thread(write_thumbnail, thumbnail_path, data)
+                art_url = thumbnail_path.as_uri()
+                windows_art_cache[provider] = (art_track_key, art_url)
+            except (OSError, ValueError):
+                app.logger.debug("Could not read Windows album art", exc_info=True)
+        else:
+            windows_art_cache[provider] = (art_track_key, None)
 
     playback_info = selected.get_playback_info()
     status = playback_info.playback_status

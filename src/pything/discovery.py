@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from typing import Any
 
 from . import state
+
+logger = logging.getLogger("pything.discovery")
+overwritten_apps: list[str] = []
 
 
 def app_manifest(app_dir: str) -> dict[str, Any]:
@@ -35,7 +39,14 @@ def app_manifest(app_dir: str) -> dict[str, Any]:
 
 def discover_apps() -> dict[str, dict[str, Any]]:
     discovered: dict[str, dict[str, Any]] = {}
-    for app_root in ("apps", "customapps"):
+    priorities: dict[str, int] = {}
+    builtin_app_ids: set[str] = set()
+    app_roots = (
+        ("apps", 0),
+        (os.fspath(state.CUSTOM_APP_DIR), 1),
+        ("customapps", 2),
+    )
+    for app_root, priority in app_roots:
         if not os.path.isdir(app_root):
             continue
         for app_name in sorted(os.listdir(app_root)):
@@ -50,20 +61,36 @@ def discover_apps() -> dict[str, dict[str, Any]]:
                 raise TypeError(
                     f"Manifest for app directory '{app_dir}' has invalid id"
                 )
-            if app_id in discovered:
-                raise RuntimeError(
-                    f"App id '{app_id}' is defined more than once"
-                )  # TODO: disable duplicate apps when we allow custom apps
-            discovered[app_id] = {
-                "id": app_id,
-                "name": manifest.get("name", app_id),
-                "description": manifest.get("description", ""),
-                "core": manifest.get("core", False),
-                "default": manifest.get("default", False),
-                "category": manifest.get("category", "uncategorized"),
-                "dependencies": manifest["dependencies"],
-                "directory": app_dir,
-            }
+            if priority == 0:
+                builtin_app_ids.add(app_id)
+            if app_id in discovered and priorities[app_id] == priority:
+                raise RuntimeError(f"App id '{app_id}' is defined more than once")
+            if app_id in discovered and priority > priorities[app_id]:
+                logger.warning(
+                    "App %s from %s overrides app from %s",
+                    app_id,
+                    app_dir,
+                    discovered[app_id]["directory"],
+                )
+            if app_id not in discovered or priority > priorities[app_id]:
+                discovered[app_id] = {
+                    "id": app_id,
+                    "name": manifest.get("name", app_id),
+                    "description": manifest.get("description", ""),
+                    "core": manifest.get("core", False),
+                    "default": manifest.get("default", False),
+                    "category": manifest.get("category", "uncategorized"),
+                    "dependencies": manifest["dependencies"],
+                    "directory": app_dir,
+                    "version": manifest.get("version"),
+                }
+                priorities[app_id] = priority
+
+    overwritten_apps[:] = sorted(
+        app_id
+        for app_id in builtin_app_ids
+        if app_id in discovered and priorities[app_id] > 0
+    )
     return discovered
 
 

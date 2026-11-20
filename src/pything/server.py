@@ -3,14 +3,19 @@
 from __future__ import annotations
 
 import datetime
+import ipaddress
 import os
 import urllib.parse
+from email.parser import BytesParser
+from email.policy import default as email_policy
 from http.server import BaseHTTPRequestHandler
 
 from . import state
 from .web import (
+    FileMultiDict,
     MultiDict,
     Response,
+    UploadedFile,
     _dispatch,
     _get_request,
     _serve_static,
@@ -32,6 +37,38 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, format: str, *args: object) -> None:
         state.logger.debug("%s - %s", self.address_string(), format % args)
 
+    def _has_trusted_origin(self) -> bool:
+        """Accept only origins served from this loopback server instance."""
+        origin = self.headers.get("Origin")
+        if not origin:
+            return False
+        try:
+            parsed = urllib.parse.urlsplit(origin)
+            hostname = parsed.hostname
+            port = parsed.port
+        except ValueError:
+            return False
+        if (
+            parsed.scheme not in ("http", "https")
+            or not hostname
+            or parsed.username is not None
+            or parsed.password is not None
+            or parsed.path
+            or parsed.query
+            or parsed.fragment
+        ):
+            return False
+        if port is None:
+            port = 443 if parsed.scheme == "https" else 80
+        if port != self.server.server_port:
+            return False
+        if hostname.casefold() == "localhost":
+            return True
+        try:
+            return ipaddress.ip_address(hostname).is_loopback
+        except ValueError:
+            return False
+
     # -- websocket upgrade ------------------------------------------------
     def _is_websocket_upgrade(self) -> bool:
         return (
@@ -40,6 +77,10 @@ class Handler(BaseHTTPRequestHandler):
         )
 
     def _do_websocket(self, settings: bool = False) -> None:
+        if not self._has_trusted_origin():
+            self.close_connection = True
+            self.send_error(403, "Untrusted Origin")
+            return
         key = self.headers.get("Sec-WebSocket-Key", "")
         rfile = self.rfile
         wfile = self.wfile
@@ -65,6 +106,10 @@ class Handler(BaseHTTPRequestHandler):
 
     # -- normal HTTP --------------------------------------------------------
     def _handle(self) -> None:
+        if self.command in {"POST", "PUT", "PATCH", "DELETE"} and not self._has_trusted_origin():
+            self.close_connection = True
+            self._send_response(Response("Forbidden", status=403))
+            return
         parsed = urllib.parse.urlparse(self.path)
         path = urllib.parse.unquote(parsed.path)
         req = _get_request()
@@ -72,17 +117,50 @@ class Handler(BaseHTTPRequestHandler):
             urllib.parse.parse_qs(parsed.query, keep_blank_values=True)
         )
         req.form = MultiDict({})
+        req.files = FileMultiDict()
+        req.remote_addr = self.client_address[0]
         req.sid = None
         _set_current_app(None)
 
         if self.command == "POST":
             length = int(self.headers.get("Content-Length") or 0)
             body = self.rfile.read(length) if length else b""
-            req.form = MultiDict(
-                urllib.parse.parse_qs(
-                    body.decode(errors="replace"), keep_blank_values=True
+            content_type = self.headers.get("Content-Type", "")
+            if content_type.lower().startswith("multipart/form-data"):
+                message = BytesParser(policy=email_policy).parsebytes(
+                    b"Content-Type: "
+                    + content_type.encode("ascii", errors="replace")
+                    + b"\r\nMIME-Version: 1.0\r\n\r\n"
+                    + body
                 )
-            )
+                form_data: dict[str, list[str]] = {}
+                file_data: dict[str, list[UploadedFile]] = {}
+                if message.is_multipart():
+                    for part in message.iter_parts():
+                        if part.get_content_disposition() != "form-data":
+                            continue
+                        name = part.get_param("name", header="content-disposition")
+                        if not name:
+                            continue
+                        payload = part.get_payload(decode=True) or b""
+                        filename = part.get_filename()
+                        if filename is not None:
+                            file_data.setdefault(name, []).append(
+                                UploadedFile(filename, payload)
+                            )
+                        else:
+                            charset = part.get_content_charset() or "utf-8"
+                            form_data.setdefault(name, []).append(
+                                payload.decode(charset, errors="replace")
+                            )
+                req.form = MultiDict(form_data)
+                req.files = FileMultiDict(file_data)
+            else:
+                req.form = MultiDict(
+                    urllib.parse.parse_qs(
+                        body.decode(errors="replace"), keep_blank_values=True
+                    )
+                )
 
         response = _dispatch(self.command, path)
         if response is None:
@@ -92,14 +170,23 @@ class Handler(BaseHTTPRequestHandler):
         self._send_response(response)
 
     def _send_response(self, response: Response) -> None:
-        self.send_response(response.status)
-        self.send_header("Content-Type", response.content_type)
-        self.send_header("Content-Length", str(len(response.body)))
-        for key, value in response.headers.items():
-            self.send_header(key, value)
-        self.end_headers()
-        if self.command != "HEAD" and response.body:
-            self.wfile.write(response.body)
+        try:
+            self.send_response(response.status)
+            self.send_header("Content-Type", response.content_type)
+            self.send_header("Content-Length", str(response.content_length))
+            for key, value in response.headers.items():
+                self.send_header(key, value)
+            self.end_headers()
+            if self.command == "HEAD":
+                return
+            if response.file is not None:
+                while chunk := response.file.read(64 * 1024):
+                    self.wfile.write(chunk)
+            elif response.body:
+                self.wfile.write(response.body)
+        finally:
+            if response.file is not None:
+                response.file.close()
 
     def do_GET(self) -> None:
         if self._is_websocket_upgrade():
@@ -113,6 +200,9 @@ class Handler(BaseHTTPRequestHandler):
         self._handle()
 
     def do_POST(self) -> None:
+        self._handle()
+
+    def do_DELETE(self) -> None:
         self._handle()
 
     def do_HEAD(self) -> None:
