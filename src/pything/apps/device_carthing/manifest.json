@@ -5,7 +5,7 @@
   "codeowners": ["@trwy7"],
   "category": "device",
   "dependencies": {
-    "optional": ["addons"]
+    "optional": ["locker"]
   },
   "default": true
 }
