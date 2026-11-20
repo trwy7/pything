@@ -21,6 +21,7 @@ from .websocket import socket
 
 
 def clock_thread() -> None:
+    # Broadcast the current time periodically to connected websocket clients.
     while True:
         socket.emit("dt", datetime.datetime.now().isoformat())
         time.sleep(60)
@@ -34,6 +35,8 @@ def import_app(iappd: str) -> None:
     state.logger.debug("Importing app %s", iappd)
     start_time = time.time()
     app_dir = os.path.abspath(iappd)
+    # Apps under the source tree can use their normal package imports; external
+    # app directories need a synthetic package namespace instead.
     source_root = os.path.dirname(os.path.abspath(state.__file__))
     try:
         is_source_app = os.path.commonpath((source_root, app_dir)) == source_root
@@ -43,6 +46,8 @@ def import_app(iappd: str) -> None:
         module_name = os.path.relpath(app_dir, source_root).replace(os.sep, ".")
         iapp = importlib.import_module(module_name)
     else:
+        # Give external apps a shared parent package so relative imports between
+        # an app's modules work without colliding with regular package names.
         package_name = "_pything_custom_apps"
         if package_name not in sys.modules:
             package = types.ModuleType(package_name)
@@ -83,7 +88,9 @@ def import_app(iappd: str) -> None:
         raise TypeError(
             f"App {iappd} variable 'app' has invalid blueprint ({type(iapp.app.blueprint)!s})"
         )
+    # Mount the app's declared routes under its own URL prefix.
     _register_blueprint_routes(iapp.app.blueprint, "/apps/" + iapp.app.id, iapp.app.id)
+    # Optional HTML fragments are collected for the client to include later.
     if os.path.exists(os.path.join(iappd, "clientmod.html")):
         state.client_mods.append(
             (os.path.join(iapp.app.dirname, "clientmod.html").replace("\\", "/"), iapp.app)
@@ -92,6 +99,7 @@ def import_app(iappd: str) -> None:
         state.app_mods.append(
             (os.path.join(iapp.app.dirname, "appmod.html").replace("\\", "/"), iapp.app)
         )
+    # Apps without a launch endpoint stay hidden from the app launcher.
     for _methods, regex, _conv, _handler, app_id in state.routes:
         if (
             app_id == iapp.app.id
@@ -116,6 +124,7 @@ def main() -> None:
     state.overwritten_app_ids.clear()
     state.overwritten_app_ids.extend(overwritten_apps)
     enabled = sorted(enabled)
+    # Install dependencies before importing apps, since imports may need them.
     install_app_requirements(manifests[app_id]["directory"] for app_id in enabled)
     for app_id in enabled:
         import_app(manifests[app_id]["directory"])
