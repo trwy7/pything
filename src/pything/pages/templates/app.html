@@ -10,6 +10,21 @@
             color: white;
             font-family: Arial, Helvetica, sans-serif;
         }
+        @font-face {
+            font-family: 'Allo';
+            src: url('/static/fonts/AlloVariable.woff2') format('woff2');
+            font-weight: 100 900;
+            font-style: normal;
+            font-display: swap;
+            size-adjust: 95%;
+            ascent-override: 95%;
+            descent-override: 22%;
+            line-gap-override: 0%;
+        }
+        * {
+            font-family: "Allo", Arial, Helvetica, sans-serif;
+            font-variation-settings: "ROND" 50;
+        }
     </style>
     {% block head %}{% endblock %}
 </head>
