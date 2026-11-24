@@ -55,13 +55,7 @@ def import_app(iappd: str) -> None:
     iapp = importlib.util.module_from_spec(spec)
     sys.modules[module_name] = iapp
     setattr(package, app_name, iapp)
-    try:
-        spec.loader.exec_module(iapp)
-    except BaseException:
-        sys.modules.pop(module_name, None)
-        if getattr(package, app_name, None) is iapp:
-            delattr(package, app_name)
-        raise
+    spec.loader.exec_module(iapp) # import the app
     end_time = time.time()
     state.logger.debug("Imported app %s in %.3f seconds", iappd, end_time - start_time)
     if not hasattr(iapp, "app"):
@@ -177,7 +171,11 @@ def main() -> None:
     # Install dependencies before importing apps, since imports may need them.
     install_app_requirements(manifests[app_id]["directory"] for app_id in enabled)
     for app_id in enabled:
-        import_app(manifests[app_id]["directory"])
+        try:
+            import_app(manifests[app_id]["directory"])
+        except Exception as e:
+            state.logger.error("Error importing app %s, pything may be in a degraded state: %s", app_id, e)
+            continue
 
     # Sort apps dict in place: other modules hold a reference to state.apps,
     # so the original rebinding of the global is expressed as an in-place sort.

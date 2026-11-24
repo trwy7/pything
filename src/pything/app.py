@@ -42,8 +42,8 @@ class App:
             dir (str): The directory of the app.
             dirname (str): The name of the app's directory.
             custom (bool): Whether the app is loaded from either custom-app directory.
-            cache_dir (Path): The cache directory for the app.
-            data_dir (Path): The data directory for the app.
+            cache_dir (Path): The cache directory for the app. Use for files that can be deleted individually at any time, as windows may aggressively delete files in the cache directory when low on disk space, even while running.
+            data_dir (Path): The data directory for the app. Use for files that are needed for the app to function, like a database, binary dependency, or other large files.
             config_dir (Path): The configuration directory for the app. Only use for data that cannot be stored in a setting, like a database or other large files.
             logger (Logger): The logger for the app.
             blueprint (Blueprint): The Flask blueprint for the app.

@@ -57,20 +57,18 @@ runtime = sys.implementation.cache_tag or (
     f"python-{sys.version_info.major}.{sys.version_info.minor}"
 )
 DEPENDENCY_DIR = (
-    CACHE_ROOT
-    / "pything"
+    DATA_ROOT
     / "dependencies"
     / f"{runtime}-{sysconfig.get_platform()}"
 )
 CUSTOM_APP_DIR = DATA_ROOT / "customapps"
 
 # Log to both the console and a file under CACHE_ROOT/pything/.
-log_dir = os.path.join(CACHE_ROOT, "pything") if CACHE_ROOT else None
-log_file = os.path.join(log_dir, "pything.log") if log_dir else None
+log_file = os.path.join(CACHE_ROOT, "pything.log") if CACHE_ROOT else None
 log_handlers: list[logging.Handler] = [logging.StreamHandler()]
 if log_file is not None:
     try:
-        os.makedirs(log_dir, exist_ok=True)
+        os.makedirs(CACHE_ROOT, exist_ok=True)
         log_handlers.append(logging.FileHandler(log_file, encoding="utf-8", mode="w"))
     except OSError:
         log_file = None  # fall back to console-only logging
