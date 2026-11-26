@@ -21,10 +21,13 @@ def is_requirement_installed(req_str: str) -> bool:
     try:
         req = Requirement(req_str)
         if req.marker is not None and not req.marker.evaluate():
+            logger.debug("Requirement %s is not applicable to this environment", req_str)
             return True
         installed_version = importlib.metadata.version(req.name)
+        logger.debug("Requirement %s is installed with version %s", req_str, installed_version)
         return req.specifier.contains(installed_version)
     except (importlib.metadata.PackageNotFoundError, ValueError):
+        logger.debug("Requirement %s is not installed", req_str)
         return False
 
 
